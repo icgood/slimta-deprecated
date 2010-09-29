@@ -23,9 +23,10 @@ AX_LUA_LIBS
 if test "x${LUA_LIB}" == "x"; then
 	AC_MSG_ERROR([Lua libraries required for building.])
 fi
+AC_SUBST([LUA_LIB])
 
 AC_CHECK_HEADERS([luah.h], [have_luah=yes], [have_luah=no])
-AC_SEARCH_LIBS([luaopen_luah], [luah], [], [have_luah=no], [-llua])
+AC_SEARCH_LIBS([luaopen_luah], [luah], [], [have_luah=no], $LUA_LIB)
 if test "x${have_luah}" != "xyes"; then
 	AC_MSG_ERROR([LuaH library is required for building.])
 fi
