@@ -17,7 +17,7 @@ end
 
 zmqr:attach(epr, epoll_context)
 zmqr:listen('zmq:pull:tcp://*:5544', request_context)
-msg_results_channel = zmqr:connect('zmq:push:tcp://localhost:4455')
+results_channel = zmqr:connect('zmq:push:tcp://localhost:4455')
 
 zmqr:run {timeout = 1.0}
 

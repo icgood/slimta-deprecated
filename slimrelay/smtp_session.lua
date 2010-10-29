@@ -5,6 +5,7 @@ require "table"
 require "ratchet"
 
 require "smtp_states"
+require "message_results"
 require "storage_engines"
 
 msg_status = ratchet.makeclass()
@@ -27,61 +28,14 @@ function smtp_session:init(data, ehlo_as)
         to_send = {smtp_states.EHLO(self)},
     }
 
-    self.msg_results = {}
-    self.current_msg_result = 1
-    for i, m in ipairs(self.messages) do
-        local n = {}
-        n.qid = m.qid
-        n.type = "softfail"
-        n.command = smtp_states.Error(self)
-        n.code = 421
-        n.message = "Unknown"
-        self.msg_results[i] = n
-    end
-end
--- }}}
-
--- {{{ smtp_session:send_results()
-function smtp_session:send_results()
-    local results_tmpl = [[<slimta><deliver>
-    <results>
-%s    </results>
-</deliver></slimta>
-]]
-
-    local success_tmpl = [[        <message queueid="%s">
-            <result type="success"/>
-        </message>
-]]
-    local fail_tmpl = [[        <message queueid="%s">
-            <result type="%s">
-                <command>%s</command>
-                <response code="%d">%s</response>
-            </result>
-        </message>
-]]
-
-    local msgs = ""
-    for i, r in ipairs(self.msg_results) do
-        if r.type == "success" then
-            msgs = msgs .. success_tmpl:format(self.messages[i].qid)
-        else
-            local cmd = r.command:build_command():gsub("%s*$", "")
-            cmd = cmd:gsub(self:message_placeholder(), "[[MESSAGE CONTENTS]]")
-            local msg = r.message:gsub("%s*$", "")
-            msgs = msgs .. fail_tmpl:format(self.messages[i].qid, r.type, cmd, r.code, msg)
-        end
-    end
-    
-    local results = results_tmpl:format(msgs)
-    msg_results_channel:send(results)
+    self.results = message_results(self.messages)
 end
 -- }}}
 
 -- {{{ smtp_session:shutdown()
 function smtp_session:shutdown(context)
     context:close()
-    self:send_results()
+    self.results:send(results_channel)
 end
 -- }}}
 
@@ -132,36 +86,23 @@ smtp_session.on_action = {
     end,
 
     fail_message = function (self, context, command, code, message)
-        local n = self.current_msg_result
-        local r = self.msg_results[n]
-        r.type = "hardfail"
-        r.command = command
-        r.code = code
-        r.message = message
-        self.current_msg_result = n + 1
+        self.results:push_result("hardfail", command, code, message)
     end,
 
     softfail_message = function (self, context, command, code, message)
-        local n = self.current_msg_result
-        local r = self.msg_results[n]
-        r.type = "success"
-        r.command = command
-        r.code = code
-        r.message = message
-        self.current_msg_result = n + 1
+        self.results:push_result("softfail", command, code, message)
     end,
 
     success = function (self, context)
-        local n = self.current_msg_result
-        local r = self.msg_results[n]
-        r.type = "success"
-        self.current_msg_result = n + 1
+        self.results:push_result("success")
     end,
 
     fail_recipient = function (self, context, command, code, message)
+        self.results:add_hardfailed_rcpt(command.which, code, message)
     end,
 
     softfail_recipient = function(self, context, command, code, message)
+        self.results:add_softfailed_rcpt(command.which, code, message)
     end,
 }
 -- }}}
