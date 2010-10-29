@@ -32,8 +32,12 @@ int main (int argc, char *argv[])
 	luaL_openlibs (L);
 	slimcommon_openlibs (L);
 
+	lua_getfield (L, -1, "add_path");
+	lua_pushstring (L, SLIMTA_SCRIPT_DIR);
+	lua_call (L, 1, 0);
+
 	push_argvs_to_global (L, argc, argv);
-	if (luaL_dofile (L, "main.lua") != 0)
+	if (luaL_dofile (L, SLIMTA_SCRIPT_DIR "/main.lua") != 0)
 		return lua_error (L);
 
 	lua_close (L);

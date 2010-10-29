@@ -38,11 +38,41 @@ static int slimcommon_stackdump (lua_State *L)
 }
 /* }}} */
 
+/* {{{ slimcommon_add_path() */
+static int slimcommon_add_path (lua_State *L)
+{
+	lua_settop (L, 1);
+	luaL_checkstring (L, 1);
+	luaopen_package (L);
+	lua_settop (L, 1);
+	lua_getglobal (L, "package");
+
+	/* Set the new package.path. */
+	lua_pushvalue (L, 1);
+	lua_pushliteral (L, "/?.lua;");
+	lua_getfield (L, 2, "path");
+	lua_concat (L, 3);
+	lua_setfield (L, 2, "path");
+
+	/* Set the new package.cpath. */
+	lua_pushvalue (L, 1);
+	lua_pushliteral (L, "/?.so;");
+	lua_getfield (L, 2, "cpath");
+	lua_concat (L, 3);
+	lua_setfield (L, 2, "cpath");
+
+	lua_settop (L, 1);
+
+	return 0;
+}
+/* }}} */
+
 /* {{{ slimcommon_openlibs () */
 int slimcommon_openlibs (lua_State *L)
 {
 	const luaL_Reg funcs[] = {
 		{"stackdump", slimcommon_stackdump},
+		{"add_path", slimcommon_add_path},
 		{NULL}
 	};
 	luaL_register (L, "slimta", funcs);
@@ -50,7 +80,7 @@ int slimcommon_openlibs (lua_State *L)
 	luaopen_slimta_xml (L);
 	lua_setfield (L, -1, "xml");
 
-	return 0;
+	return 1;
 }
 /* }}} */
 
