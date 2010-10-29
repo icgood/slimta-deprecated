@@ -78,7 +78,9 @@ int slimcommon_openlibs (lua_State *L)
 	luaL_register (L, "slimta", funcs);
 
 	luaopen_slimta_xml (L);
-	lua_setfield (L, -1, "xml");
+	lua_setfield (L, -2, "xml");
+	luaopen_slimta_rlimit (L);
+	lua_setfield (L, -2, "rlimit");
 
 	return 1;
 }
