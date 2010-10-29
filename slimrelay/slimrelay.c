@@ -5,7 +5,9 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include <luah.h>
+#include <ratchet.h>
+
+#include "slimcommon.h"
 
 /* {{{ push_argvs_to_global() */
 static void push_argvs_to_global (lua_State *L, int argc, char **argv)
@@ -28,9 +30,10 @@ int main (int argc, char *argv[])
 
 	lua_State *L = luaL_newstate ();
 	luaL_openlibs (L);
+	slimcommon_openlibs (L);
 
 	push_argvs_to_global (L, argc, argv);
-	if (luaL_dofile (L, "master.lua") != 0)
+	if (luaL_dofile (L, "main.lua") != 0)
 		return lua_error (L);
 
 	lua_close (L);

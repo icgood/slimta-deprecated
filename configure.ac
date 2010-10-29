@@ -25,10 +25,16 @@ if test "x${LUA_LIB}" == "x"; then
 fi
 AC_SUBST([LUA_LIB])
 
-AC_CHECK_HEADERS([luah.h], [have_luah=yes], [have_luah=no])
-AC_SEARCH_LIBS([luaopen_luah], [luah], [], [have_luah=no], $LUA_LIB)
-if test "x${have_luah}" != "xyes"; then
-	AC_MSG_ERROR([LuaH library is required for building.])
+AC_CHECK_HEADERS([ratchet.h], [have_ratchet=yes], [have_ratchet=no])
+AC_SEARCH_LIBS([luaopen_ratchet], [ratchet], [], [have_ratchet=no], $LUA_LIB)
+if test "x${have_ratchet}" != "xyes"; then
+	AC_MSG_ERROR([Lua Ratchet library is required for building.])
+fi
+
+AC_CHECK_HEADERS([expat.h], [have_expat=yes], [have_expat=no])
+AC_SEARCH_LIBS([XML_ParserCreate], [expat], [], [have_expat=no], $LUA_LIB)
+if test "x${have_expat}" != "xyes"; then
+	AC_MSG_ERROR([Expat headers and libraries are required for building.])
 fi
 
 # Check for header files.
