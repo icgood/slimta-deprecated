@@ -8,8 +8,8 @@ require "smtp_session"
 smtp_context = ratchet.new_context()
 
 -- {{{ smtp_context.create()
-function smtp_context.create(r, nexthop)
-    local session = smtp_session(nexthop, "stonehenge")
+function smtp_context.create(r, nexthop, results_channel)
+    local session = smtp_session(nexthop, results_channel, "stonehenge")
     local connect_to = "tcp://[" .. nexthop.destination .. "]:" .. nexthop.port
     r:connect(connect_to, smtp_context, session)
 end

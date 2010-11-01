@@ -79,6 +79,13 @@ tags = {slimta = {},
     }
 -- }}}
 
+-- {{{ on_init()
+function request_context:on_init(use_ratchet, results_channel)
+    self.use_ratchet = use_ratchet
+    self.results_channel = results_channel
+end
+-- }}}
+
 -- {{{ on_recv()
 function request_context:on_recv()
     local data = self:recv()
@@ -161,7 +168,7 @@ function request_context:create_sessions()
     for i, nexthop in ipairs(self.msg_info.nexthops) do
         local proto = protocols[nexthop.protocol]
         if proto then
-            proto.create(epr, nexthop)
+            proto.create(self.use_ratchet, nexthop, self.results_channel)
         else
             error("Unsupported protocol", proto)
         end

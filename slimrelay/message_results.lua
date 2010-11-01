@@ -3,7 +3,9 @@ require "ratchet"
 message_results = ratchet.makeclass()
 
 -- {{{ message_results:init()
-function message_results:init(messages)
+function message_results:init(messages, results_channel)
+    self.results_channel = results_channel
+
     -- Initialize all messages to temp-failed state.
     self.messages = messages
     self.current = 1
@@ -115,9 +117,9 @@ end
 -- }}}
 
 -- {{{ message_results:send()
-function message_results:send(channel)
+function message_results:send()
     local results = self:format_results()
-    channel:send(results)
+    self.results_channel:send(results)
 end
 -- }}}
 

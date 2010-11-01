@@ -15,7 +15,7 @@ local template_start = string.char(1, 3, 9, 27)
 local template_end = string.char(27, 9, 3, 1)
 
 -- {{{ smtp_session:init()
-function smtp_session:init(data, ehlo_as)
+function smtp_session:init(data, results_channel, ehlo_as)
     self.messages = data.messages
     self.security = data.security
 
@@ -28,14 +28,14 @@ function smtp_session:init(data, ehlo_as)
         to_send = {smtp_states.EHLO(self)},
     }
 
-    self.results = message_results(self.messages)
+    self.results = message_results(self.messages, results_channel)
 end
 -- }}}
 
 -- {{{ smtp_session:shutdown()
 function smtp_session:shutdown(context)
     context:close()
-    self.results:send(results_channel)
+    self.results:send()
 end
 -- }}}
 

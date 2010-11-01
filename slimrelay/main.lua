@@ -2,10 +2,10 @@ require "ratchet"
 
 require "request_context"
 
-zmqr = ratchet(ratchet.zmq.poll())
+local zmqr = ratchet(ratchet.zmq.poll())
 zmqr:register_uri("zmq", ratchet.zmq.socket, ratchet.zmq.parse_uri)
 
-epr = ratchet(ratchet.epoll())
+local epr = ratchet(ratchet.epoll())
 epr:register_uri("tcp", ratchet.socket, ratchet.socket.parse_tcp_uri)
 
 -- {{{ epoll_context: Handles events from the epoll-based ratchet.
@@ -15,9 +15,9 @@ function epoll_context:on_recv()
 end
 -- }}}
 
-zmqr:attach(epr, epoll_context)
-zmqr:listen('zmq:pull:tcp://*:5544', request_context)
-results_channel = zmqr:connect('zmq:push:tcp://localhost:4455')
+zmqr:attach(epr, epoll_context) -- Trap epoll events from zmq_poll.
+local results_channel = zmqr:connect('zmq:push:tcp://localhost:4455')
+zmqr:listen('zmq:pull:tcp://*:5544', request_context, epr, results_channel)
 
 zmqr:run {timeout = 1.0}
 
