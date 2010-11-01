@@ -86,13 +86,13 @@ function request_context:on_recv()
     self.tag_stack = {}
     self.msg_info = {}
 
-    parser = slimta.xml {state = self,
-                         startelem = self.start_tag,
-                         endelem = self.end_tag,
-                         elemdata = self.tag_data}
+    local parser = slimta.xml {state = self,
+                               startelem = self.start_tag,
+                               endelem = self.end_tag,
+                               elemdata = self.tag_data}
     parser:parse(data)
 
-    self:create_smtp_sessions()
+    self:create_sessions()
 end
 -- }}}
 
@@ -102,7 +102,7 @@ function request_context:start_tag(tag, attrs)
 
     if tags[tag] then
         -- Check if this tag is valid and in the right place.
-        valid = (#tags[tag] == #self.tag_stack)
+        local valid = (#tags[tag] == #self.tag_stack)
         for i, t in ipairs(tags[tag]) do
             if t ~= self.tag_stack[i].tag then
                 valid = false
@@ -156,12 +156,15 @@ function request_context:tag_data(data)
 end
 -- }}}
 
--- {{{ create_smtp_sessions()
-function request_context:create_smtp_sessions()
+-- {{{ create_sessions()
+function request_context:create_sessions()
     for i, nexthop in ipairs(self.msg_info.nexthops) do
-        session = smtp_session(nexthop, "stonehenge")
-        connect_to = "tcp://[" .. nexthop.destination .. "]:" .. nexthop.port
-        epr:connect(connect_to, smtp_context, session)
+        local proto = protocols[nexthop.protocol]
+        if proto then
+            proto.create(epr, nexthop)
+        else
+            error("Unsupported protocol", proto)
+        end
     end
 end
 -- }}}

@@ -53,7 +53,7 @@ function smtp_session:queue_next_msg_commands()
     self.commands.to_send = {smtp_states.MAIL(self, msg)}
 
     -- RCPT TO:<forward-addr>
-    which = {which = 0}
+    local which = {which = 0}
     for i, rcpt in ipairs(msg.envelope.recipients) do
         which.which = i
         table.insert(self.commands.to_send, smtp_states.RCPT(self, msg, which))

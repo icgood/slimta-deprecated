@@ -3,7 +3,17 @@ require "table"
 
 require "ratchet"
 
+require "smtp_session"
+
 smtp_context = ratchet.new_context()
+
+-- {{{ smtp_context.create()
+function smtp_context.create(r, nexthop)
+    local session = smtp_session(nexthop, "stonehenge")
+    local connect_to = "tcp://[" .. nexthop.destination .. "]:" .. nexthop.port
+    r:connect(connect_to, smtp_context, session)
+end
+-- }}}
 
 -- {{{ smtp_context:each_response()
 function smtp_context:save_each_response_function()
@@ -78,5 +88,7 @@ function smtp_context:on_send(data)
     io.stderr:write("C: ["..data.."]\n")
 end
 -- }}}
+
+protocols["SMTP"] = smtp_context
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

@@ -28,7 +28,7 @@ function message_results:set_result(i, type_, command, code, message)
         if type(command) == "string" then
             r.command = command:gsub("%s*$", "")
         else
-            command = command:build_command():gsub("%s*$", "")
+            local command = command:build_command():gsub("%s*$", "")
             command = command:gsub(smtp_session.message_placeholder(), "[[MESSAGE CONTENTS]]")
             r.command = command
         end

@@ -91,7 +91,7 @@ function smtp_states.EHLO:parse_response(code, response)
         if not greeting then
             greeting = line
         else
-            pattern = "^%s*(%w[%w%-]*)(.*)$"
+            local pattern = "^%s*(%w[%w%-]*)(.*)$"
             self.session:add_extension(line:match(pattern))
         end
     end
@@ -105,7 +105,7 @@ smtp_states.MAIL.supports_pipeline = true
 function smtp_states.MAIL:build_command()
     local command = "MAIL FROM:<" .. self.message.envelope.sender .. ">"
     local size = tonumber(self.message.contents.size)
-    if session:has_extension("SIZE") and size then
+    if self.session:has_extension("SIZE") and size then
         command = command .. " size=" .. size
     end
     return command .. "\r\n"
