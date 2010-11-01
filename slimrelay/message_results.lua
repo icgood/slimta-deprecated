@@ -1,6 +1,6 @@
 require "ratchet"
 
-message_results = ratchet.makeclass()
+local message_results = ratchet.makeclass()
 
 -- {{{ message_results:init()
 function message_results:init(messages, results_channel)
@@ -122,5 +122,7 @@ function message_results:send()
     self.results_channel:send(results)
 end
 -- }}}
+
+return message_results
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

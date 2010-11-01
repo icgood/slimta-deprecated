@@ -1,7 +1,7 @@
 require "ratchet"
 require "slimta"
 
-request_context = ratchet.new_context()
+local request_context = ratchet.new_context()
 
 -- {{{ tags table
 tags = {slimta = {},
@@ -170,5 +170,7 @@ function request_context:create_sessions()
     end
 end
 -- }}}
+
+return request_context
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

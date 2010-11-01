@@ -1,8 +1,8 @@
 require "ratchet"
 
-require "smtp_session"
+local smtp_session = require "smtp_session"
 
-smtp_context = ratchet.new_context()
+local smtp_context = ratchet.new_context()
 
 -- {{{ smtp_context.create()
 function smtp_context.create(r, nexthop, results_channel)

@@ -18,7 +18,7 @@ end
 
 ------------------
 
-smtp_states = {}
+local smtp_states = {}
 
 -- {{{ Banner
 smtp_states.Banner = new_state()
@@ -197,5 +197,7 @@ function smtp_states.QUIT:parse_response(code, response)
     return "quit_immediately"
 end
 -- }}}
+
+return smtp_states
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

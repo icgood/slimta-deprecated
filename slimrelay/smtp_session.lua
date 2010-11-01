@@ -1,10 +1,9 @@
 require "ratchet"
 
-require "smtp_states"
-require "message_results"
+local smtp_states = require "smtp_states"
+local message_results = require "message_results"
 
-msg_status = ratchet.makeclass()
-smtp_session = ratchet.makeclass()
+local smtp_session = ratchet.makeclass()
 
 local template_start = string.char(1, 3, 9, 27)
 local template_end = string.char(27, 9, 3, 1)
@@ -186,5 +185,7 @@ function smtp_session:message_placeholder()
     return template_start .. "message" .. template_end
 end
 -- }}}
+
+return smtp_session
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
