@@ -165,7 +165,7 @@ function request_context:create_sessions()
         if proto then
             proto.create(self.use_ratchet, nexthop, self.results_channel)
         else
-            error("Unsupported protocol", proto)
+            error("Unsupported protocol: " .. proto)
         end
     end
 end
