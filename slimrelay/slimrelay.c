@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <lua.h>
@@ -8,6 +9,10 @@
 #include <ratchet.h>
 
 #include "slimcommon.h"
+
+#ifndef SLIMRELAY_SCRIPT_PATH
+#define SLIMRELAY_SCRIPT_PATH "/usr/share/slimrelay"
+#endif
 
 /* {{{ push_argvs_to_global() */
 static void push_argvs_to_global (lua_State *L, int argc, char **argv)
@@ -19,7 +24,37 @@ static void push_argvs_to_global (lua_State *L, int argc, char **argv)
 		lua_pushstring (L, argv[i]);
 		lua_rawseti (L, -2, i);
 	}
+	lua_pushliteral (L, "n");
+	lua_pushinteger (L, argc);
+	lua_rawset (L, -3);
 	lua_setglobal (L, "arg");
+
+}
+/* }}} */
+
+/* {{{ setup_globals() */
+static void setup_globals (lua_State *L, int argc, char **argv)
+{
+	push_argvs_to_global (L, argc, argv);
+
+	/* Initial table of protocols, populated by included files. */
+	lua_newtable (L);
+	lua_setglobal (L, "protocols");
+
+}
+/* }}} */
+
+/* {{{ get_script_path() */
+static const char *get_script_path (const char *file)
+{
+	const char *envpath = getenv ("SLIMRELAY_SCRIPT_PATH");
+	const char *path = (envpath ? envpath : SLIMRELAY_SCRIPT_PATH);
+	if (!file)
+		return path;
+
+	static char with_file[1024];
+	snprintf (with_file, 1024, "%s/%s", path, file);
+	return with_file;
 }
 /* }}} */
 
@@ -33,11 +68,11 @@ int main (int argc, char *argv[])
 	slimcommon_openlibs (L);
 
 	lua_getfield (L, -1, "add_path");
-	lua_pushstring (L, SLIMTA_SCRIPT_DIR);
+	lua_pushstring (L, get_script_path (NULL));
 	lua_call (L, 1, 0);
 
-	push_argvs_to_global (L, argc, argv);
-	if (luaL_dofile (L, SLIMTA_SCRIPT_DIR "/main.lua") != 0)
+	setup_globals (L, argc, argv);
+	if (luaL_dofile (L, get_script_path ("main.lua")) != 0)
 		return lua_error (L);
 
 	lua_close (L);

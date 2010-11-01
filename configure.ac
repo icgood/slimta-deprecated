@@ -7,7 +7,7 @@ AM_INIT_AUTOMAKE
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 AC_CONFIG_MACRO_DIR([m4])
-#AC_CONFIG_SRCDIR([])
+AC_CONFIG_SRCDIR([slimrelay/slimrelay.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Check for programs.
@@ -48,6 +48,7 @@ AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 
 # Checks for library functions.
+AC_CHECK_FUNCS([getenv])
 
 AC_CONFIG_FILES([Makefile
 		 slimcommon/Makefile
