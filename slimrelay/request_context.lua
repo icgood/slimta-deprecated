@@ -1,10 +1,5 @@
-require "table"
-
 require "ratchet"
 require "slimta"
-
-require "smtp_session"
-require "smtp_context"
 
 request_context = ratchet.new_context()
 

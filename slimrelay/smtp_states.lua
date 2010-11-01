@@ -1,5 +1,3 @@
-require "table"
-
 require "ratchet"
 
 -- {{{ new_state()

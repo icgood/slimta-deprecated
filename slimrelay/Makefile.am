@@ -9,7 +9,8 @@ dist_pkgdata_DATA = smtp_session.lua \
 		    smtp_states.lua \
 		    smtp_context.lua \
 		    message_results.lua \
-		    storage_engines.lua \
+		    local_storage.lua \
 		    request_context.lua \
+		    config.lua \
 		    main.lua
 

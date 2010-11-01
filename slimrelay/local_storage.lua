@@ -1,6 +1,3 @@
-require "io"
-
-storage_engines = {}
 
 -- {{{ local
 local local_iter = function (f)

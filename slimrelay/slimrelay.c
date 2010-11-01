@@ -41,6 +41,9 @@ static void setup_globals (lua_State *L, int argc, char **argv)
 	lua_newtable (L);
 	lua_setglobal (L, "protocols");
 
+	/* Initial table or storage engines, populated by included files. */
+	lua_newtable (L);
+	lua_setglobal (L, "storage_engines");
 }
 /* }}} */
 
@@ -70,8 +73,12 @@ int main (int argc, char *argv[])
 	lua_getfield (L, -1, "add_path");
 	lua_pushstring (L, get_script_path (NULL));
 	lua_call (L, 1, 0);
+	lua_settop (L, 0);
 
 	setup_globals (L, argc, argv);
+
+	luaL_dofile (L, get_script_path ("config.lua"));
+	lua_settop (L, 0);
 	if (luaL_dofile (L, get_script_path ("main.lua")) != 0)
 		return lua_error (L);
 

@@ -1,12 +1,7 @@
-require "os"
-require "string"
-require "table"
-
 require "ratchet"
 
 require "smtp_states"
 require "message_results"
-require "storage_engines"
 
 msg_status = ratchet.makeclass()
 smtp_session = ratchet.makeclass()

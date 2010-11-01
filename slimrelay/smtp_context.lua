@@ -1,6 +1,3 @@
-require "io"
-require "table"
-
 require "ratchet"
 
 require "smtp_session"
