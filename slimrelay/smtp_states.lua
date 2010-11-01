@@ -1,5 +1,3 @@
-require "ratchet"
-
 -- {{{ new_state()
 local new_state = function ()
     local ret = ratchet.makeclass()

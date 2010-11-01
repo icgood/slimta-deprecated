@@ -1,5 +1,3 @@
-require "ratchet"
-
 local request_context = require "request_context"
 
 local zmqr = ratchet(ratchet.zmq.poll())
@@ -16,12 +14,13 @@ end
 -- }}}
 
 zmqr:attach(epr, epoll_context) -- Trap epoll events from zmq_poll.
-local results_channel = zmqr:connect('zmq:push:tcp://localhost:4455')
-zmqr:listen('zmq:pull:tcp://*:5544', request_context, epr, results_channel)
+local results_channel = zmqr:connect(connections.results_channel)
+zmqr:listen(connections.request_channel, request_context, epr, results_channel)
 
-for k, v in pairs(getfenv()) do
-    print(k, v)
+local on_error = function (err)
+    print("ERROR: " .. tostring(err))
+    print(debug.traceback())
 end
-zmqr:run {timeout = 1.0}
+zmqr:run {timeout = 1.0, panicf = on_error}
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

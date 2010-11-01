@@ -1,6 +1,3 @@
-require "ratchet"
-require "slimta"
-
 local request_context = ratchet.new_context()
 
 -- {{{ tags table

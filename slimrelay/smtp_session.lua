@@ -1,5 +1,3 @@
-require "ratchet"
-
 local smtp_states = require "smtp_states"
 local message_results = require "message_results"
 

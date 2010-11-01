@@ -41,9 +41,13 @@ static void setup_globals (lua_State *L, int argc, char **argv)
 	lua_newtable (L);
 	lua_setglobal (L, "protocols");
 
-	/* Initial table or storage engines, populated by included files. */
+	/* Initial table of storage engines, populated by included files. */
 	lua_newtable (L);
 	lua_setglobal (L, "storage_engines");
+
+	/* Initial table of connection strings, populated by the configs. */
+	lua_newtable (L);
+	lua_setglobal (L, "connections");
 }
 /* }}} */
 
@@ -68,6 +72,8 @@ int main (int argc, char *argv[])
 
 	lua_State *L = luaL_newstate ();
 	luaL_openlibs (L);
+	luaopen_ratchet (L);
+
 	slimcommon_openlibs (L);
 
 	lua_getfield (L, -1, "add_path");
@@ -77,8 +83,8 @@ int main (int argc, char *argv[])
 
 	setup_globals (L, argc, argv);
 
-	luaL_dofile (L, get_script_path ("config.lua"));
-	lua_settop (L, 0);
+	if (luaL_dofile (L, get_script_path ("config.lua")) != 0)
+		return lua_error (L);
 	if (luaL_dofile (L, get_script_path ("main.lua")) != 0)
 		return lua_error (L);
 

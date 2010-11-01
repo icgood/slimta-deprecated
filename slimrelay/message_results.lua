@@ -1,5 +1,3 @@
-require "ratchet"
-
 local message_results = ratchet.makeclass()
 
 -- {{{ message_results:init()
