@@ -1,5 +1,10 @@
 
 ------------------------------------------------------------------------------
+-- Set some resource limits.
+local cur, max = slimta.rlimit.get("NOFILE");
+slimta.rlimit.set("NOFILE", max, max)
+
+------------------------------------------------------------------------------
 -- Load up storage engines that will be used.
 require "local_storage"
 --require "couchdb_storage"

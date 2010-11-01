@@ -32,10 +32,38 @@
 
 #include "rlimit.h"
 
+/* {{{ myrlimit_resource() */
+static int myrlimit_resource (lua_State *L, int index)
+{
+	int type = lua_type (L, index);
+
+	if (type == LUA_TNUMBER)
+		return (int) lua_tointeger (L, index);
+
+	else if (type == LUA_TSTRING)
+	{
+		lua_pushvalue (L, lua_upvalueindex (1));
+		lua_pushvalue (L, index);
+		lua_gettable (L, -2);
+		if (lua_isnumber (L, -1))
+		{
+			int ret = (int) lua_tointeger (L, -1);
+			lua_pop (L, 2);
+			return ret;
+		}
+		else
+			return luaL_error (L, "Unknown rlimit resource: %s", lua_tostring (L, index));
+	}
+
+	else
+		return luaL_typerror (L, index, "string or integer");
+}
+/* }}} */
+
 /* {{{ myrlimit_get() */
 static int myrlimit_get (lua_State *L)
 {
-	int resource = luaL_checkint (L, 1);
+	int resource = myrlimit_resource (L, 1);
 	struct rlimit l;
 
 	if (getrlimit (resource, &l) < 0)
@@ -51,7 +79,7 @@ static int myrlimit_get (lua_State *L)
 /* {{{ myrlimit_set() */
 static int myrlimit_set (lua_State *L)
 {
-	int resource = luaL_checkint (L, 1);
+	int resource = myrlimit_resource (L, 1);
 	lua_Number soft = luaL_checknumber (L, 2);
 	lua_Number hard = luaL_checknumber (L, 3);
 	struct rlimit l = {(rlim_t) soft, (rlim_t) hard};
@@ -69,12 +97,17 @@ static int myrlimit_set (lua_State *L)
 int luaopen_slimta_rlimit (lua_State *L)
 {
 	const luaL_Reg funcs[] = {
-		{"get", myrlimit_get},
-		{"set", myrlimit_set},
 		{NULL}
 	};
 
 	luaL_register (L, "slimta.rlimit", funcs);
+
+	lua_pushvalue (L, -1);
+	lua_pushcclosure (L, myrlimit_get, 1);
+	lua_setfield (L, -2, "get");
+	lua_pushvalue (L, -1);
+	lua_pushcclosure (L, myrlimit_set, 1);
+	lua_setfield (L, -2, "set");
 
 	set_rlimit_int (AS);
 	set_rlimit_int (CORE);
