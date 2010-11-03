@@ -149,9 +149,6 @@ static int myxml_del (lua_State *L)
 	if (parser)
 		XML_ParserFree (parser);
 
-	lua_pushlightuserdata (L, NULL);
-	lua_setfield (L, 1, "parser");
-
 	return 0;
 }
 /* }}} */
