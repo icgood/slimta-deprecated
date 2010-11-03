@@ -1,8 +1,9 @@
 local message_results = ratchet.makeclass()
 
 -- {{{ message_results:init()
-function message_results:init(messages, results_channel)
+function message_results:init(messages, results_channel, message_placeholder)
     self.results_channel = results_channel
+    self.message_placeholder = message_placeholder
 
     -- Initialize all messages to temp-failed state.
     self.messages = messages
@@ -29,7 +30,7 @@ function message_results:set_result(i, type_, command, code, message)
             r.command = command:gsub("%s*$", "")
         else
             local command = command:build_command():gsub("%s*$", "")
-            command = command:gsub(smtp_session.message_placeholder(), "[[MESSAGE CONTENTS]]")
+            command = command:gsub(self.message_placeholder, "[[MESSAGE CONTENTS]]")
             r.command = command
         end
         r.code = code

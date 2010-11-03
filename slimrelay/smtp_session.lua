@@ -20,7 +20,7 @@ function smtp_session:init(data, results_channel, ehlo_as)
         to_send = {smtp_states.EHLO(self)},
     }
 
-    self.results = message_results(self.messages, results_channel)
+    self.results = message_results(self.messages, results_channel, self.message_placeholder())
 end
 -- }}}
 
@@ -178,8 +178,8 @@ function smtp_session:has_extension(keyword)
 end
 -- }}}
 
--- {{{ smtp_session:message_placeholder()
-function smtp_session:message_placeholder()
+-- {{{ smtp_session.message_placeholder()
+function smtp_session.message_placeholder()
     return template_start .. "message" .. template_end
 end
 -- }}}
