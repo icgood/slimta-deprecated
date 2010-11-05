@@ -1,5 +1,7 @@
+local smtp_states = {}
+
 -- {{{ new_state()
-local new_state = function ()
+local new_state = function (name, supports_pipeline)
     local ret = ratchet.makeclass()
     ret.init = function (self, session, message, extra_named)
         self.session = session
@@ -10,16 +12,16 @@ local new_state = function ()
             end
         end
     end
-    return ret
+    ret.name = name
+    ret.supports_pipeline = supports_pipeline
+    smtp_states[name] = ret
 end
 -- }}}
 
 ------------------
 
-local smtp_states = {}
-
 -- {{{ Banner
-smtp_states.Banner = new_state()
+new_state("Banner")
 
 function smtp_states.Banner:build_command()
     return ""
@@ -33,7 +35,7 @@ end
 -- }}}
 
 -- {{{ Error
-smtp_states.Error = new_state()
+new_state("Error")
 
 function smtp_states.Error:build_command()
     return ""
@@ -47,7 +49,7 @@ end
 -- }}}
 
 -- {{{ HELO
-smtp_states.HELO = new_state()
+new_state("HELO")
 
 function smtp_states.HELO:build_command()
     return "HELO " .. session.ehlo_as .. "\r\n"
@@ -65,7 +67,7 @@ end
 -- }}}
 
 -- {{{ EHLO
-smtp_states.EHLO = new_state()
+new_state("EHLO")
 
 function smtp_states.EHLO:build_command()
     return "EHLO " .. self.session.ehlo_as .. "\r\n"
@@ -95,8 +97,7 @@ end
 -- }}}
 
 -- {{{ MAIL
-smtp_states.MAIL = new_state()
-smtp_states.MAIL.supports_pipeline = true
+new_state("MAIL", true)
 
 function smtp_states.MAIL:build_command()
     local command = "MAIL FROM:<" .. self.message.envelope.sender .. ">"
@@ -121,8 +122,7 @@ end
 -- }}}
 
 -- {{{ RCPT
-smtp_states.RCPT = new_state()
-smtp_states.RCPT.supports_pipeline = true
+new_state("RCPT", true)
 
 function smtp_states.RCPT:build_command()
     return "RCPT TO:<" .. self.message.envelope.recipients[self.which] .. ">\r\n"
@@ -142,7 +142,7 @@ end
 -- }}}
 
 -- {{{ DATA
-smtp_states.DATA = new_state()
+new_state("DATA")
 
 function smtp_states.DATA:build_command()
     return "DATA\r\n"
@@ -162,11 +162,10 @@ end
 -- }}}
 
 -- {{{ DATA_send
-smtp_states.DATA_send = new_state()
-smtp_states.DATA_send.supports_pipeline = true
+new_state("DATA_send", true)
 
 function smtp_states.DATA_send:build_command()
-    return self.session:message_placeholder() .. "\r\n.\r\n"
+    return self.session:message_placeholder() .. ".\r\n"
 end
 
 function smtp_states.DATA_send:parse_response(code, response)
@@ -179,13 +178,25 @@ function smtp_states.DATA_send:parse_response(code, response)
             return "softfail_message"
         end
     end
+end
+-- }}}
 
-    return "success"
+-- {{{ RSET
+new_state("RSET", true)
+
+function smtp_states.RSET:build_command()
+    return "RSET\r\n"
+end
+
+function smtp_states.RSET:parse_response(code, response)
+    if code < 200 or code >= 300 then
+        return "quit"
+    end
 end
 -- }}}
 
 -- {{{ QUIT
-smtp_states.QUIT = new_state()
+new_state("QUIT")
 
 function smtp_states.QUIT:build_command()
     return "QUIT\r\n"

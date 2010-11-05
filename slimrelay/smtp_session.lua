@@ -33,6 +33,7 @@ end
 
 -- {{{ smtp_session:queue_next_msg_commands()
 function smtp_session:queue_next_msg_commands()
+    self.some_rcpts_accepted = false
     self.current_msg = self.current_msg + 1
     local msg = self.messages[self.current_msg]
 
@@ -41,8 +42,13 @@ function smtp_session:queue_next_msg_commands()
         return
     end
 
+    self.commands.to_send = {}
+    if self.current_msg > 1 then
+        table.insert(self.commands.to_send, smtp_states.RSET(self))
+    end
+
     -- MAIL FROM:<sender>
-    self.commands.to_send = {smtp_states.MAIL(self, msg)}
+    table.insert(self.commands.to_send, smtp_states.MAIL(self, msg))
 
     -- RCPT TO:<forward-addr>
     local which = {which = 0}
@@ -85,8 +91,12 @@ smtp_session.on_action = {
         self.results:push_result("softfail", command, code, message)
     end,
 
-    success = function (self, context)
-        self.results:push_result("success")
+    success = function (self, context, command)
+        if command.name == "DATA" then
+            self.results:push_result("success")
+        elseif command.name == "RCPT" then
+            self.some_rcpts_accepted = true
+        end
     end,
 
     fail_recipient = function (self, context, command, code, message)
@@ -103,9 +113,11 @@ smtp_session.on_action = {
 function smtp_session:process_response(context, code, message)
     local command = table.remove(self.commands.waiting_for, 1) or smtp_states.Error(self)
 
-    local action = command:parse_response(code, message)
-    if action then
-        return self.on_action[action](self, context, command, code, message)
+    local failure = command:parse_response(code, message)
+    if failure then
+        return self.on_action[failure](self, context, command, code, message)
+    else
+        return self.on_action.success(self, context, command, code, message)
     end
 end
 -- }}}
@@ -138,26 +150,43 @@ function smtp_session:send_more_commands(context)
 end
 -- }}}
 
+-- {{{ smtp_session:send_message_contents()
+function smtp_session:send_message_contents(context)
+    local msg = self.messages[self.current_msg]
+    for line in storage_engines[msg.contents.storage](msg.contents.data) do
+        if line:match("^%.") then
+            line = "." .. line
+        end
+        line = line .. "\r\n"
+        context:queue_data(line, true)
+    end
+end
+-- }}}
+
 -- {{{ smtp_session:check_data_and_send()
-function smtp_session:check_data_and_send(context, data, more)
-    local pattern = "^(.-)"..self:message_placeholder().."(.*)$"
-    local before, after = data:match(pattern)
+function smtp_session:check_data_and_send(context, data, more, start_i)
+    local pattern = "^(.-)"..self:message_placeholder().."()"
+    local before, end_i = data:match(pattern, start_i)
     if not before then
         -- Data does not include message placeholder, send away!
-        context:queue_data(data, more)
+        if start_i then
+            context:queue_data(data:sub(start_i), more)
+        else
+            context:queue_data(data, more)
+        end
     else
         context:queue_data(before, true)
 
-        local msg = self.messages[self.current_msg]
-        for line in storage_engines[msg.contents.storage](msg.contents.data) do
-            if line:match("^%.") then
-                line = "." .. line
-            end
-            line = line .. "\r\n"
-            context:queue_data(line, true)
+        -- RFC 5321 specifies specifies you should only send message data
+        -- if there was at least one accepted RCPT TO, otherwise send an
+        -- empty message (only matters if DATA still returned 354, which
+        -- it should not have).
+        if self.some_rcpts_accepted then
+            self:send_message_contents(context)
         end
 
-        context:queue_data(after, more)
+        -- Recurse through rest of data, after message placeholder.
+        self:check_data_and_send(context, data, more, end_i)
     end
 end
 -- }}}
