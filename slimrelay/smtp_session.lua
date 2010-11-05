@@ -11,7 +11,7 @@ function smtp_session:init(data, results_channel, ehlo_as)
     self.messages = data.messages
     self.security = data.security
 
-    self.ehlo_as = ehlo_as or os.getenv("HOSTNAME")
+    self.ehlo_as = get_conf(ehlo_as or os.getenv("HOSTNAME"), self)
     self.extensions = {}
 
     self.current_msg = 0
@@ -153,6 +153,9 @@ end
 -- {{{ smtp_session:send_message_contents()
 function smtp_session:send_message_contents(context)
     local msg = self.messages[self.current_msg]
+
+    -- Storage engine must provide iteration through lines of message, without
+    -- including endline characters.
     for line in storage_engines[msg.contents.storage](msg.contents.data) do
         if line:match("^%.") then
             line = "." .. line

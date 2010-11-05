@@ -67,9 +67,33 @@ static int slimcommon_add_path (lua_State *L)
 }
 /* }}} */
 
+/* {{{ slimcommon_string_or_func() */
+static int slimcommon_string_or_func (lua_State *L)
+{
+	if (lua_isstring (L, 1))
+	{
+		lua_settop (L, 1);
+		return 1;
+	}
+
+	else if (lua_isfunction (L, 1))
+	{
+		int args = lua_gettop (L) - 1;
+		lua_call (L, args, 1);
+		return 1;
+	}
+
+	else
+		return luaL_typerror (L, 1, "string or function");
+}
+/* }}} */
+
 /* {{{ slimcommon_openlibs () */
 int slimcommon_openlibs (lua_State *L)
 {
+	lua_pushcfunction (L, slimcommon_string_or_func);
+	lua_setglobal (L, "get_conf");
+
 	const luaL_Reg funcs[] = {
 		{"stackdump", slimcommon_stackdump},
 		{"add_path", slimcommon_add_path},

@@ -1,5 +1,9 @@
 local request_context = require "request_context"
 
+local results_channel_str = get_conf(connections.results_channel)
+local request_channel_str = get_conf(connections.request_channel)
+local master_timeout = tonumber(get_conf(master_timeout or 10.0))
+
 local zmqr = ratchet(ratchet.zmq.poll())
 zmqr:register_uri("zmq", ratchet.zmq.socket, ratchet.zmq.parse_uri)
 
@@ -14,13 +18,13 @@ end
 -- }}}
 
 zmqr:attach(epr, epoll_context) -- Trap epoll events from zmq_poll.
-local results_channel = zmqr:connect(connections.results_channel)
-zmqr:listen(connections.request_channel, request_context, epr, results_channel)
+local results_channel = zmqr:connect(results_channel_str)
+zmqr:listen(request_channel_str, request_context, epr, results_channel)
 
 local on_error = function (err)
     print("ERROR: " .. tostring(err))
     print(debug.traceback())
 end
-zmqr:run {timeout = 1.0, panicf = on_error}
+zmqr:run {timeout = master_timeout, panicf = on_error}
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
