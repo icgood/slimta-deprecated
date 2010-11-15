@@ -25,9 +25,53 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <string.h>
+#include <sys/utsname.h>
+
 #include <ratchet/misc.h>
 
 #include "xml.h"
+
+/* {{{ slimcommon_uname_index() */
+static int slimcommon_uname_index (lua_State *L)
+{
+	struct utsname *info = (struct utsname *) lua_touserdata (L, 1);
+	const char *index = luaL_checkstring (L, 2);
+	if (strcmp (index, "sysname") == 0)
+		lua_pushstring (L, info->sysname);
+	else if (strcmp (index, "nodename") == 0)
+		lua_pushstring (L, info->nodename);
+	else if (strcmp (index, "release") == 0)
+		lua_pushstring (L, info->release);
+	else if (strcmp (index, "version") == 0)
+		lua_pushstring (L, info->version);
+	else if (strcmp (index, "machine") == 0)
+		lua_pushstring (L, info->machine);
+#ifdef _GNU_SOURCE
+	else if (strcmp (index, "domainname") == 0)
+		lua_pushstring (L, info->domainname);
+#endif
+	else
+		lua_pushnil (L);
+	return 1;
+
+}
+/* }}} */
+
+/* {{{ slimcommon_init_uname() */
+static int slimcommon_init_uname (lua_State *L)
+{
+	struct utsname *info = (struct utsname *) lua_newuserdata (L, sizeof (struct utsname));
+	memset (info, 0, sizeof (struct utsname));
+	if (uname (info) < 0)
+		errno = 0;
+	lua_createtable (L, 0, 1);
+	lua_pushcfunction (L, slimcommon_uname_index);
+	lua_setfield (L, -2, "__index");
+	lua_setmetatable (L, -2);
+	return 1;
+}
+/* }}} */
 
 /* {{{ slimcommon_stackdump() */
 static int slimcommon_stackdump (lua_State *L)
@@ -105,6 +149,8 @@ int slimcommon_openlibs (lua_State *L)
 	lua_setfield (L, -2, "xml");
 	luaopen_slimta_rlimit (L);
 	lua_setfield (L, -2, "rlimit");
+	slimcommon_init_uname (L);
+	lua_setfield (L, -2, "uname");
 
 	return 1;
 }
