@@ -6,7 +6,7 @@ local smtp_context = ratchet.new_context()
 function smtp_context.create(r, nexthop, results_channel)
     local session = smtp_session(nexthop, results_channel, hostname)
     local connect_to = string.format("tcp://[%s]:%d", nexthop.destination, nexthop.port)
-    r:connect(connect_to, smtp_context, session)
+    r:attach(smtp_context, r:connect_uri(connect_to), session)
 end
 -- }}}
 

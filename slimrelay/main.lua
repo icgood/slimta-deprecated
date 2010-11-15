@@ -17,9 +17,9 @@ function epoll_context:on_recv()
 end
 -- }}}
 
-zmqr:attach(epr, epoll_context) -- Trap epoll events from zmq_poll.
-local results_channel = zmqr:connect(results_channel_str)
-zmqr:listen(request_channel_str, request_context, epr, results_channel)
+zmqr:attach(epoll_context, epr) -- Trap epoll events from zmq_poll.
+local results_channel = zmqr:attach(nil, zmqr:connect_uri(results_channel_str))
+zmqr:attach(request_context, zmqr:listen_uri(request_channel_str), epr, results_channel)
 
 local on_error = function (err)
     print("ERROR: " .. tostring(err))

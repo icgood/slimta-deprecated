@@ -25,6 +25,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <errno.h>
 #include <string.h>
 #include <sys/utsname.h>
 
