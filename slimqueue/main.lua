@@ -1,9 +1,8 @@
 local request_storage = require "request_storage"
+local queue_message = require "queue_message"
+local relay_request = require "relay_request"
 
-local results_channel_str = get_conf(connections.results_channel)
-local request_channel_str = get_conf(connections.request_channel)
-local storage_channel_str = get_conf(connections.storage_channel)
-local master_timeout = tonumber(get_conf(master_timeout or 10.0))
+local master_timeout = get_conf.number(master_timeout) or 10.0
 
 local zmqr = ratchet(ratchet.zmq.poll())
 zmqr:register_uri("zmq", ratchet.zmq.socket, ratchet.zmq.parse_uri)
@@ -18,8 +17,10 @@ function epoll_context:on_recv()
 end
 -- }}}
 
-zmqr:attach(epr, epoll_context) -- Trap epoll events from zmq_poll.
-epr:listen(storage_channel_str, request_storage)
+zmqr:attach(epoll_context, epr) -- Trap epoll events from zmq_poll.
+zmqr:attach(queue_message, zmqr:listen_uri(XXX_channel_str))
+zmqr:attach(relay_request, zmqr:connect_uri(XXX_channel_str))
+epr:attach(request_storage, epr:listen_uri(storage_channel_str))
 
 local on_error = function (err)
     print("ERROR: " .. tostring(err))

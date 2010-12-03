@@ -1,8 +1,8 @@
 local request_context = require "request_context"
 
-local results_channel_str = get_conf(connections.results_channel)
-local request_channel_str = get_conf(connections.request_channel)
-local master_timeout = tonumber(get_conf(master_timeout or 10.0))
+local results_channel_str = get_conf.string(connections.results_channel)
+local request_channel_str = get_conf.string(connections.request_channel)
+local master_timeout = get_conf.number(master_timeout) or 10.0
 
 local zmqr = ratchet(ratchet.zmq.poll())
 zmqr:register_uri("zmq", ratchet.zmq.socket, ratchet.zmq.parse_uri)

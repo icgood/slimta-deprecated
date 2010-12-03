@@ -6,9 +6,9 @@ require "local_storage"
 --require "couchdb_storage"
 
 ------------------------------------------------------------------------------
--- Load up session protocols that will be used.
+-- Load up the SMTP protocol.
 require "smtp_context"
---require "lmtp_context"
+
 
 ------------------------------------------------------------------------------
 -- Connections strings

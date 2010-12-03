@@ -11,7 +11,7 @@ function smtp_session:init(data, results_channel, ehlo_as)
     self.messages = data.messages
     self.security = data.security
 
-    self.ehlo_as = get_conf(ehlo_as or os.getenv("HOSTNAME"), self)
+    self.ehlo_as = get_conf.string(ehlo_as or os.getenv("HOSTNAME"), self)
     self.extensions = {}
 
     self.current_msg = 0
