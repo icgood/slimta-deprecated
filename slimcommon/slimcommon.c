@@ -26,12 +26,48 @@
 #include <lualib.h>
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/utsname.h>
 
 #include <ratchet/misc.h>
 
 #include "xml.h"
+
+/* {{{ slimcommon_string_or_func() */
+static int slimcommon_string_or_func (lua_State *L)
+{
+	/* Call function with any args before attempting string conversion. */
+	if (lua_isfunction (L, 1))
+	{
+		int args = lua_gettop (L) - 1;
+		lua_call (L, args, 1);
+	}
+	lua_settop (L, 1);
+
+	luaL_callmeta (L, 1, "__tostring");
+	lua_tostring (L, -1);
+
+	return 1;
+}
+/* }}} */
+
+/* {{{ slimcommon_number_or_func() */
+static int slimcommon_number_or_func (lua_State *L)
+{
+	/* Call function with any args before attempting number conversion. */
+	if (lua_isfunction (L, 1))
+	{
+		int args = lua_gettop (L) - 1;
+		lua_call (L, args, 1);
+	}
+	lua_settop (L, 1);
+
+	lua_tonumber (L, 1);
+
+	return 1;
+}
+/* }}} */
 
 /* {{{ slimcommon_uname_index() */
 static int slimcommon_uname_index (lua_State *L)
@@ -112,38 +148,49 @@ static int slimcommon_add_path (lua_State *L)
 }
 /* }}} */
 
-/* {{{ slimcommon_string_or_func() */
-static int slimcommon_string_or_func (lua_State *L)
+/* {{{ slimcommon_mkstemp_close() */
+static int slimcommon_mkstemp_close (lua_State *L)
 {
-	/* Call function with any args before attempting string conversion. */
-	if (lua_isfunction (L, 1))
+	FILE **fp = (FILE **) luaL_checkudata (L, 1, LUA_FILEHANDLE);
+	int ok = (fclose (*fp) == 0);
+	*fp = NULL;
+	int eno = errno;
+	if (ok)
 	{
-		int args = lua_gettop (L) - 1;
-		lua_call (L, args, 1);
+		lua_pushboolean (L, 1);
+		return 1;
 	}
-	lua_settop (L, 1);
-
-	luaL_callmeta (L, 1, "__tostring");
-	lua_tostring (L, -1);
-
-	return 1;
+	else
+	{
+		lua_pushnil (L);
+		lua_pushfstring (L, "%s", strerror (eno));
+		lua_pushinteger (L, eno);
+		return 3;
+	}
 }
 /* }}} */
 
-/* {{{ slimcommon_number_or_func() */
-static int slimcommon_number_or_func (lua_State *L)
+/* {{{ slimcommon_mkstemp() */
+static int slimcommon_mkstemp (lua_State *L)
 {
-	/* Call function with any args before attempting number conversion. */
-	if (lua_isfunction (L, 1))
-	{
-		int args = lua_gettop (L) - 1;
-		lua_call (L, args, 1);
-	}
-	lua_settop (L, 1);
+	const char *tmpl_arg = luaL_checkstring (L, 1);
+	char *tmpl = strdup (tmpl_arg);
 
-	lua_tonumber (L, 1);
+	int fd = mkstemp (tmpl);
+	if (fd == -1)
+		return 0;
 
-	return 1;
+	FILE *f = fdopen (fd, "w");
+	if (!f)
+		return rhelp_perror (L);
+	FILE **fobj = (FILE **) lua_newuserdata (L, sizeof (FILE *));
+	*fobj = f;
+	luaL_getmetatable (L, LUA_FILEHANDLE);
+	lua_setmetatable (L, -2);
+	lua_pushstring (L, tmpl);
+	free (tmpl);
+
+	return 2;
 }
 /* }}} */
 
@@ -170,6 +217,15 @@ int slimcommon_openlibs (lua_State *L)
 	lua_setfield (L, -2, "rlimit");
 	slimcommon_init_uname (L);
 	lua_setfield (L, -2, "uname");
+
+	/* Set up the mkstemp function. */
+	lua_pushcfunction (L, slimcommon_mkstemp);
+	lua_getglobal (L, "io");
+	lua_getfield (L, -1, "open");
+	lua_getfenv (L, -1);
+	lua_setfenv (L, -4);
+	lua_pop (L, 2);
+	lua_setfield (L, -2, "mkstemp");
 
 	return 1;
 }

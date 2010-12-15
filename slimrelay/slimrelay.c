@@ -11,7 +11,11 @@
 #include "slimcommon.h"
 
 #ifndef SLIMRELAY_SCRIPT_PATH
-#define SLIMRELAY_SCRIPT_PATH "/usr/share/slimrelay"
+#define SLIMRELAY_SCRIPT_PATH "/usr/share/slimta/relay"
+#endif
+
+#ifndef SLIMCOMMON_SCRIPT_PATH
+#define SLIMCOMMON_SCRIPT_PATH "/usr/share/slimta/common"
 #endif
 
 /* {{{ push_argvs_to_global() */
@@ -65,6 +69,20 @@ static const char *get_script_path (const char *file)
 }
 /* }}} */
 
+/* {{{ get_common_path() */
+static const char *get_common_path (const char *file)
+{
+	const char *envpath = getenv ("SLIMCOMMON_SCRIPT_PATH");
+	const char *path = (envpath ? envpath : SLIMCOMMON_SCRIPT_PATH);
+	if (!file)
+		return path;
+
+	static char with_file[1024];
+	snprintf (with_file, 1024, "%s/%s", path, file);
+	return with_file;
+}
+/* }}} */
+
 /* {{{ main() */
 int main (int argc, char *argv[])
 {
@@ -78,6 +96,11 @@ int main (int argc, char *argv[])
 
 	lua_getfield (L, -1, "add_path");
 	lua_pushstring (L, get_script_path (NULL));
+	lua_call (L, 1, 0);
+	lua_settop (L, 0);
+
+	lua_getfield (L, -1, "add_path");
+	lua_pushstring (L, get_common_path (NULL));
 	lua_call (L, 1, 0);
 	lua_settop (L, 0);
 

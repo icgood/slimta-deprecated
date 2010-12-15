@@ -10,8 +10,8 @@
 
 #include "slimcommon.h"
 
-#ifndef SLIMQUEUE_SCRIPT_PATH
-#define SLIMQUEUE_SCRIPT_PATH "/usr/share/slimqueue"
+#ifndef SLIMDISK_SCRIPT_PATH
+#define SLIMDISK_SCRIPT_PATH "/usr/share/slimta/disk"
 #endif
 
 /* {{{ push_argvs_to_global() */
@@ -40,22 +40,14 @@ static void setup_globals (lua_State *L, int argc, char **argv)
 	/* Initial table of storage engines, populated by included files. */
 	lua_newtable (L);
 	lua_setglobal (L, "storage_engines");
-
-	/* Initial table of connection strings, populated by the configs. */
-	lua_newtable (L);
-	lua_setglobal (L, "connections");
-
-	/* Initial table of queue engines, populated by included files. */
-	lua_newtable (L);
-	lua_setglobal (L, "queue_engines");
 }
 /* }}} */
 
 /* {{{ get_script_path() */
 static const char *get_script_path (const char *file)
 {
-	const char *envpath = getenv ("SLIMQUEUE_SCRIPT_PATH");
-	const char *path = (envpath ? envpath : SLIMQUEUE_SCRIPT_PATH);
+	const char *envpath = getenv ("SLIMDISK_SCRIPT_PATH");
+	const char *path = (envpath ? envpath : SLIMDISK_SCRIPT_PATH);
 	if (!file)
 		return path;
 

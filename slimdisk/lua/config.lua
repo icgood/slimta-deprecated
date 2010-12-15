@@ -1,13 +1,13 @@
 ------------------------------------------------------------------------------
 -- Load up storage engines that will be used.
+storage_dir = "/home/ian/queue"
 require "local_storage"
 --require "couchdb_storage"
 
 ------------------------------------------------------------------------------
 -- Connections strings
-connections.request_channel = "zmq:push:tcp://localhost:5544"
-connections.results_channel = "zmq:pull:tcp://*:4455"
-connections.storage_channel = "tcp://localhost:4554"
+connections.local_storage_put = "tcp://*:7887"
+connections.local_storage_get = "tcp://*:8778"
 
 ------------------------------------------------------------------------------
 -- Set some resource limits.

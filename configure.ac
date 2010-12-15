@@ -52,7 +52,13 @@ AC_CHECK_FUNCS([getenv])
 
 AC_CONFIG_FILES([Makefile
 		 slimcommon/Makefile
+		 slimcommon/lua/Makefile
 		 slimrelay/Makefile
+		 slimrelay/lua/Makefile
 		 slimqueue/Makefile
-		 slimedge/Makefile])
+		 slimqueue/lua/Makefile
+		 slimdisk/Makefile
+		 slimdisk/lua/Makefile
+		 slimedge/Makefile
+		 slimedge/lua/Makefile])
 AC_OUTPUT
