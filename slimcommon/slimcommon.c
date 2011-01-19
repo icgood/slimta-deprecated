@@ -124,8 +124,6 @@ static int slimcommon_add_path (lua_State *L)
 {
 	lua_settop (L, 1);
 	luaL_checkstring (L, 1);
-	luaopen_package (L);
-	lua_settop (L, 1);
 	lua_getglobal (L, "package");
 
 	/* Set the new package.path. */

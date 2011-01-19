@@ -97,13 +97,12 @@ int main (int argc, char *argv[])
 	lua_getfield (L, -1, "add_path");
 	lua_pushstring (L, get_script_path (NULL));
 	lua_call (L, 1, 0);
-	lua_settop (L, 0);
 
 	lua_getfield (L, -1, "add_path");
 	lua_pushstring (L, get_common_path (NULL));
 	lua_call (L, 1, 0);
-	lua_settop (L, 0);
 
+	lua_settop (L, 0);
 	setup_globals (L, argc, argv);
 
 	if (luaL_dofile (L, get_script_path ("config.lua")) != 0)
