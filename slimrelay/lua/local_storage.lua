@@ -1,20 +1,34 @@
 
--- {{{ local
-local local_writer = function ()
-    template = get_conf.string(storage_dir .. "/message_XXXXXX")
-    return slimta.mkstemp(template)
-end
+-- {{{ local_reader class
+local local_reader = {}
+local_reader.__index = local_reader
 
-local local_reader_iter = function (f)
-    return f:read("*l")
-end
+-- {{{ local_reader.new()
+function local_reader.new(data)
+    local self = {}
+    setmetatable(self, local_reader)
 
-local local_reader = function (data)
-    local filename = data:gsub("^%s*", ""):gsub("%s*$", "")
-    return local_read_iter, io.input(filename)
-end
+    self.filename = data:gsub("^%s*", ""):gsub("%s*$", "")
 
-storage_engines["local"] = {reader = local_read, writer = local_writer}
+    return self
+end
 -- }}}
+
+-- {{{ local_reader:__call()
+function local_reader:__call()
+    local f = io.open(self.filename)
+    return f:read("*a")
+end
+-- }}}
+
+-- }}}
+
+-- {{{ local_writer class
+
+-- }}}
+
+--------------------------------------------------------------------------------
+
+storage_engines["local"] = {reader = local_reader, writer = local_writer}
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

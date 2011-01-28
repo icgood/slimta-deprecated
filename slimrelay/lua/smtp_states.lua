@@ -1,24 +1,24 @@
 local smtp_states = {}
 
 -- {{{ new_state()
-local new_state = function (name, supports_pipeline)
-    local ret = ratchet.makeclass()
-    ret.init = function (self, session, message, extra_named)
-        self.session = session
-        self.message = message
+local function new_state(name, supports_pipeline)
+    local ret = {name = name, supports_pipeline = supports_pipeline}
+    ret.__index = ret
+    function ret.new(session, message, extra_named)
+        local self = {session = session, message = message}
+        setmetatable(self, ret)
         if extra_named then
             for k, v in pairs(extra_named) do
                 self[k] = v
             end
         end
+        return self
     end
-    ret.name = name
-    ret.supports_pipeline = supports_pipeline
     smtp_states[name] = ret
 end
 -- }}}
 
-------------------
+--------------------------------------------------------------------------------
 
 -- {{{ Banner
 new_state("Banner")
@@ -165,7 +165,14 @@ end
 new_state("DATA_send", true)
 
 function smtp_states.DATA_send:build_command()
-    return self.session:message_placeholder() .. ".\r\n"
+    -- RFC 5321 specifies you should only send message data if there was at
+    -- least one accepted RCPT TO, otherwise send an empty message (only
+    -- matters if DATA still returned 354, which it should not have).
+    if self.session.some_rcpts_accepted then
+        return self.session.current_msg
+    else
+        return ""
+    end
 end
 
 function smtp_states.DATA_send:parse_response(code, response)

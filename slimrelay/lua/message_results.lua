@@ -1,7 +1,12 @@
-local message_results = ratchet.makeclass()
 
--- {{{ message_results:init()
-function message_results:init(messages, results_channel, message_placeholder)
+local message_results = {}
+message_results.__index = message_results
+
+-- {{{ message_results.new()
+function message_results.new(messages, results_channel, message_placeholder)
+    local self = {}
+    setmetatable(self, message_results)
+
     self.results_channel = results_channel
     self.message_placeholder = message_placeholder
 
@@ -16,6 +21,8 @@ function message_results:init(messages, results_channel, message_placeholder)
         self.results[i] = r
         self:set_result(i, "softfail", "", "421", "Unknown")
     end
+
+    return self
 end
 -- }}}
 

@@ -1,88 +1,90 @@
 local smtp_session = require "smtp_session"
+local smtp_data = require "smtp_data"
 
-local smtp_context = ratchet.new_context()
+local smtp_context = {}
+smtp_context.__index = smtp_context
 
-smtp_context.timeouts = {}
+-- {{{ smtp_context.new()
+function smtp_context.new(nexthop, results_channel)
+    local self = {}
+    setmetatable(self, smtp_context)
 
--- {{{ smtp_context.create()
-function smtp_context.create(r, nexthop, results_channel)
-    local session = smtp_session(nexthop, results_channel, hostname)
-    local connect_to = string.format("tcp://[%s]:%d", nexthop.destination, nexthop.port)
-    r:attach(smtp_context, r:connect_uri(connect_to), session)
-end
--- }}}
+    self.session = smtp_session.new(nexthop, results_channel, hostname)
+    self.host = nexthop.destination
+    self.port = nexthop.port
 
--- {{{ smtp_context:each_response()
-function smtp_context:save_each_response_function()
-    self.each_response = function (before, code, after)
-        if type(before) == "string" then
-            local ret = ""
-            for line in before:gmatch(code.."%-(.-\r?\n)") do
-                ret = ret .. line
-            end
-            self.shutting_down = self.session:process_response(self, tonumber(code), ret .. after)
-        else
-            self.shutting_down = self.session:process_response(self, tonumber(code), after)
-        end
-        return ""
+    self.messages = {}
+    for i, msg in ipairs(nexthop.messages) do
+        self.messages[i] = smtp_data.new(msg.contents.storage, msg.contents.data)
     end
+    self.buffer = ""
+
+    return self
 end
 -- }}}
 
--- {{{ smtp_context:process_from_buffer()
-function smtp_context:process_from_buffer()
-    local pattern = "^()(%d%d%d)%s+(.-\r?\n)"
-    if not self.buffer:match(pattern) then
-        pattern = "^(.-\r?\n)(%d%d%d)%s+(.-\r?\n)"
-    end
-
-    repeat
-        local newbuf, n = self.buffer:gsub(pattern, self.each_response)
-        self.buffer = newbuf
-    until n == 0
-end
--- }}}
-
--- {{{ smtp_context:queue_data()
-function smtp_context:queue_data(data, more_coming)
+-- {{{ smtp_context:queue_send()
+function smtp_context:queue_send(socket, data, more_coming)
     self.pipeline = self.pipeline .. data
+    while #self.pipeline > self.send_size do
+        local to_send = self.pipeline:sub(1, self.send_size)
+        socket:send(to_send)
+        io.stderr:write("C: ["..to_send.."]\n")
+        self.pipeline = self.pipeline:sub(self.send_size+1)
+    end
     if not more_coming then
-        self:send(self.pipeline)
+        socket:send(self.pipeline)
+        io.stderr:write("C: ["..self.pipeline.."]\n")
         self.pipeline = ""
     end
 end
 -- }}}
 
--- {{{ smtp_context:on_init()
-function smtp_context:on_init(session)
-    self.session = session
-    self.buffer = ""
-    self.pipeline = ""
+-- {{{ smtp_context:run_session()
+function smtp_context:run_session()
+    local rec = kernel:resolve_dns(self.host, self.port)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:connect(rec.addr)
 
-    self:save_each_response_function()
+    self.send_size = get_conf.number(smtp_send_size or 102400, socket)
+
+    while not self.session.is_finished do
+        if self.session:is_waiting() then
+            local data = socket:recv()
+            io.stderr:write("S: ["..data.."]\n")
+            if data == '' then
+                break
+            end
+
+            self.buffer = self.session:process_from_buffer(self.buffer .. data)
+        else
+            self.pipeline = ""
+            repeat
+                local data, more_coming = self.session:send_more()
+
+                if type(data) == "number" then
+                    -- We need to send message data.
+                    for i, piece in self.messages[data]:iterate() do
+                        self:queue_send(socket, piece, more_coming)
+                    end
+                    self:queue_send(socket, ".\r\n", more_coming)
+                else
+                    self:queue_send(socket, data, more_coming)
+                end
+            until not more_coming
+        end
+    end
 end
 -- }}}
 
--- {{{ smtp_context:on_recv()
-function smtp_context:on_recv()
-    local data = self:recv()
-    io.stderr:write("S: ["..data.."]\n")
-    if data == "" then
-        self.session:shutdown(self)
-        return
+-- {{{ smtp_context:__call()
+function smtp_context:__call()
+    for i, msg in ipairs(self.messages) do
+        kernel:attach(msg, kernel:running_thread())
     end
-    self.buffer = self.buffer .. data
-    self:process_from_buffer()
 
-    if not self.shutting_down then
-        self.session:send_more_commands(self)
-    end
-end
--- }}}
-
--- {{{ smtp_context:on_send()
-function smtp_context:on_send(data)
-    io.stderr:write("C: ["..data.."]\n")
+    self:run_session()
+    self.session:shutdown()
 end
 -- }}}
 

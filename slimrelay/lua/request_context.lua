@@ -1,101 +1,94 @@
-local request_context = ratchet.new_context()
 
 -- {{{ tags table
-tags = {slimta = {},
+local tags = {slimta = {},
 
-        deliver = {"slimta"},
-
-        nexthop = {"slimta", "deliver",
-            list = "nexthops",
-        },
-
-        protocol = {"slimta", "deliver", "nexthop",
-            handle = function (info, attrs, data)
-                info.protocol = data:match("%S+")
-            end,
-        },
-
-        destination = {"slimta", "deliver", "nexthop",
-            handle = function (info, attrs, data)
-                info.destination = data:match("%S+")
-            end,
-        },
-
-        port = {"slimta", "deliver", "nexthop",
-            handle = function (info, attrs, data)
-                info.port = data:match("%d+")
-            end,
-        },
-
-        security = {"slimta", "deliver", "nexthop",
-            handle = function (info, attrs, data)
-                -- Put security stuff here.
-            end,
-        },
-
-        message = {"slimta", "deliver", "nexthop",
-            list = "messages",
-            handle = function (info, attrs, data)
-                info.qid = attrs["queueid"]
-            end
-        },
-
-        envelope = {"slimta", "deliver", "nexthop", "message"},
-
-        sender = {"slimta", "deliver", "nexthop", "message", "envelope",
-            handle = function (info, attrs, data)
-                local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
-
-                info.envelope = info.envelope or {}
-                info.envelope.sender = stripped_data
-            end,
-        },
-
-        recipient = {"slimta", "deliver", "nexthop", "message", "envelope",
-            handle = function (info, attrs, data)
-                local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
-
-                info.envelope = info.envelope or {}
-                info.envelope.recipients = info.envelope.recipients or {}
-                table.insert(info.envelope.recipients, stripped_data)
-            end,
-        },
-
-        contents = {"slimta", "deliver", "nexthop", "message",
-            handle = function (info, attrs, data)
-                attrs["data"] = data
-                info.contents = attrs
-            end,
-        },
-
-    }
+              deliver = {"slimta"},
+      
+              nexthop = {"slimta", "deliver",
+                  list = "nexthops",
+              },
+      
+              protocol = {"slimta", "deliver", "nexthop",
+                  handle = function (info, attrs, data)
+                      info.protocol = data:match("%S+")
+                  end,
+              },
+      
+              destination = {"slimta", "deliver", "nexthop",
+                  handle = function (info, attrs, data)
+                      info.destination = data:match("%S+")
+                  end,
+              },
+      
+              port = {"slimta", "deliver", "nexthop",
+                  handle = function (info, attrs, data)
+                      info.port = data:match("%d+")
+                  end,
+              },
+      
+              security = {"slimta", "deliver", "nexthop",
+                  handle = function (info, attrs, data)
+                      -- Put security stuff here.
+                  end,
+              },
+      
+              message = {"slimta", "deliver", "nexthop",
+                  list = "messages",
+                  handle = function (info, attrs, data)
+                      info.qid = attrs["queueid"]
+                  end
+              },
+      
+              envelope = {"slimta", "deliver", "nexthop", "message"},
+      
+              sender = {"slimta", "deliver", "nexthop", "message", "envelope",
+                  handle = function (info, attrs, data)
+                      local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
+      
+                      info.envelope = info.envelope or {}
+                      info.envelope.sender = stripped_data
+                  end,
+              },
+      
+              recipient = {"slimta", "deliver", "nexthop", "message", "envelope",
+                  handle = function (info, attrs, data)
+                      local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
+      
+                      info.envelope = info.envelope or {}
+                      info.envelope.recipients = info.envelope.recipients or {}
+                      table.insert(info.envelope.recipients, stripped_data)
+                  end,
+              },
+      
+              contents = {"slimta", "deliver", "nexthop", "message",
+                  handle = function (info, attrs, data)
+                      attrs.data = data
+                      info.contents = attrs
+                  end,
+              },
+      
+          }
 -- }}}
 
--- {{{ on_init()
-function request_context:on_init(use_ratchet, results_channel)
-    self.use_ratchet = use_ratchet
+local request_context = {}
+request_context.__index = request_context
+
+-- {{{ request_context.new()
+function request_context.new(endpoint, results_channel)
+    local self = {}
+    setmetatable(self, request_context)
+
+    self.endpoint = endpoint
     self.results_channel = results_channel
-end
--- }}}
-
--- {{{ on_recv()
-function request_context:on_recv()
-    local data = self:recv()
 
     self.tag_stack = {}
     self.msg_info = {}
 
-    local parser = slimta.xml {state = self,
-                               startelem = self.start_tag,
-                               endelem = self.end_tag,
-                               elemdata = self.tag_data}
-    parser:parse(data)
-
-    self:create_sessions()
+    return self
 end
 -- }}}
 
--- {{{ start_tag()
+-- {{{ request_context:start_tag()
 function request_context:start_tag(tag, attrs)
     local current = {tag = tag, attrs = attrs, data = ""}
 
@@ -136,7 +129,7 @@ function request_context:start_tag(tag, attrs)
 end
 -- }}}
 
--- {{{ end_tag()
+-- {{{ request_context:end_tag()
 function request_context:end_tag(tag)
     local current = self.tag_stack[#self.tag_stack]
 
@@ -148,22 +141,46 @@ function request_context:end_tag(tag)
 end
 -- }}}
 
--- {{{ tag_data()
+-- {{{ request_context:tag_data()
 function request_context:tag_data(data)
     local current = self.tag_stack[#self.tag_stack]
     current.data = current.data .. data
 end
 -- }}}
 
--- {{{ create_sessions()
+-- {{{ request_context:parse_request()
+function request_context:parse_request(data)
+    local parser = slimta.xml.new(self, self.start_tag, self.end_tag, self.tag_data)
+    parser:parse(data)
+end
+-- }}}
+
+-- {{{ request_context:create_sessions()
 function request_context:create_sessions()
     for i, nexthop in ipairs(self.msg_info.nexthops) do
         local proto = protocols[nexthop.protocol]
         if proto then
-            proto.create(self.use_ratchet, nexthop, self.results_channel)
+            local proto_channel = proto.new(nexthop, self.results_channel)
+            kernel:attach(proto_channel)
         else
             error("Unsupported protocol: " .. proto)
         end
+    end
+end
+-- }}}
+
+-- {{{ request_context:__call()
+function request_context:__call()
+    -- Set up the ZMQ listener.
+    local type_, endpoint = uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(type_)
+    socket:bind(endpoint)
+
+    -- Gather all results messages.
+    while true do
+        local data = socket:recv()
+        self:parse_request(data)
+        self:create_sessions()
     end
 end
 -- }}}

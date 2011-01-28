@@ -28,8 +28,7 @@
 #include <stdio.h>
 #include <sys/resource.h>
 
-#include <ratchet/misc.h>
-
+#include "misc.h"
 #include "rlimit.h"
 
 /* {{{ myrlimit_resource() */
@@ -67,7 +66,7 @@ static int myrlimit_get (lua_State *L)
 	struct rlimit l;
 
 	if (getrlimit (resource, &l) < 0)
-		return rhelp_perror (L);
+		return handle_perror (L);
 
 	lua_pushnumber (L, (lua_Number) l.rlim_cur);
 	lua_pushnumber (L, (lua_Number) l.rlim_max);
@@ -85,7 +84,7 @@ static int myrlimit_set (lua_State *L)
 	struct rlimit l = {(rlim_t) soft, (rlim_t) hard};
 
 	if (setrlimit (resource, &l) < 0)
-		return rhelp_perror (L);
+		return handle_perror (L);
 
 	return 0;
 }

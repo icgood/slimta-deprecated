@@ -1,33 +1,130 @@
 local smtp_states = require "smtp_states"
 local message_results = require "message_results"
 
-local smtp_session = ratchet.makeclass()
+local smtp_session = {}
+smtp_session.__index = smtp_session
 
-local template_start = string.char(1, 3, 9, 27)
-local template_end = string.char(27, 9, 3, 1)
+-- {{{ smtp_session.on_action[]
+smtp_session.on_action = {
+    quit_immediately = function (self, command, code, message)
+        self.is_finished = true
+    end,
 
--- {{{ smtp_session:init()
-function smtp_session:init(data, results_channel, ehlo_as)
+    quit = function (self)
+        self.commands.to_send = {smtp_states.QUIT(self)}
+    end,
+
+    try_helo = function (self)
+        self.commands.to_send = {smtp_states.HELO(self)}
+    end,
+
+    fail_message = function (self, command, code, message)
+        self.results:push_result("hardfail", command, code, message)
+    end,
+
+    softfail_message = function (self, command, code, message)
+        self.results:push_result("softfail", command, code, message)
+    end,
+
+    success = function (self, command)
+        if command.name == "DATA" then
+            self.results:push_result("success")
+        elseif command.name == "RCPT" then
+            self.some_rcpts_accepted = true
+        end
+    end,
+
+    fail_recipient = function (self, command, code, message)
+        self.results:add_hardfailed_rcpt(command.which, code, message)
+    end,
+
+    softfail_recipient = function(self, command, code, message)
+        self.results:add_softfailed_rcpt(command.which, code, message)
+    end,
+}
+-- }}}
+
+-- {{{ smtp_session.new()
+function smtp_session.new(data, results_channel, ehlo_as)
+    local self = {}
+    setmetatable(self, smtp_session)
+
     self.messages = data.messages
     self.security = data.security
 
-    self.ehlo_as = get_conf.string(ehlo_as or os.getenv("HOSTNAME"), self)
+    self.ehlo_as = get_conf.string(ehlo_as, self) or os.getenv("HOSTNAME")
     self.extensions = {}
+
+    self:save_each_response_function()
 
     self.current_msg = 0
     self.commands = {
-        waiting_for = {smtp_states.Banner(self)},
-        to_send = {smtp_states.EHLO(self)},
+        waiting_for = {smtp_states.Banner.new(self)},
+        to_send = {smtp_states.EHLO.new(self)},
     }
 
-    self.results = message_results(self.messages, results_channel, self.message_placeholder())
+    self.results = message_results.new(self.messages, results_channel, self.message_placeholder)
+
+    return self
 end
 -- }}}
 
 -- {{{ smtp_session:shutdown()
-function smtp_session:shutdown(context)
-    context:close()
+function smtp_session:shutdown()
     self.results:send()
+end
+-- }}}
+
+-- {{{ smtp_session:is_waiting()
+function smtp_session:is_waiting()
+    return self.commands.waiting_for[1] ~= nil
+end
+-- }}}
+
+-- {{{ smtp_session:each_response()
+function smtp_session:save_each_response_function()
+    self.each_response = function (before, code, after)
+        if type(before) == "string" then
+            local ret = ""
+            for line in before:gmatch(code.."%-(.-\r?\n)") do
+                ret = ret .. line
+            end
+            self:process_response(tonumber(code), ret .. after)
+        else
+            self:process_response(tonumber(code), after)
+        end
+        return ""
+    end
+end
+-- }}}
+
+-- {{{ smtp_session:process_from_buffer()
+function smtp_session:process_from_buffer(buffer)
+    repeat
+        local pattern = "^()(%d%d%d)%s+(.-\r?\n)"
+        if not buffer:match(pattern) then
+            pattern = "^(.-\r?\n)(%d%d%d)%s+(.-\r?\n)"
+        end
+
+        local newbuf, n = buffer:gsub(pattern, self.each_response, 1)
+        buffer = newbuf
+    until n == 0
+
+    -- Return the new remaining bufferc
+    return buffer
+end
+-- }}}
+
+-- {{{ smtp_session:process_response()
+function smtp_session:process_response(code, message)
+    local command = table.remove(self.commands.waiting_for, 1) or smtp_states.Error.new(self)
+
+    local failure = command:parse_response(code, message)
+    if failure then
+        self.on_action[failure](self, command, code, message)
+    else
+        self.on_action.success(self, command, code, message)
+    end
 end
 -- }}}
 
@@ -38,159 +135,48 @@ function smtp_session:queue_next_msg_commands()
     local msg = self.messages[self.current_msg]
 
     if not msg then
-        self.commands.to_send = {smtp_states.QUIT(self)}
+        self.commands.to_send = {smtp_states.QUIT.new(self)}
         return
     end
 
     self.commands.to_send = {}
-    if self.current_msg > 1 then
-        table.insert(self.commands.to_send, smtp_states.RSET(self))
-    end
 
     -- MAIL FROM:<sender>
-    table.insert(self.commands.to_send, smtp_states.MAIL(self, msg))
+    table.insert(self.commands.to_send, smtp_states.MAIL.new(self, msg))
 
     -- RCPT TO:<forward-addr>
     local which = {which = 0}
     for i, rcpt in ipairs(msg.envelope.recipients) do
         which.which = i
-        table.insert(self.commands.to_send, smtp_states.RCPT(self, msg, which))
+        table.insert(self.commands.to_send, smtp_states.RCPT.new(self, msg, which))
     end
 
     -- DATA
-    table.insert(self.commands.to_send, smtp_states.DATA(self, msg))
-    table.insert(self.commands.to_send, smtp_states.DATA_send(self, msg))
+    table.insert(self.commands.to_send, smtp_states.DATA.new(self, msg))
+    table.insert(self.commands.to_send, smtp_states.DATA_send.new(self, msg))
 
     -- QUIT (after all messages)
-    if n == #self.messages then
-        table.insert(self.commands.to_send, smtp_states.QUIT(self))
+    if self.current_msg == #self.messages then
+        table.insert(self.commands.to_send, smtp_states.QUIT.new(self))
     end
 end
 -- }}}
 
--- {{{ smtp_session.on_action[]
-smtp_session.on_action = {
-    quit_immediately = function (self, context, command, code, message)
-        self:shutdown(context)
-        return true
-    end,
-
-    quit = function (self, context)
-        self.commands.to_send = {smtp_states.QUIT(self)}
-    end,
-
-    try_helo = function (self, context)
-        self.commands.to_send = {smtp_states.HELO(self)}
-    end,
-
-    fail_message = function (self, context, command, code, message)
-        self.results:push_result("hardfail", command, code, message)
-    end,
-
-    softfail_message = function (self, context, command, code, message)
-        self.results:push_result("softfail", command, code, message)
-    end,
-
-    success = function (self, context, command)
-        if command.name == "DATA" then
-            self.results:push_result("success")
-        elseif command.name == "RCPT" then
-            self.some_rcpts_accepted = true
-        end
-    end,
-
-    fail_recipient = function (self, context, command, code, message)
-        self.results:add_hardfailed_rcpt(command.which, code, message)
-    end,
-
-    softfail_recipient = function(self, context, command, code, message)
-        self.results:add_softfailed_rcpt(command.which, code, message)
-    end,
-}
--- }}}
-
--- {{{ smtp_session:process_response()
-function smtp_session:process_response(context, code, message)
-    local command = table.remove(self.commands.waiting_for, 1) or smtp_states.Error(self)
-
-    local failure = command:parse_response(code, message)
-    if failure then
-        return self.on_action[failure](self, context, command, code, message)
-    else
-        return self.on_action.success(self, context, command, code, message)
-    end
-end
--- }}}
-
--- {{{ smtp_session:send_more_commands()
-function smtp_session:send_more_commands(context)
-    if #self.commands.waiting_for == 0 and #self.commands.to_send == 0 then
+-- {{{ smtp_session:send_more()
+function smtp_session:send_more()
+    if #self.commands.to_send == 0 then
         self:queue_next_msg_commands()
     end
 
-    -- Send all pipeline-able commands at the front of the send queue.
-    local remaining = {}
-    local more = true
-    for i, command in ipairs(self.commands.to_send) do
-        if not more then
-            table.insert(remaining, command)
-        else
-            local data = command:build_command()
-            more = command.supports_pipeline and self:has_extension("PIPELINING")
-            self:check_data_and_send(context, data, more)
-            table.insert(self.commands.waiting_for, command)
-        end
-    end
-    if not more then
-        self.commands.to_send = remaining
-    else
-        self:queue_next_msg_commands()
-        return self:send_more_commands(context)
-    end
-end
--- }}}
+    -- Dequeue command from to_send and enqueue in waiting_for.
+    local command = table.remove(self.commands.to_send, 1)
+    table.insert(self.commands.waiting_for, command)
 
--- {{{ smtp_session:send_message_contents()
-function smtp_session:send_message_contents(context)
-    local msg = self.messages[self.current_msg]
+    -- Build command string and whether it supports pipelining.
+    local data = command:build_command()
+    local more = command.supports_pipeline and self:has_extension("PIPELINING")
 
-    -- Storage engine must provide iteration through lines of message, without
-    -- including endline characters.
-    for line in storage_engines[msg.contents.storage].reader(msg.contents.data) do
-        if line:match("^%.") then
-            line = "." .. line
-        end
-        line = line .. "\r\n"
-        context:queue_data(line, true)
-    end
-end
--- }}}
-
--- {{{ smtp_session:check_data_and_send()
-function smtp_session:check_data_and_send(context, data, more, start_i)
-    local pattern = "^(.-)"..self:message_placeholder().."()"
-    local before, end_i = data:match(pattern, start_i)
-    if not before then
-        -- Data does not include message placeholder, send away!
-        if start_i then
-            context:queue_data(data:sub(start_i), more)
-        else
-            context:queue_data(data, more)
-        end
-    else
-        context:queue_data(before, true)
-
-        -- RFC 5321 specifies you should only send message data if there was at
-        -- least one accepted RCPT TO, otherwise send an empty message (only
-        -- matters if DATA still returned 354, which it should not have).
-        if self.some_rcpts_accepted then
-            local msg = self.messages[self.current_msg]
-            self:queue_data(msg.contents.final, true)
-        end
-
-        -- Recurse through rest of data, after message placeholder.
-        self:check_data_and_send(context, data, more, end_i)
-    end
+    return data, more
 end
 -- }}}
 
@@ -207,12 +193,6 @@ end
 -- {{{ smtp_session:has_extension()
 function smtp_session:has_extension(keyword)
     return self.extensions[keyword]
-end
--- }}}
-
--- {{{ smtp_session.message_placeholder()
-function smtp_session.message_placeholder()
-    return template_start .. "message" .. template_end
 end
 -- }}}
 

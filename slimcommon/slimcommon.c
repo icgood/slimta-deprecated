@@ -30,9 +30,9 @@
 #include <string.h>
 #include <sys/utsname.h>
 
-#include <ratchet/misc.h>
-
+#include "misc.h"
 #include "xml.h"
+#include "rlimit.h"
 
 /* {{{ slimcommon_string_or_func() */
 static int slimcommon_string_or_func (lua_State *L)
@@ -113,7 +113,7 @@ static int slimcommon_init_uname (lua_State *L)
 /* {{{ slimcommon_stackdump() */
 static int slimcommon_stackdump (lua_State *L)
 {
-	rhelp_stackdump (L);
+	stackdump (L);
 
 	return 0;
 }
@@ -180,7 +180,7 @@ static int slimcommon_mkstemp (lua_State *L)
 
 	FILE *f = fdopen (fd, "w");
 	if (!f)
-		return rhelp_perror (L);
+		return handle_perror (L);
 	FILE **fobj = (FILE **) lua_newuserdata (L, sizeof (FILE *));
 	*fobj = f;
 	luaL_getmetatable (L, LUA_FILEHANDLE);

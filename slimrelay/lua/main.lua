@@ -1,30 +1,27 @@
 local request_context = require "request_context"
+local results_context = require "results_context"
 
 local results_channel_str = get_conf.string(connections.results_channel)
 local request_channel_str = get_conf.string(connections.request_channel)
 local master_timeout = get_conf.number(master_timeout) or 10.0
 
-local zmqr = ratchet(ratchet.zmq.poll())
-zmqr:register_uri("zmq", ratchet.zmq.socket, ratchet.zmq.parse_uri)
+uri = ratchet.uri.new()
+uri:register("tcp", ratchet.socket.parse_tcp_uri)
+uri:register("zmq", ratchet.zmqsocket.parse_uri)
 
-local epr = ratchet(ratchet.epoll())
-epr:register_uri("tcp", ratchet.socket, ratchet.socket.parse_tcp_uri)
+local results_channel = results_context.new(results_channel_str)
+local request_channel = request_context.new(request_channel_str, results_channel)
 
--- {{{ epoll_context: Handles events from the epoll-based ratchet.
-local epoll_context = zmqr:new_context()
-function epoll_context:on_recv()
-    return epr:run{iterations=1, timeout=0.0, maxevents=5}
-end
--- }}}
+kernel = ratchet.new()
+kernel:attach(results_channel)
+kernel:attach(request_channel)
 
-zmqr:attach(epoll_context, epr) -- Trap epoll events from zmq_poll.
-local results_channel = zmqr:attach(nil, zmqr:connect_uri(results_channel_str))
-zmqr:attach(request_context, zmqr:listen_uri(request_channel_str), epr, results_channel)
-
-local on_error = function (err)
+local function on_error(err)
     print("ERROR: " .. tostring(err))
     print(debug.traceback())
 end
-zmqr:run {timeout = master_timeout, panicf = on_error}
+kernel:set_error_handler(on_error)
+
+kernel:loop()
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

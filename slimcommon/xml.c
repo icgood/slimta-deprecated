@@ -30,8 +30,6 @@
 #include <expat.h>
 #include <errno.h>
 
-#include <ratchet.h>
-
 #include "xml.h"
 
 /* {{{ generic_start_cb() */
@@ -40,8 +38,9 @@ static void XMLCALL generic_start_cb (void *user_data, const char *name, const c
 	lua_State *L = (lua_State *) user_data;
 	int i;
 
-	lua_getfield (L, 1, "start_cb");
-	lua_getfield (L, 1, "state");
+	lua_getfenv (L, 1);
+	lua_getfield (L, -1, "start_cb");
+	lua_getfield (L, -2, "state");
 	lua_pushstring (L, name);
 	lua_newtable (L);
 	for (i=0; atts[i] != NULL; i+=2)
@@ -51,6 +50,7 @@ static void XMLCALL generic_start_cb (void *user_data, const char *name, const c
 		lua_rawset (L, -3);
 	}
 	lua_call (L, 3, 0);
+	lua_pop (L, 1);
 }
 /* }}} */
 
@@ -59,10 +59,12 @@ static void XMLCALL generic_end_cb (void *user_data, const char *name)
 {
 	lua_State *L = (lua_State *) user_data;
 
-	lua_getfield (L, 1, "end_cb");
-	lua_getfield (L, 1, "state");
+	lua_getfenv (L, 1);
+	lua_getfield (L, -1, "end_cb");
+	lua_getfield (L, -2, "state");
 	lua_pushstring (L, name);
 	lua_call (L, 2, 0);
+	lua_pop (L, 1);
 }
 /* }}} */
 
@@ -71,81 +73,82 @@ static void generic_data_cb (void *user_data, const char *s, int len)
 {
 	lua_State *L = (lua_State *) user_data;
 
-	lua_getfield (L, 1, "data_cb");
-	lua_getfield (L, 1, "state");
+	lua_getfenv (L, 1);
+	lua_getfield (L, -1, "data_cb");
+	lua_getfield (L, -2, "state");
 	lua_pushlstring (L, s, (size_t) len);
 	lua_call (L, 2, 0);
+	lua_pop (L, 1);
 }
 /* }}} */
 
-/* {{{ myxml_init() */
-static int myxml_init (lua_State *L)
+/* {{{ myxml_new() */
+static int myxml_new (lua_State *L)
 {
-	lua_settop (L, 5);
-	const char *encoding = NULL;
+	/* Get the start element handler parameter. */
 	XML_StartElementHandler start_cb = NULL;
-	XML_EndElementHandler end_cb = NULL;
-	XML_CharacterDataHandler data_cb = NULL;
-
-	lua_newtable (L);
-	lua_setfield (L, 1, "state");
-
-	/* Grab the named parameters. */
-	for (lua_pushnil (L); lua_next (L, 2) != 0; lua_pop (L, 1))
+	if (!lua_isnoneornil (L, 2))
 	{
-		if (rhelp_strequal (L, -2, "state"))
-		{
-			lua_pushvalue (L, -1);
-			lua_setfield (L, 1, "state");
-		}
-		else if (rhelp_strequal (L, -2, "startelem"))
-		{
-			lua_pushvalue (L, -1);
-			lua_setfield (L, 1, "start_cb");
-			start_cb = generic_start_cb;
-		}
-		else if (rhelp_strequal (L, -2, "endelem"))
-		{
-			lua_pushvalue (L, -1);
-			lua_setfield (L, 1, "end_cb");
-			end_cb = generic_end_cb;
-		}
-		else if (rhelp_strequal (L, -2, "elemdata"))
-		{
-			lua_pushvalue (L, -1);
-			lua_setfield (L, 1, "data_cb");
-			data_cb = generic_data_cb;
-		}
-		else if (rhelp_strequal (L, -2, "encoding"))
-			encoding = lua_tostring (L, -1);
-		else
-			luaL_argerror (L, 2, "unknown named params given");
+		luaL_checktype (L, 2, LUA_TFUNCTION);
+		start_cb = generic_start_cb;
 	}
 
-	XML_Parser parser = XML_ParserCreate (encoding);
-	if (!parser)
+	/* Get the end element handler parameter. */
+	XML_EndElementHandler end_cb = NULL;
+	if (!lua_isnoneornil (L, 3))
+	{
+		luaL_checktype (L, 3, LUA_TFUNCTION);
+		end_cb = generic_end_cb;
+	}
+
+	/* Get the data handler parameter. */
+	XML_CharacterDataHandler data_cb = NULL;
+	if (!lua_isnoneornil (L, 4))
+	{
+		luaL_checktype (L, 4, LUA_TFUNCTION);
+		data_cb = generic_data_cb;
+	}
+
+	/* Get the encoding parameter, usually none. */
+	const char *encoding = luaL_optstring (L, 5, NULL);
+
+	/* Create the parser object in a new Lua userdata. */
+	XML_Parser *parser = (XML_Parser *) lua_newuserdata (L, sizeof (XML_Parser));
+	*parser = XML_ParserCreate (encoding);
+	if (!*parser)
 		return luaL_error (L, "XML parser create failed");
 
-	XML_SetUserData (parser, L);
+	/* Configure the parser internally. */
+	XML_SetUserData (*parser, L);
 	if (start_cb || end_cb)
-		XML_SetElementHandler (parser, start_cb, end_cb);
+		XML_SetElementHandler (*parser, start_cb, end_cb);
 	if (data_cb)
-		XML_SetCharacterDataHandler (parser, data_cb);
+		XML_SetCharacterDataHandler (*parser, data_cb);
 
-	lua_pushlightuserdata (L, parser);
-	lua_setfield (L, 1, "parser");
+	/* Save info about the parser in the environment. */
+	lua_createtable (L, 0, 4);
+	lua_pushvalue (L, 1);
+	lua_setfield (L, -2, "state");
+	lua_pushvalue (L, 2);
+	lua_setfield (L, -2, "start_cb");
+	lua_pushvalue (L, 3);
+	lua_setfield (L, -2, "end_cb");
+	lua_pushvalue (L, 4);
+	lua_setfield (L, -2, "data_cb");
+	lua_setfenv (L, -2);
 
-	return 0;
+	/* Make this userdata an object of the slimta.xml class. */
+	luaL_getmetatable (L, "slimta_xml_meta");
+	lua_setmetatable (L, -2);
+
+	return 1;
 }
 /* }}} */
 
-/* {{{ myxml_del() */
-static int myxml_del (lua_State *L)
+/* {{{ myxml_gc() */
+static int myxml_gc (lua_State *L)
 {
-	lua_getfield (L, 1, "parser");
-	XML_Parser parser = (XML_Parser) lua_touserdata (L, -1);
-	lua_pop (L, 1);
-
+	XML_Parser parser = *(XML_Parser *) luaL_checkudata (L, 1, "slimta_xml_meta");
 	if (parser)
 		XML_ParserFree (parser);
 
@@ -156,58 +159,70 @@ static int myxml_del (lua_State *L)
 /* {{{ myxml_parse() */
 static int myxml_parse (lua_State *L)
 {
-	const char *data;
-	size_t datalen;
-	int more_coming = 0;
+	XML_Parser parser = *(XML_Parser *) luaL_checkudata (L, 1, "slimta_xml_meta");
+	size_t data_len;
+	const char *data = luaL_checklstring (L, 2, &data_len);
+	int more_coming = lua_toboolean (L, 3);
 
-	lua_settop (L, 3);
-
-	lua_getfield (L, 1, "parser");
-	XML_Parser parser = (XML_Parser) lua_touserdata (L, -1);
-	lua_pop (L, 1);
-
-	data = lua_tolstring (L, 2, &datalen);
-	more_coming = lua_toboolean (L, 3);
-
-	int ret = XML_Parse (parser, data, datalen, (more_coming ? 0 : 1));
+	int ret = XML_Parse (parser, data, data_len, (more_coming ? 0 : 1));
 	if (ret == 0)
 	{
-		lua_pushboolean (L, 0);
+		lua_pushnil (L);
 		int error = (int) XML_GetErrorCode (parser);
 		lua_pushstring (L, XML_ErrorString (error));
+		return 2;
 	}
 	else
 	{
 		lua_pushboolean (L, 1);
-		lua_pushnil (L);
+		return 1;
 	}
-	
-	return 2;
 }
 /* }}} */
 
 /* {{{ myxml_parsesome() */
 static int myxml_parsesome (lua_State *L)
 {
+	/* Keep the same args, with a true boolean as the third parameter to parse(). */
 	lua_settop (L, 2);
 	lua_pushboolean (L, 1);
-
-	return rhelp_callmethod (L, 1, "parse", 2);
+	lua_getfield (L, 1, "parse");
+	lua_call (L, 3, 2);
+	return 2;
 }
 /* }}} */
 
 /* {{{ luaopen_slimta_xml() */
 int luaopen_slimta_xml (lua_State *L)
 {
-	luaL_Reg meths[] = {
-		{"init", myxml_init},
-		{"del", myxml_del},
-		{"parse", myxml_parse},
-		{"parsesome", myxml_parsesome},
+	static const luaL_Reg funcs[] = {
+		{"new", myxml_new},
 		{NULL}
 	};
 
-	rhelp_newclass (L, "slimta.xml", meths, NULL);
+	static const luaL_Reg metameths[] = {
+		{"__gc", myxml_gc},
+		{NULL}
+	};
+
+	static const luaL_Reg meths[] = {
+		/* Documented methods. */
+		{"parse", myxml_parse},
+		{"parsesome", myxml_parsesome},
+		/* Undocumented, helper methods. */
+		{NULL}
+	};
+
+	/* Set up the slimta.xml class and metatables. */
+	luaL_newmetatable (L, "slimta_xml_meta");
+	lua_newtable (L);
+	luaI_openlib (L, NULL, meths, 0);
+	lua_setfield (L, -2, "__index");
+	luaI_openlib (L, NULL, metameths, 0);
+	lua_pop (L, 1);
+
+	/* Set up the slimta.xml namespace functions. */
+	luaI_openlib (L, "slimta.xml", funcs, 0);
 
 	return 1;
 }
