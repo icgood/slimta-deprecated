@@ -4,6 +4,31 @@ local message_results = require "message_results"
 local smtp_session = {}
 smtp_session.__index = smtp_session
 
+-- {{{ smtp_session.new()
+function smtp_session.new(data, results_channel, ehlo_as)
+    local self = {}
+    setmetatable(self, smtp_session)
+
+    self.messages = data.messages
+    self.security = data.security
+
+    self.ehlo_as = get_conf.string(ehlo_as, self) or os.getenv("HOSTNAME")
+    self.extensions = {}
+
+    self:save_each_response_function()
+
+    self.current_msg = 0
+    self.commands = {
+        waiting_for = {smtp_states.Banner.new(self)},
+        to_send = {smtp_states.EHLO.new(self)},
+    }
+
+    self.results = message_results.new(self.messages, results_channel, self.message_placeholder)
+
+    return self
+end
+-- }}}
+
 -- {{{ smtp_session.on_action[]
 smtp_session.on_action = {
     quit_immediately = function (self, command, code, message)
@@ -42,31 +67,6 @@ smtp_session.on_action = {
         self.results:add_softfailed_rcpt(command.which, code, message)
     end,
 }
--- }}}
-
--- {{{ smtp_session.new()
-function smtp_session.new(data, results_channel, ehlo_as)
-    local self = {}
-    setmetatable(self, smtp_session)
-
-    self.messages = data.messages
-    self.security = data.security
-
-    self.ehlo_as = get_conf.string(ehlo_as, self) or os.getenv("HOSTNAME")
-    self.extensions = {}
-
-    self:save_each_response_function()
-
-    self.current_msg = 0
-    self.commands = {
-        waiting_for = {smtp_states.Banner.new(self)},
-        to_send = {smtp_states.EHLO.new(self)},
-    }
-
-    self.results = message_results.new(self.messages, results_channel, self.message_placeholder)
-
-    return self
-end
 -- }}}
 
 -- {{{ smtp_session:shutdown()

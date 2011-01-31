@@ -1,3 +1,5 @@
+local smtp_data = require "smtp_data"
+
 local smtp_states = {}
 
 -- {{{ new_state()
@@ -169,7 +171,10 @@ function smtp_states.DATA_send:build_command()
     -- least one accepted RCPT TO, otherwise send an empty message (only
     -- matters if DATA still returned 354, which it should not have).
     if self.session.some_rcpts_accepted then
-        return self.session.current_msg
+        local curr = self.session.current_msg
+        local curr_msg = self.session.messages[curr]
+        local curr_loader = curr_msg.contents.loader
+        return curr_loader
     else
         return ""
     end

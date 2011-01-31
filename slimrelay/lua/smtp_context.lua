@@ -9,14 +9,14 @@ function smtp_context.new(nexthop, results_channel)
     local self = {}
     setmetatable(self, smtp_context)
 
+    for i, msg in ipairs(nexthop.messages) do
+        msg.contents.loader = smtp_data.new(msg.contents.storage, msg.contents.data)
+        kernel:attach(msg.contents.loader)
+    end
+
     self.session = smtp_session.new(nexthop, results_channel, hostname)
     self.host = nexthop.destination
     self.port = nexthop.port
-
-    self.messages = {}
-    for i, msg in ipairs(nexthop.messages) do
-        self.messages[i] = smtp_data.new(msg.contents.storage, msg.contents.data)
-    end
     self.buffer = ""
 
     return self
@@ -62,14 +62,13 @@ function smtp_context:run_session()
             repeat
                 local data, more_coming = self.session:send_more()
 
-                if type(data) == "number" then
-                    -- We need to send message data.
-                    for i, piece in self.messages[data]:iterate() do
+                if type(data) == "string" then
+                    self:queue_send(socket, data, more_coming)
+                else
+                    -- We want to send an iterable object, such as message data.
+                    for i, piece in data:iter() do
                         self:queue_send(socket, piece, more_coming)
                     end
-                    self:queue_send(socket, ".\r\n", more_coming)
-                else
-                    self:queue_send(socket, data, more_coming)
                 end
             until not more_coming
         end
@@ -79,10 +78,6 @@ end
 
 -- {{{ smtp_context:__call()
 function smtp_context:__call()
-    for i, msg in ipairs(self.messages) do
-        kernel:attach(msg, kernel:running_thread())
-    end
-
     self:run_session()
     self.session:shutdown()
 end

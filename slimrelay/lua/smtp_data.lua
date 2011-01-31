@@ -1,31 +1,39 @@
-local smtp_message = {}
-smtp_message.__index = smtp_message
+local smtp_data = {}
+smtp_data.__index = smtp_data
 
--- {{{ smtp_message.new()
-function smtp_message.new(storage_type, info)
+-- {{{ smtp_data.new()
+function smtp_data.new(storage_type, info)
     local self = {}
-    setmetatable(self, smtp_message)
+    setmetatable(self, smtp_data)
 
     local engine = storage_engines[storage_type]
     if not engine then
         error("invalid storage engine: [" .. engine .."]")
     end
     self.engine = engine.reader.new(info)
-    self.iter_size = get_conf.number(smtp_iterate_size or 1024)
+    self.iter_size = get_conf.number(smtp_data_iterate_size or 1024)
 
     return self
 end
 -- }}}
 
--- {{{ message_iterator()
-local function message_iterator(invariant, i)
+-- {{{ iterator_func()
+local function iterator_func(invariant, i)
     local message = invariant.full_message
     local len = invariant.send_size
     local last_part = invariant.last_part
 
+    -- If we're done iterator, jump out.
+    if invariant.done then
+        return
+    end
+
     local piece = message:sub(i, i+len-1)
     if piece == "" then
-        return  -- We are done iterating over the message.
+        -- We are done iterating over the message, but need to return
+        -- the ".\r\n" to end DATA command.
+        invariant.done = true
+        return i, ".\r\n"
     end
 
     piece = last_part .. piece
@@ -42,8 +50,8 @@ local function message_iterator(invariant, i)
 end
 -- }}}
 
--- {{{ smtp_message:iterate()
-function smtp_message:iterate()
+-- {{{ smtp_data:iter()
+function smtp_data:iter()
     if not self.full_message then
         self.unpause_thread = kernel:running_thread()
         kernel:pause()
@@ -51,14 +59,15 @@ function smtp_message:iterate()
 
     local invariant = {send_size = self.iter_size,
                        last_part = "",
+                       done = false,
                        full_message = self.full_message}
 
-    return message_iterator, invariant, 1
+    return iterator_func, invariant, 1
 end
 -- }}}
 
--- {{{ smtp_message:get()
-function smtp_message:get()
+-- {{{ smtp_data:get()
+function smtp_data:get()
     if not self.full_message then
         self.unpause_thread = kernel:running_thread()
         kernel:pause()
@@ -68,8 +77,8 @@ function smtp_message:get()
 end
 -- }}}
 
--- {{{ smtp_message:__call()
-function smtp_message:__call()
+-- {{{ smtp_data:__call()
+function smtp_data:__call()
     self.full_message = self.engine()
     if self.unpause_thread then
         kernel:unpause(self.unpause_thread)
@@ -78,6 +87,6 @@ function smtp_message:__call()
 end
 -- }}}
 
-return smtp_message
+return smtp_data
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
