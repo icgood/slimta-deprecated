@@ -31,7 +31,7 @@ end
 
 function smtp_states.Banner:parse_response(code, response)
     if code ~= 220 then
-        return "quit_immediately"
+        return "softfail_and_quit_immediately"
     end
 end
 -- }}}
@@ -45,7 +45,7 @@ end
 
 function smtp_states.Error:parse_response(code, response)
     if code == 421 then
-        return "quit_immediately"
+        return "softfail_and_quit_immediately"
     end
 end
 -- }}}
@@ -60,7 +60,7 @@ end
 function smtp_states.HELO:parse_response(code, response)
     if code ~= 250 then
         if code == 421 then
-            return "quit_immediately"
+            return "softfail_and_quit_immediately"
         else
             return "quit"
         end
@@ -78,7 +78,7 @@ end
 function smtp_states.EHLO:parse_response(code, response)
     if code ~= 250 then
         if code == 421 then
-            return "quit_immediately"
+            return "softfail_and_quit_immediately"
         elseif code >= 500 and code < 600 then
             return "try_helo"
         else
@@ -113,7 +113,7 @@ end
 function smtp_states.MAIL:parse_response(code, response)
     if code ~= 250 then
         if code == 421 then
-            return "quit_immediately"
+            return "softfail_and_quit_immediately"
         elseif code >= 500 and code < 600 then
             return "fail_message"
         else
@@ -133,7 +133,7 @@ end
 function smtp_states.RCPT:parse_response(code, response)
     if code ~= 250 and code ~= 251 then
         if code == 421 then
-            return "quit_immediately"
+            return "softfail_and_quit_immediately"
         elseif code >= 500 and code < 600 then
             return "fail_recipient"
         else
@@ -153,7 +153,7 @@ end
 function smtp_states.DATA:parse_response(code, response)
     if code ~= 354 then
         if code == 421 then
-            return "quit_immediately"
+            return "softfail_and_quit_immediately"
         elseif code >= 500 and code < 600 then
             return "fail_message"
         else
@@ -183,7 +183,7 @@ end
 function smtp_states.DATA_send:parse_response(code, response)
     if code ~= 250 then
         if code == 421 then
-            return "quit_immediately"
+            return "softfail_and_quit_immediately"
         elseif code >= 500 and code < 600 then
             return "fail_message"
         else

@@ -77,6 +77,12 @@ function smtp_data:get()
 end
 -- }}}
 
+-- {{{ smtp_data:brief()
+function smtp_data:brief()
+    return "[[MESSAGE CONTENTS]]"
+end
+-- }}}
+
 -- {{{ smtp_data:__call()
 function smtp_data:__call()
     self.full_message = self.engine()

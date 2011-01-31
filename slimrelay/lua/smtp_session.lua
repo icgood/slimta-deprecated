@@ -35,6 +35,11 @@ smtp_session.on_action = {
         self.is_finished = true
     end,
 
+    softfail_and_quit_immediately = function (self, command, code, message)
+        self.is_finished = true
+        self.results:push_result("softfail", command, code, message)
+    end,
+
     quit = function (self)
         self.commands.to_send = {smtp_states.QUIT(self)}
     end,
@@ -52,7 +57,7 @@ smtp_session.on_action = {
     end,
 
     success = function (self, command)
-        if command.name == "DATA" then
+        if command.name == "DATA_send" then
             self.results:push_result("success")
         elseif command.name == "RCPT" then
             self.some_rcpts_accepted = true

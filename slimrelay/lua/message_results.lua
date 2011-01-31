@@ -36,9 +36,12 @@ function message_results:set_result(i, type_, command, code, message)
         if type(command) == "string" then
             r.command = command:gsub("%s*$", "")
         else
-            local command = command:build_command():gsub("%s*$", "")
-            command = command:gsub(self.message_placeholder, "[[MESSAGE CONTENTS]]")
-            r.command = command
+            local command = command:build_command()
+            if type(command) == "string" then
+                r.command = command:gsub("%s*$", "")
+            else
+                r.command = command:brief()
+            end
         end
         r.code = code
         r.message = message:gsub("%s*$", "")
