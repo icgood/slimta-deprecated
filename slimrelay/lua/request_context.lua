@@ -81,8 +81,7 @@ function request_context.new(endpoint, results_channel)
     self.endpoint = endpoint
     self.results_channel = results_channel
 
-    self.tag_stack = {}
-    self.msg_info = {}
+    self:reset()
 
     return self
 end
@@ -169,6 +168,13 @@ function request_context:create_sessions()
 end
 -- }}}
 
+-- {{{ request_context:reset()
+function request_context:reset()
+    self.tag_stack = {}
+    self.msg_info = {}
+end
+-- }}}
+
 -- {{{ request_context:__call()
 function request_context:__call()
     -- Set up the ZMQ listener.
@@ -181,6 +187,7 @@ function request_context:__call()
         local data = socket:recv()
         self:parse_request(data)
         self:create_sessions()
+        self:reset()
     end
 end
 -- }}}
