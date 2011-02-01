@@ -24,11 +24,51 @@ end
 -- }}}
 
 -- {{{ local_writer class
+local local_writer = {}
+local_writer.__index = local_writer
+
+-- {{{ local_writer.new()
+function local_writer.new()
+    local self = {}
+    setmetatable(self, local_writer)
+
+    return self
+end
+-- }}}
+
+-- {{{ local_writer:__call()
+function local_writer:__call()
+end
+-- }}}
+
+-- }}}
+
+-- {{{ local_list class
+local local_list = {}
+local_list.__index = local_list
+
+-- {{{ local_list.new()
+function local_list.new()
+    local self = {}
+    setmetatable(self, local_list)
+
+    return self
+end
+-- }}}
+
+-- {{{ local_list:__call()
+function local_list:__call()
+end
+-- }}}
 
 -- }}}
 
 --------------------------------------------------------------------------------
 
-storage_engines["local"] = {reader = local_reader, writer = local_writer}
+storage_engines["local"] = {
+    new = local_writer,
+    list = local_list,
+    get = local_reader,
+}
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

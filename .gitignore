@@ -22,6 +22,7 @@ Makefile
 *.la
 *.lo
 *.o
+slimedge/slimedge
 slimrelay/slimrelay
 slimqueue/slimqueue
 slimdisk/slimdisk
