@@ -43,12 +43,15 @@ if test "x${ac_cv_header_lua_h}" != "xyes"; then
 	AC_MSG_ERROR([Lua headers are required for building.])
 fi
 
+AC_CHECK_HEADERS([fcntl.h sys/ioctl.h sys/socket.h sys/time.h])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 
 # Checks for library functions.
-AC_CHECK_FUNCS([getenv])
+AC_CHECK_FUNCS([memset modf strchr strdup strerror uname])
+AC_FUNC_STRERROR_R
 
 AC_CONFIG_FILES([Makefile
 		 slimcommon/Makefile

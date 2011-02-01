@@ -1,20 +1,20 @@
 local smtp_session = require "smtp_session"
 local smtp_data = require "smtp_data"
 
-local smtp_context = {}
-smtp_context.__index = smtp_context
+local smtp_relay = {}
+smtp_relay.__index = smtp_relay
 
--- {{{ smtp_context.new()
-function smtp_context.new(nexthop, results_channel)
+-- {{{ smtp_relay.new()
+function smtp_relay.new(nexthop, results_channel)
     local self = {}
-    setmetatable(self, smtp_context)
+    setmetatable(self, smtp_relay)
 
     for i, msg in ipairs(nexthop.messages) do
         msg.contents.loader = smtp_data.new(msg.contents.storage, msg.contents.data)
         kernel:attach(msg.contents.loader)
     end
 
-    self.session = smtp_session.new(nexthop, results_channel, hostname)
+    self.session = smtp_session.new(nexthop, results_channel)
     self.host = nexthop.destination
     self.port = nexthop.port
     self.buffer = ""
@@ -23,8 +23,8 @@ function smtp_context.new(nexthop, results_channel)
 end
 -- }}}
 
--- {{{ smtp_context:queue_send()
-function smtp_context:queue_send(socket, data, more_coming)
+-- {{{ smtp_relay:queue_send()
+function smtp_relay:queue_send(socket, data, more_coming)
     self.pipeline = self.pipeline .. data
     while #self.pipeline > self.send_size do
         local to_send = self.pipeline:sub(1, self.send_size)
@@ -40,8 +40,8 @@ function smtp_context:queue_send(socket, data, more_coming)
 end
 -- }}}
 
--- {{{ smtp_context:run_session()
-function smtp_context:run_session()
+-- {{{ smtp_relay:run_session()
+function smtp_relay:run_session()
     local rec = kernel:resolve_dns(self.host, self.port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
@@ -76,13 +76,13 @@ function smtp_context:run_session()
 end
 -- }}}
 
--- {{{ smtp_context:__call()
-function smtp_context:__call()
+-- {{{ smtp_relay:__call()
+function smtp_relay:__call()
     self:run_session()
     self.session:shutdown()
 end
 -- }}}
 
-protocols["SMTP"] = smtp_context
+slimrelay.protocols["SMTP"] = smtp_relay
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

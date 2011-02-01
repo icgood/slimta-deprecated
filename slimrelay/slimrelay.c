@@ -9,79 +9,10 @@
 #include <ratchet.h>
 
 #include "slimcommon.h"
+#include "misc.h"
+#include "globals.h"
 
-#ifndef SLIMRELAY_SCRIPT_PATH
-#define SLIMRELAY_SCRIPT_PATH "/usr/share/slimta/relay"
-#endif
-
-#ifndef SLIMCOMMON_SCRIPT_PATH
-#define SLIMCOMMON_SCRIPT_PATH "/usr/share/slimta/common"
-#endif
-
-/* {{{ push_argvs_to_global() */
-static void push_argvs_to_global (lua_State *L, int argc, char **argv)
-{
-	int i;
-	lua_newtable (L);
-	for (i=0; i<argc; i++)
-	{
-		lua_pushstring (L, argv[i]);
-		lua_rawseti (L, -2, i);
-	}
-	lua_pushliteral (L, "n");
-	lua_pushinteger (L, argc);
-	lua_rawset (L, -3);
-	lua_setglobal (L, "arg");
-
-}
-/* }}} */
-
-/* {{{ setup_globals() */
-static void setup_globals (lua_State *L, int argc, char **argv)
-{
-	push_argvs_to_global (L, argc, argv);
-
-	/* Initial table of protocols, populated by included files. */
-	lua_newtable (L);
-	lua_setglobal (L, "protocols");
-
-	/* Initial table of storage engines, populated by included files. */
-	lua_newtable (L);
-	lua_setglobal (L, "storage_engines");
-
-	/* Initial table of connection strings, populated by the configs. */
-	lua_newtable (L);
-	lua_setglobal (L, "connections");
-}
-/* }}} */
-
-/* {{{ get_script_path() */
-static const char *get_script_path (const char *file)
-{
-	const char *envpath = getenv ("SLIMRELAY_SCRIPT_PATH");
-	const char *path = (envpath ? envpath : SLIMRELAY_SCRIPT_PATH);
-	if (!file)
-		return path;
-
-	static char with_file[1024];
-	snprintf (with_file, 1024, "%s/%s", path, file);
-	return with_file;
-}
-/* }}} */
-
-/* {{{ get_common_path() */
-static const char *get_common_path (const char *file)
-{
-	const char *envpath = getenv ("SLIMCOMMON_SCRIPT_PATH");
-	const char *path = (envpath ? envpath : SLIMCOMMON_SCRIPT_PATH);
-	if (!file)
-		return path;
-
-	static char with_file[1024];
-	snprintf (with_file, 1024, "%s/%s", path, file);
-	return with_file;
-}
-/* }}} */
+#define ME "slimrelay"
 
 /* {{{ main() */
 int main (int argc, char *argv[])
@@ -91,24 +22,16 @@ int main (int argc, char *argv[])
 	lua_State *L = luaL_newstate ();
 	luaL_openlibs (L);
 	luaopen_ratchet (L);
-
 	slimcommon_openlibs (L);
 
-	lua_getfield (L, -1, "add_path");
-	lua_pushstring (L, get_script_path (NULL));
-	lua_call (L, 1, 0);
-
-	lua_getfield (L, -1, "add_path");
-	lua_pushstring (L, get_common_path (NULL));
-	lua_call (L, 1, 0);
+	slimta_setup_globals (L, argc, argv);
+	slimta_load_config (L, ME);
 
 	lua_settop (L, 0);
-	setup_globals (L, argc, argv);
 
-	if (luaL_dofile (L, get_script_path ("config.lua")) != 0)
-		return lua_error (L);
-	if (luaL_dofile (L, get_script_path ("main.lua")) != 0)
-		return lua_error (L);
+	lua_getglobal (L, "require");
+	lua_pushliteral (L, ME);
+	lua_call (L, 1, 0);
 
 	lua_close (L);
 

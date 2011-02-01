@@ -5,14 +5,14 @@ local smtp_session = {}
 smtp_session.__index = smtp_session
 
 -- {{{ smtp_session.new()
-function smtp_session.new(data, results_channel, ehlo_as)
+function smtp_session.new(data, results_channel)
     local self = {}
     setmetatable(self, smtp_session)
 
     self.messages = data.messages
     self.security = data.security
 
-    self.ehlo_as = get_conf.string(ehlo_as, self) or os.getenv("HOSTNAME")
+    self.ehlo_as = get_conf.string(hostname, self) or os.getenv("HOSTNAME")
     self.extensions = {}
 
     self:save_each_response_function()
