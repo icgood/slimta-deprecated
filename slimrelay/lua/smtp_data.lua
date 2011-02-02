@@ -10,7 +10,7 @@ function smtp_data.new(storage_type, info)
     if not engine then
         error("invalid storage engine: [" .. engine .."]")
     end
-    self.engine = engine.reader.new(info)
+    self.engine = engine.get.new(info)
     self.iter_size = get_conf.number(smtp_data_iterate_size or 1024)
 
     return self
@@ -85,7 +85,7 @@ end
 
 -- {{{ smtp_data:__call()
 function smtp_data:__call()
-    self.full_message = self.engine()
+    self.full_message = self.engine().message
     if self.unpause_thread then
         kernel:unpause(self.unpause_thread)
         self.unpause_thread = nil

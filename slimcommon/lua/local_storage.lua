@@ -17,7 +17,7 @@ end
 -- {{{ local_reader:__call()
 function local_reader:__call()
     local f = io.open(self.filename)
-    return f:read("*a")
+    return {message = f:read("*a")}
 end
 -- }}}
 

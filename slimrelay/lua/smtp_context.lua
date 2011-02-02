@@ -46,7 +46,7 @@ function smtp_context:run_session()
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
 
-    self.send_size = get_conf.number(smtp_send_size or 102400, socket)
+    self.send_size = get_conf.number(socket_send_size, socket) or 102400
 
     while not self.session.is_finished do
         if self.session:is_waiting() then

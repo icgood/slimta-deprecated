@@ -54,14 +54,13 @@ AC_CHECK_FUNCS([memset modf strchr strdup strerror uname])
 AC_FUNC_STRERROR_R
 
 AC_CONFIG_FILES([Makefile
+		 etc/Makefile
 		 slimcommon/Makefile
 		 slimcommon/lua/Makefile
 		 slimrelay/Makefile
 		 slimrelay/lua/Makefile
 		 slimqueue/Makefile
 		 slimqueue/lua/Makefile
-		 slimdisk/Makefile
-		 slimdisk/lua/Makefile
 		 slimedge/Makefile
 		 slimedge/lua/Makefile])
 AC_OUTPUT

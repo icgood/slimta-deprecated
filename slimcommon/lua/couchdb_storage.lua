@@ -1,123 +1,225 @@
 require "json"
 
+local http_connection = require "http_connection"
+
 -- {{{ couchdb_new
+local couchdb_new = {}
+couchdb_new.__index = couchdb_new
 
-local couchdb_new = ratchet.new_context()
+-- {{{ couchdb_new.new()
+function couchdb_new.new()
+    local self = {}
+    setmetatable(self, couchdb_new)
 
--- {{{ couchdb_new:on_init()
-function couchdb_new:on_init(message)
-    self.msg = message
-    self.received = ''
+    self.where = get_conf.string(couchdb_channel)
+    self.database = get_conf.string(couchdb_queue)
 
-    self:send_command(message)
+    self.mailfrom = ""
+    self.rcpttos = {}
+    self.message = ""
+
+    return self
 end
 -- }}}
 
--- {{{ couchdb_new:on_recv()
-function couchdb_new:on_recv()
-    local data = self:recv()
-    if #data > 0 then
-        self.received = self.received .. data
+-- {{{ couchdb_new:set_mailfrom()
+function couchdb_new:set_mailfrom(new_mf)
+    self.mailfrom = new_mf
+end
+-- }}}
+
+-- {{{ couchdb_new:add_rcptto()
+function couchdb_new:add_rcptto(new_to)
+    table.insert(self.rcpttos, new_to)
+end
+-- }}}
+
+-- {{{ couchdb_new:add_data()
+function couchdb_new:add_data(data)
+    if self.message == "" then
+        self.message = data
     else
-        self:parse_response(self.received, self.msg)
+        self.message = self.message .. data
     end
 end
 -- }}}
 
--- {{{ couchdb_new:send_command()
-function couchdb_new:send_command(message)
-    local command = "POST /%s/ HTTP/1.0\r\nContent-Length: %d\r\nContent-Type: application/json\r\n\r\n%s\r\n"
-    local data = json.encode(message)
-    local send = command:format(couchdb_info.database, #data, data)
-    self:send(send)
+-- {{{ couchdb_new:get_jsoned_info()
+function couchdb_new:get_jsoned_info()
+    local info = {
+        mailfrom = self.mailfrom,
+        rcpttos = self.rcpttos,
+    }
+    return json.encode(info)
 end
 -- }}}
 
--- {{{ couchdb_new:parse_response()
-function couchdb_new:parse_response(data, message)
-    local first_line, headers, content = data:match("^(.-)\r?\n(.-)\r?\n\r?\n(.*)$")
-    if not first_line then
-        -- fail gracefully with no error info.
-    end
-    local code, text = first_line:match("^HTTP/[%d%.]+%s+(%d+)%s+(.*)$")
-    if tonumber(code) ~= 201 then
-        -- fail gracefully with a code/text.
+-- {{{ couchdb_new:create_message_root()
+function couchdb_new:create_message_root()
+    local info = self.get_jsoned_info()
+
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query(
+        "POST",
+        "/"..self.database.."/",
+        {["Content-Type"] = "application/json", ["Content-Length"] = #info},
+        info
+    )
+    if code ~= 201 then
+        return nil, reason
     end
 
-    local info = json.decode(content)
-    if not info or not info.ok or not info.id then
-        -- fail gracefully, no id given, shouldn't happen.
+    local info = json.decode(data)
+
+    return info
+end
+-- }}}
+
+-- {{{ couchdb_new:delete_message_root()
+function couchdb_new:delete_message_root(info)
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query(
+        "DELETE",
+        "/"..self.database.."/"..info.id.."?rev="..info.rev
+    )
+    if code ~= 200 then
+        return nil, reason
     end
 
-    -- succeed, provide info.id.
+    return true
+end
+-- }}}
+
+-- {{{ couchdb_new:create_message_body()
+function couchdb_new:create_message_body(info)
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query(
+        "PUT",
+        "/"..self.database.."/"..info.id.."?rev="..info.rev,
+        {["Content-Type"] = "message/rfc822", ["Content-Length"] = #self.message},
+        self.message
+    )
+    if code ~= 201 then
+        return nil, reason
+    end
+
+    local info = json.decode(data)
+
+    return info
+end
+-- }}}
+
+-- {{{ couchdb_new:__call()
+function couchdb_new:__call()
+    local ret, reason
+
+    ret, reason = self:create_couchttp()
+    if not ret then
+        return nil, reason
+    end
+    local info = ret
+
+    ret, reason = self:create_message_body(info)
+    if not ret then
+        self:delete_couchttp(info)
+        return nil, reason
+    end
+
+    return info.id
 end
 -- }}}
 
 -- }}}
 
 -- {{{ couchdb_list
+local couchdb_list = {}
+couchdb_list.__index = couchdb_list
 
-local couchdb_list = ratchet.new_context()
+-- {{{ couchdb_list.new()
+function couchdb_list.new()
+    local self = {}
+    setmetatable(self, couchdb_list)
 
--- {{{ couchdb_list:on_init()
-function couchdb_list:on_init()
-    self.received = ''
+    self.where = get_conf.string(couchdb_channel)
+    self.database = get_conf.string(couchdb_queue)
 
-    self:send_command()
+    return self
 end
 -- }}}
 
--- {{{ couchdb_list:on_recv()
-function couchdb_list:on_recv()
-    local data = self:recv()
-    if #data > 0 then
-        self.received = self.received .. data
-    else
-        self:parse_response(self.received)
-    end
-end
--- }}}
-
--- {{{ couchdb_list:send_command()
-function couchdb_list:send_command()
-    local command = "GET /%s/_all_docs HTTP/1.0\r\nContent-Length: %d\r\nContent-Type: application/json\r\n\r\n%s\r\n"
-    local data = json.encode(message)
-    local send = command:format(couchdb_info.database, #data, data)
-    self:send(send)
-end
--- }}}
-
--- {{{ couchdb_list:parse_response()
-function couchdb_list:parse_response(data)
-    local first_line, headers, content = data:match("^(.-)\r?\n(.-)\r?\n\r?\n(.*)$")
-    if not first_line then
-        -- fail gracefully with no error info.
-    end
-    local code, text = first_line:match("^HTTP/[%d%.]+%s+(%d+)%s+(.*)$")
-    if tonumber(code) ~= 201 then
-        -- fail gracefully with a code/text.
+-- {{{ couchdb_list:__call()
+function couchdb_list:__call()
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/_all_docs")
+    if code ~= 200 then
+        return nil, reason
     end
 
-    local info = json.decode(content)
-    if not info or not info.ok or not info.id then
-        -- fail gracefully, no id given, shouldn't happen.
+    local ret = json.decode(data)
+
+    local list = {}
+    for i, row in ipairs(ret.rows) do
+        table.insert(list, row.id)
     end
 
-    -- succeed, provide info.id.
+    return list
 end
 -- }}}
 
 -- }}}
 
-queue_engines["couchdb"] = {
+-- {{{ couchdb_get
+local couchdb_get = {}
+couchdb_get.__index = couchdb_get
+
+-- {{{ couchdb_get.new()
+function couchdb_get.new(data)
+    local self = {}
+    setmetatable(self, couchdb_get)
+
+    self.where = get_conf.string(couchdb_channel)
+    self.database = get_conf.string(couchdb_queue)
+
+    self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
+
+    return self
+end
+-- }}}
+
+-- {{{ couchdb_get:__call()
+function couchdb_get:__call()
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
+    if code ~= 200 then
+        return nil, reason
+    end
+    local info = json.decode(data)
+
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id.."/message?rev="..info._rev)
+    if code ~= 200 then
+        return nil, reason
+    end
+    local message = data
+
+    local ret = {
+        mailfrom = info.mailfrom,
+        rcpttos = info.rcpttos,
+        message = message,
+    }
+
+    return ret
+end
+-- }}}
+
+-- }}}
+
+--------------------------------------------------------------------------------
+
+storage_engines["couchdb"] = {
     new = couchdb_new,
     list = couchdb_list,
     get = couchdb_get,
-}
-
-couchdb_info = {
-    database = "queue",
-    channel = "tcp://localhost:5984",
 }
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

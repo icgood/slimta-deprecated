@@ -1,8 +1,8 @@
 local request_context = require "request_context"
 local results_context = require "results_context"
 
-local results_channel_str = get_conf.string(connections.results_channel)
-local request_channel_str = get_conf.string(connections.request_channel)
+local results_channel_str = get_conf.string(results_channel)
+local request_channel_str = get_conf.string(request_channel)
 local master_timeout = get_conf.number(master_timeout) or 10.0
 
 uri = ratchet.uri.new()

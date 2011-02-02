@@ -1,2 +1,2 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = slimcommon slimedge slimqueue slimrelay
+SUBDIRS = etc slimcommon slimedge slimqueue slimrelay
