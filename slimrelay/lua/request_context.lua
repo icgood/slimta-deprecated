@@ -83,8 +83,6 @@ function request_context.new(endpoint, results_channel)
     self.endpoint = endpoint
     self.results_channel = results_channel
 
-    self:reset()
-
     return self
 end
 -- }}}
@@ -186,10 +184,10 @@ function request_context:__call()
 
     -- Gather all results messages.
     while true do
+        self:reset()
         local data = socket:recv()
         self:parse_request(data)
         self:create_sessions()
-        self:reset()
     end
 end
 -- }}}
