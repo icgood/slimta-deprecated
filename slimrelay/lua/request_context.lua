@@ -1,73 +1,75 @@
 
 -- {{{ tags table
-local tags = {slimta = {},
+local tags = {
+    
+    slimta = {},
 
-              deliver = {"slimta"},
+    deliver = {"slimta"},
+    
+    nexthop = {"slimta", "deliver",
+        list = "nexthops",
+    },
+    
+    protocol = {"slimta", "deliver", "nexthop",
+        handle = function (info, attrs, data)
+            info.protocol = data:match("%S+")
+        end,
+    },
+    
+    destination = {"slimta", "deliver", "nexthop",
+        handle = function (info, attrs, data)
+            info.destination = data:match("%S+")
+        end,
+    },
+    
+    port = {"slimta", "deliver", "nexthop",
+        handle = function (info, attrs, data)
+            info.port = data:match("%d+")
+        end,
+    },
+    
+    security = {"slimta", "deliver", "nexthop",
+        handle = function (info, attrs, data)
+            -- Put security stuff here.
+        end,
+    },
+    
+    message = {"slimta", "deliver", "nexthop",
+        list = "messages",
+        handle = function (info, attrs, data)
+            info.qid = attrs["queueid"]
+        end
+    },
+    
+    envelope = {"slimta", "deliver", "nexthop", "message"},
+    
+    sender = {"slimta", "deliver", "nexthop", "message", "envelope",
+        handle = function (info, attrs, data)
+            local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
+    
+            info.envelope = info.envelope or {}
+            info.envelope.sender = stripped_data
+        end,
+    },
+    
+    recipient = {"slimta", "deliver", "nexthop", "message", "envelope",
+        handle = function (info, attrs, data)
+            local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
+    
+            info.envelope = info.envelope or {}
+            info.envelope.recipients = info.envelope.recipients or {}
+            table.insert(info.envelope.recipients, stripped_data)
+        end,
+    },
+    
+    contents = {"slimta", "deliver", "nexthop", "message",
+        handle = function (info, attrs, data)
+            attrs.data = data
+            info.contents = attrs
+        end,
+    },
       
-              nexthop = {"slimta", "deliver",
-                  list = "nexthops",
-              },
-      
-              protocol = {"slimta", "deliver", "nexthop",
-                  handle = function (info, attrs, data)
-                      info.protocol = data:match("%S+")
-                  end,
-              },
-      
-              destination = {"slimta", "deliver", "nexthop",
-                  handle = function (info, attrs, data)
-                      info.destination = data:match("%S+")
-                  end,
-              },
-      
-              port = {"slimta", "deliver", "nexthop",
-                  handle = function (info, attrs, data)
-                      info.port = data:match("%d+")
-                  end,
-              },
-      
-              security = {"slimta", "deliver", "nexthop",
-                  handle = function (info, attrs, data)
-                      -- Put security stuff here.
-                  end,
-              },
-      
-              message = {"slimta", "deliver", "nexthop",
-                  list = "messages",
-                  handle = function (info, attrs, data)
-                      info.qid = attrs["queueid"]
-                  end
-              },
-      
-              envelope = {"slimta", "deliver", "nexthop", "message"},
-      
-              sender = {"slimta", "deliver", "nexthop", "message", "envelope",
-                  handle = function (info, attrs, data)
-                      local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
-      
-                      info.envelope = info.envelope or {}
-                      info.envelope.sender = stripped_data
-                  end,
-              },
-      
-              recipient = {"slimta", "deliver", "nexthop", "message", "envelope",
-                  handle = function (info, attrs, data)
-                      local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
-      
-                      info.envelope = info.envelope or {}
-                      info.envelope.recipients = info.envelope.recipients or {}
-                      table.insert(info.envelope.recipients, stripped_data)
-                  end,
-              },
-      
-              contents = {"slimta", "deliver", "nexthop", "message",
-                  handle = function (info, attrs, data)
-                      attrs.data = data
-                      info.contents = attrs
-                  end,
-              },
-      
-          }
+}
 -- }}}
 
 local request_context = {}
