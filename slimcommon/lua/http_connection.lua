@@ -90,7 +90,7 @@ function http_connection:parse_response(socket)
         local name, value
         name, value, lineend = full_reply:match("^(.-):%s+(.-)\r\n()", lineend)
         if name then
-            headers[name] = value
+            headers[name:lower()] = value
         end
     until not name
 

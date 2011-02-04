@@ -11,7 +11,7 @@ local tags = {
     {"results", "deliver", "slimta"},
 
     {"message", "results", "deliver", "slimta",
-        list = "message",
+        list = "messages",
         handle = function (info, attrs, data)
             info.queueid = attrs.queueid
         end,
@@ -69,6 +69,26 @@ function relay_results_context.new(endpoint)
 end
 -- }}}
 
+-- {{{ relay_results_context:delete_message()
+function relay_results_context:delete_message(queue_id)
+    local which_engine = get_conf.string(use_storage_engine, msg, data)
+    local engine = storage_engines[which_engine].delete
+
+    local storage = engine.new(queue_id)
+    kernel:attach(storage)
+end
+-- }}}
+
+-- {{{ relay_results_context:try_again_later()
+function relay_results_context:try_again_later(queue_id)
+end
+-- }}}
+
+-- {{{ relay_results_context:queue_bounce()
+function relay_results_context:queue_bounce(queue_id)
+end
+-- }}}
+
 -- {{{ relay_results_context:__call()
 function relay_results_context:__call()
     -- Set up the ZMQ listener.
@@ -80,7 +100,15 @@ function relay_results_context:__call()
     while true do
         local data = socket:recv()
         self.results = self.parser:parse_xml(data)
-        slimta.stackdump(self.results)
+        for i, msg in ipairs(self.results.messages) do
+            if msg.type == "success" then
+                self:delete_message(msg.queueid)
+            elseif msg.type == "hardfail" then
+                self:queue_bounce(msg.queueid)
+            else
+                self:try_again_later(msg.queueid)
+            end
+        end
     end
 end
 -- }}}

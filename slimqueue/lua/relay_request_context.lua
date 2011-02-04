@@ -22,7 +22,7 @@ function relay_request_context:build_message(data)
   <destination>mx1.emailsrvr.com</destination>
   <port>25</port>
   <security></security>
-  <message queueid="0123456789">
+  <message queueid="%s">
    <envelope>
     <sender>%s</sender>
 %s   </envelope>
@@ -42,7 +42,7 @@ function relay_request_context:build_message(data)
     local sender = self.message.envelope.sender
     local size = self.message.size
 
-    local msg = msg_tmpl:format(sender, rcpts, size, data)
+    local msg = msg_tmpl:format(data, sender, rcpts, size, data)
 
     return msg
 end

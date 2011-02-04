@@ -2,6 +2,19 @@ require "json"
 
 local http_connection = require "http_connection"
 
+-- {{{ strip_quotes()
+local function strip_quotes(str)
+    local first = str:sub(1, 1)
+    local last = str:sub(-1)
+
+    if first == '"' and last == '"' then
+        return str:sub(2, -2)
+    end
+end
+-- }}}
+
+--------------------------------------------------------------------------------
+
 -- {{{ couchdb_new
 local couchdb_new = {}
 couchdb_new.__index = couchdb_new
@@ -84,10 +97,7 @@ end
 -- {{{ couchdb_new:delete_message_root()
 function couchdb_new:delete_message_root(info)
     local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query(
-        "DELETE",
-        "/"..self.database.."/"..info.id.."?rev="..info.rev
-    )
+    local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..info.id.."?rev="..info.rev)
     if code ~= 200 then
         return nil, reason
     end
@@ -241,24 +251,17 @@ end
 -- {{{ couchdb_delete:__call()
 function couchdb_delete:__call()
     local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
+    local code, reason, headers, data = couchttp:query("HEAD", "/"..self.database.."/"..self.id)
     if code ~= 200 then
         return nil, reason
     end
-    local info = json.decode(data)
+    local rev = strip_quotes(headers["etag"])
 
     local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id.."/message?rev="..info._rev)
+    local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..self.id.."?rev="..rev)
     if code ~= 200 then
         return nil, reason
     end
-    local message = data
-
-    local ret = {
-        mailfrom = info.mailfrom,
-        rcpttos = info.rcpttos,
-        message = message,
-    }
 
     return ret
 end
