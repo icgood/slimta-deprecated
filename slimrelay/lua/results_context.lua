@@ -3,12 +3,11 @@ local results_context = {}
 results_context.__index = results_context
 
 -- {{{ results_context.new()
-function results_context.new(endpoint, results_channel)
+function results_context.new(endpoint)
     local self = {}
     setmetatable(self, results_context)
 
     self.endpoint = endpoint
-    self.results_channel = results_channel
 
     return self
 end
