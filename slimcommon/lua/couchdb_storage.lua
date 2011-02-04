@@ -34,6 +34,12 @@ function couchdb_new:add_rcptto(new_to)
 end
 -- }}}
 
+-- {{{ couchdb_new:set_rcpttos()
+function couchdb_new:set_rcpttos(new_tos)
+    self.rcpttos = new_tos
+end
+-- }}}
+
 -- {{{ couchdb_new:add_data()
 function couchdb_new:add_data(data)
     if self.message == "" then
@@ -56,7 +62,7 @@ end
 
 -- {{{ couchdb_new:create_message_root()
 function couchdb_new:create_message_root()
-    local info = self.get_jsoned_info()
+    local info = self:get_jsoned_info()
 
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query(
@@ -95,7 +101,7 @@ function couchdb_new:create_message_body(info)
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query(
         "PUT",
-        "/"..self.database.."/"..info.id.."?rev="..info.rev,
+        "/"..self.database.."/"..info.id.."/message?rev="..info.rev,
         {["Content-Type"] = "message/rfc822", ["Content-Length"] = #self.message},
         self.message
     )
@@ -113,7 +119,7 @@ end
 function couchdb_new:__call()
     local ret, reason
 
-    ret, reason = self:create_couchttp()
+    ret, reason = self:create_message_root()
     if not ret then
         return nil, reason
     end
@@ -121,7 +127,7 @@ function couchdb_new:__call()
 
     ret, reason = self:create_message_body(info)
     if not ret then
-        self:delete_couchttp(info)
+        self:delete_message_root(info)
         return nil, reason
     end
 
