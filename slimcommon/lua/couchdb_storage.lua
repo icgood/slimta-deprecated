@@ -220,12 +220,59 @@ end
 
 -- }}}
 
+-- {{{ couchdb_delete
+local couchdb_delete = {}
+couchdb_delete.__index = couchdb_delete
+
+-- {{{ couchdb_delete.new()
+function couchdb_delete.new(data)
+    local self = {}
+    setmetatable(self, couchdb_delete)
+
+    self.where = get_conf.string(couchdb_channel)
+    self.database = get_conf.string(couchdb_queue)
+
+    self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
+
+    return self
+end
+-- }}}
+
+-- {{{ couchdb_delete:__call()
+function couchdb_delete:__call()
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
+    if code ~= 200 then
+        return nil, reason
+    end
+    local info = json.decode(data)
+
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id.."/message?rev="..info._rev)
+    if code ~= 200 then
+        return nil, reason
+    end
+    local message = data
+
+    local ret = {
+        mailfrom = info.mailfrom,
+        rcpttos = info.rcpttos,
+        message = message,
+    }
+
+    return ret
+end
+-- }}}
+
+-- }}}
+
 --------------------------------------------------------------------------------
 
 storage_engines["couchdb"] = {
     new = couchdb_new,
     list = couchdb_list,
     get = couchdb_get,
+    delete = couchdb_delete,
 }
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

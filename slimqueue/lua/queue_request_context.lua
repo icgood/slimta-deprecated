@@ -1,48 +1,49 @@
 
+local xml_wrapper = require "xml_wrapper"
 local relay_request_context = require "relay_request_context"
 
 -- {{{ tags table
 local tags = {
 
-    slimta = {},
+    {"slimta"},
 
-    queue = {"slimta"},
+    {"queue", "slimta"},
 
-    client = {"slimta", "queue",
+    {"client", "queue", "slimta",
         list = "clients",
     },
 
-    protocol = {"slimta", "deliver", "client",
+    {"protocol", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             info.protocol = data:match("%S+")
         end,
     },
 
-    host = {"slimta", "queue", "client",
+    {"host", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             info.host = data:match("%S+")
         end,
     },
 
-    port = {"slimta", "queue", "client",
+    {"port", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             info.port = data:match("%d+")
         end,
     },
 
-    security = {"slimta", "queue", "client",
+    {"security", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             -- Put security stuff here.
         end,
     },
 
-    message = {"slimta", "queue", "client",
+    {"message", "client", "queue", "slimta",
         list = "messages",
     },
 
-    envelope = {"slimta", "queue", "client", "message"},
+    {"envelope", "message", "client", "queue", "slimta"},
 
-    sender = {"slimta", "queue", "client", "message", "envelope",
+    {"sender", "envelope", "message", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
 
@@ -51,7 +52,7 @@ local tags = {
         end,
     },
 
-    recipient = {"slimta", "queue", "client", "message", "envelope",
+    {"recipient", "envelope", "message", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             local stripped_data = data:gsub("^%s*", ""):gsub("%s*$", "")
 
@@ -80,75 +81,9 @@ function queue_request_context.new(endpoint)
     setmetatable(self, queue_request_context)
 
     self.endpoint = endpoint
+    self.parser = xml_wrapper.new(tags)
 
     return self
-end
--- }}}
-
--- {{{ queue_request_context:start_tag()
-function queue_request_context:start_tag(tag, attrs)
-    local current = {tag = tag, attrs = attrs, data = ""}
-
-    if tags[tag] then
-        -- Check if this tag is valid and in the right place.
-        local valid = (#tags[tag] == #self.tag_stack)
-        for i, t in ipairs(tags[tag]) do
-            if t ~= self.tag_stack[i].tag then
-                valid = false
-                break
-            end
-        end
-
-        -- For valid tags, generate info and handler.
-        if valid then
-            local currinfo = self.msg_info
-            for i, t in ipairs(self.tag_stack) do
-                if tags[t.tag].list then
-                    currinfo = currinfo[tags[t.tag].list]
-                    currinfo = currinfo[#currinfo]
-                end
-            end
-            if tags[tag].list then
-                local n = tags[tag].list
-                if not currinfo[n] then
-                    currinfo[n] = {}
-                end
-                table.insert(currinfo[n], {})
-                currinfo = currinfo[n][#currinfo[n]]
-            end
-
-            current.info = currinfo
-            current.handle = tags[tag].handle
-        end
-    end
-
-    table.insert(self.tag_stack, current)
-end
--- }}}
-
--- {{{ queue_request_context:end_tag()
-function queue_request_context:end_tag(tag)
-    local current = self.tag_stack[#self.tag_stack]
-
-    if current and current.handle then
-        current.handle(current.info, current.attrs, current.data)
-    end
-
-    table.remove(self.tag_stack)
-end
--- }}}
-
--- {{{ queue_request_context:tag_data()
-function queue_request_context:tag_data(data)
-    local current = self.tag_stack[#self.tag_stack]
-    current.data = current.data .. data
-end
--- }}}
-
--- {{{ queue_request_context:parse_request()
-function queue_request_context:parse_request(data)
-    local parser = slimta.xml.new(self, self.start_tag, self.end_tag, self.tag_data)
-    parser:parse(data)
 end
 -- }}}
 
@@ -183,13 +118,6 @@ function queue_request_context:handle_messages(socket)
 end
 -- }}}
 
--- {{{ queue_request_context:reset()
-function queue_request_context:reset()
-    self.tag_stack = {}
-    self.msg_info = {}
-end
--- }}}
-
 -- {{{ queue_request_context:__call()
 function queue_request_context:__call()
     -- Set up the ZMQ listener.
@@ -199,9 +127,8 @@ function queue_request_context:__call()
 
     -- Gather all results messages.
     while true do
-        self:reset()
         local data = socket:recv()
-        self:parse_request(data)
+        self.msg_info = self.parser:parse_xml(data)
         self:handle_messages(socket)
         socket:send("yay!")
     end
