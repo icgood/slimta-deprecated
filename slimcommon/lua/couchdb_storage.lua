@@ -3,6 +3,12 @@ require "json"
 local http_connection = require "http_connection"
 local uuids
 
+-- {{{ default_next_attempt_timestamp()
+local function default_next_attempt_timestamp()
+    return slimta.get_now() + 300
+end
+-- }}}
+
 -- {{{ strip_quotes()
 local function strip_quotes(str)
     local first = str:sub(1, 1)
@@ -57,7 +63,7 @@ function couchdb_uuids:__call()
         local couchttp = http_connection.new(self.where)
         local code, reason, headers, data = couchttp:query("GET", "/_uuids?count="..self.count)
         if code ~= 200 then
-            return nil, reason
+            error(reason)
         end
 
         local ret = json.decode(data)
@@ -153,7 +159,7 @@ function couchdb_new:create_message_root()
 
     -- Not a collision, but not a success? Return reason.
     if code ~= 201 then
-        return nil, reason
+        error(reason)
     end
 
     local info = json.decode(data)
@@ -167,7 +173,7 @@ function couchdb_new:delete_message_root(info)
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..info.id.."?rev="..info.rev)
     if code ~= 200 then
-        return nil, reason
+        error(reason)
     end
 
     return true
@@ -184,7 +190,7 @@ function couchdb_new:create_message_body(info)
         self.message
     )
     if code ~= 201 then
-        return nil, reason
+        error(reason)
     end
 
     local info = json.decode(data)
@@ -199,14 +205,14 @@ function couchdb_new:__call()
 
     ret, reason = self:create_message_root()
     if not ret then
-        return nil, reason
+        error(reason)
     end
     local info = ret
 
     ret, reason = self:create_message_body(info)
     if not ret then
         self:delete_message_root(info)
-        return nil, reason
+        error(reason)
     end
 
     return info.id
@@ -236,7 +242,7 @@ function couchdb_list:__call()
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/_all_docs")
     if code ~= 200 then
-        return nil, reason
+        error(reason)
     end
 
     local ret = json.decode(data)
@@ -275,14 +281,14 @@ function couchdb_get:__call()
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
     if code ~= 200 then
-        return nil, reason
+        error(reason)
     end
     local info = json.decode(data)
 
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id.."/message?rev="..info._rev)
     if code ~= 200 then
-        return nil, reason
+        error(reason)
     end
     local message = data
 
@@ -316,22 +322,71 @@ function couchdb_update.new(data)
 end
 -- }}}
 
+-- {{{ couchdb_update:get_helper()
+function couchdb_update:get_helper()
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
+    if code ~= 200 then
+        error(reason)
+    end
+
+    return json.decode(data)
+end
+-- }}}
+
+-- {{{ couchdb_update:put_helper()
+function couchdb_update:put_helper(info)
+    local data = json.encode(info)
+
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query(
+        "PUT",
+        "/"..self.database.."/"..id,
+        {["Content-Type"] = "application/json", ["Content-Length"] = #data},
+        data
+    )
+
+    return code, reason
+end
+-- }}}
+
+-- {{{ couchdb_update:set_next_attempt()
+function couchdb_update:set_next_attempt()
+    local code, reason
+
+    repeat
+        local info = self:get_helper()
+
+        info.attempts = info.attempts + 1
+        local next_attempt_getter = next_queue_attempt_timestamp or default_next_attempt_timestamp
+        info.next_attempt = get_conf.number(next_attempt_getter, info.attempts, info)
+
+        code, reason = self:put_helper(info)
+    until code ~= 409
+
+    if code ~= 201 then
+        error(reason)
+    end
+end
+-- }}}
+
 -- {{{ couchdb_update:__call()
-function couchdb_update:__call(attempts, next_attempt)
-    local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("HEAD", "/"..self.database.."/"..self.id)
-    if code ~= 200 then
-        return nil, reason
-    end
-    local rev = strip_quotes(headers["etag"])
+function couchdb_update:__call(new_values)
+    local code, reason
 
-    local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..self.id.."?rev="..rev)
-    if code ~= 200 then
-        return nil, reason
-    end
+    repeat
+        local info = self:get_helper()
 
-    return ret
+        for key, val in pairs(new_values) do
+            info[key] = val
+        end
+
+        code, reason = self:put_helper(info)
+    until code ~= 409
+
+    if code ~= 201 then
+        error(reason)
+    end
 end
 -- }}}
 
@@ -360,14 +415,14 @@ function couchdb_delete:__call()
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("HEAD", "/"..self.database.."/"..self.id)
     if code ~= 200 then
-        return nil, reason
+        error(reason)
     end
     local rev = strip_quotes(headers["etag"])
 
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..self.id.."?rev="..rev)
     if code ~= 200 then
-        return nil, reason
+        error(reason)
     end
 
     return ret

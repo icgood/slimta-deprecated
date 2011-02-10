@@ -19,7 +19,7 @@ function relay_request_context:build_message(data)
     local msg_tmpl = [[<slimta><deliver>
  <nexthop>
   <protocol>SMTP</protocol>
-  <destination>mx1.emailsrvr.com</destination>
+  <destination>icgood.net</destination>
   <port>25</port>
   <security></security>
   <message queueid="%s">

@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/utsname.h>
 
 #include "misc.h"
@@ -146,6 +147,18 @@ static int slimcommon_add_path (lua_State *L)
 }
 /* }}} */
 
+/* {{{ slimcommon_get_now() */
+static int slimcommon_get_now (lua_State *L)
+{
+	time_t ret = time (NULL);
+	if (ret == -1)
+		return handle_perror (L);
+
+	lua_pushnumber (L, (lua_Number) ret);
+	return 1;
+}
+/* }}} */
+
 /* {{{ slimcommon_mkstemp_close() */
 static int slimcommon_mkstemp_close (lua_State *L)
 {
@@ -205,6 +218,7 @@ int slimcommon_openlibs (lua_State *L)
 	const luaL_Reg funcs[] = {
 		{"stackdump", slimcommon_stackdump},
 		{"add_path", slimcommon_add_path},
+		{"get_now", slimcommon_get_now},
 		{NULL}
 	};
 	luaL_register (L, "slimta", funcs);
