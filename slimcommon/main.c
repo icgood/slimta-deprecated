@@ -63,6 +63,25 @@ static int load_config (lua_State *L)
 }
 /* }}} */
 
+/* {{{ setup_kernel() */
+static void setup_kernel (lua_State *L)
+{
+	luaopen_ratchet (L);
+
+	/* Set up 'kernel' global by calling ratchet.new(). */
+	lua_getfield (L, -1, "new");
+	lua_call (L, 0, 1);
+	lua_setglobal (L, "kernel");
+
+	/* Set up 'uri' global by calling ratchet.uri.new(). */
+	lua_getfield (L, -1, "uri");
+	lua_getfield (L, -1, "new");
+	lua_call (L, 0, 1);
+	lua_setglobal (L, "uri");
+	lua_pop (L, 1);
+}
+/* }}} */
+
 /* {{{ main() */
 int main (int argc, char *argv[])
 {
@@ -70,10 +89,10 @@ int main (int argc, char *argv[])
 
 	lua_State *L = luaL_newstate ();
 	luaL_openlibs (L);
-	luaopen_ratchet (L);
 	slimcommon_openlibs (L);
 
 	push_argvs_to_global (L, argc, argv);
+	setup_kernel (L);
 	load_config (L);
 
 	lua_settop (L, 0);
