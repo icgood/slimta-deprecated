@@ -75,7 +75,12 @@ smtp_session.on_action = {
 -- }}}
 
 -- {{{ smtp_session:shutdown()
-function smtp_session:shutdown()
+function smtp_session:shutdown(type_, command, code, response)
+    -- Push out results for any remaining messages.
+    if type_ then
+        while self.results:push_result(type_, command, code, response) do end
+    end
+
     self.results:send()
 end
 -- }}}

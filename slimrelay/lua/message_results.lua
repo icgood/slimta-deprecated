@@ -52,8 +52,12 @@ end
 -- {{{ message_results:push_result()
 function message_results:push_result(type, command, code, message)
     local i = self.current
+    if not self.results[i] then
+        return false
+    end
     self:set_result(i, type, command, code, message)
     self.current = i + 1
+    return true
 end
 -- }}}
 
@@ -94,7 +98,7 @@ function message_results:format_results()
     local fail_tmpl = [[        <message queueid="%s">
             <result type="%s">
                 <command>%s</command>
-                <response code="%d">%s</response>
+                <response code="%s">%s</response>
             </result>
         </message>
 ]]
@@ -102,7 +106,7 @@ function message_results:format_results()
     local failrcpt_tmpl = [[
             <recipient type="%s">
                 %s
-                <response code="%d">%s</response>
+                <response code="%s">%s</response>
             </recipient>
 ]]
 
@@ -112,11 +116,11 @@ function message_results:format_results()
             -- The message may have been sent successfully but not necessarily to all recipients.
             local rcptmsgs = ""
             for i, rcpt in ipairs(r.failed_rcpts) do
-                rcptmsgs = failrcpt_tmpl:format(rcpt.type, rcpt.addr, rcpt.code, rcpt.message)
+                rcptmsgs = failrcpt_tmpl:format(rcpt.type, rcpt.addr, tostring(rcpt.code), rcpt.message)
             end
             msgs = msgs .. success_tmpl:format(r.qid, rcptmsgs)
         else
-            msgs = msgs .. fail_tmpl:format(r.qid, r.type, r.command, r.code, r.message)
+            msgs = msgs .. fail_tmpl:format(r.qid, r.type, r.command, tostring(r.code), r.message)
         end
     end
 

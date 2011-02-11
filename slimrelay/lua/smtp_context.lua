@@ -40,8 +40,17 @@ function smtp_context:queue_send(socket, data, more_coming)
 end
 -- }}}
 
--- {{{ smtp_context:run_session()
-function smtp_context:run_session()
+-- {{{ smtp_context:on_error()
+function smtp_context:on_error(err)
+    print("ERROR: "..err)
+    self.session:shutdown("softfail", "[[socket]]", "", err)
+end
+-- }}}
+
+-- {{{ smtp_context:__call()
+function smtp_context:__call()
+    kernel:set_error_handler(smtp_context.on_error, self)
+
     local rec = kernel:resolve_dns(self.host, self.port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
@@ -73,12 +82,7 @@ function smtp_context:run_session()
             until not more_coming
         end
     end
-end
--- }}}
 
--- {{{ smtp_context:__call()
-function smtp_context:__call()
-    self:run_session()
     self.session:shutdown()
 end
 -- }}}
