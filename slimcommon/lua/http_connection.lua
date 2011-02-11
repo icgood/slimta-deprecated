@@ -23,8 +23,22 @@ function http_connection:build_header_string(headers)
 end
 -- }}}
 
+-- {{{ http_connection:parse_header_string()
+function http_connection:parse_header_string(data, start)
+    local headers = {}
+    repeat
+        local name, value
+        name, value, start = data:match("^(.-):%s+(.-)\r\n()", start)
+        if name then
+            headers[name:lower()] = value
+        end
+    until not name
+    return headers, start
+end
+-- }}}
+
 -- {{{ http_connection:build_request_and_headers()
-function http_connection:build_request_and_headers(command, uri, headers, data)
+function http_connection:build_request_and_headers(command, uri, headers)
     local ret = command:upper() .. " " .. uri .. " HTTP/1.0\r\n"
     if headers and #headers then
         ret = ret .. self:build_header_string(headers)
@@ -79,20 +93,13 @@ function http_connection:parse_response(socket)
     socket:close()
 
     local code, reason, lineend = full_reply:match("^HTTP%/%d%.%d (%d%d%d) (.-)\r\n()")
-    local headers = {}
-    local data
+    local headers, data
 
     if not code then
         return
     end
 
-    repeat
-        local name, value
-        name, value, lineend = full_reply:match("^(.-):%s+(.-)\r\n()", lineend)
-        if name then
-            headers[name:lower()] = value
-        end
-    until not name
+    headers, lineend = self:parse_header_string(full_reply, lineend)
 
     lineend = full_reply:match("\r\n\r\n()", lineend)
     if lineend then
