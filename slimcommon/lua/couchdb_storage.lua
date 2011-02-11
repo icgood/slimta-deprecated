@@ -86,63 +86,28 @@ local couchdb_new = {}
 couchdb_new.__index = couchdb_new
 
 -- {{{ couchdb_new.new()
-function couchdb_new.new()
+function couchdb_new.new(data)
     local self = {}
     setmetatable(self, couchdb_new)
 
     self.where = get_conf.string(couchdb_channel)
     self.database = get_conf.string(couchdb_queue)
 
-    self.mailfrom = ""
-    self.rcpttos = {}
-    self.message = ""
+    self.data = data
 
     return self
 end
 -- }}}
 
--- {{{ couchdb_new:set_mailfrom()
-function couchdb_new:set_mailfrom(new_mf)
-    self.mailfrom = new_mf
-end
--- }}}
-
--- {{{ couchdb_new:add_rcptto()
-function couchdb_new:add_rcptto(new_to)
-    table.insert(self.rcpttos, new_to)
-end
--- }}}
-
--- {{{ couchdb_new:set_rcpttos()
-function couchdb_new:set_rcpttos(new_tos)
-    self.rcpttos = new_tos
-end
--- }}}
-
--- {{{ couchdb_new:add_data()
-function couchdb_new:add_data(data)
-    if self.message == "" then
-        self.message = data
-    else
-        self.message = self.message .. data
-    end
-end
--- }}}
-
--- {{{ couchdb_new:get_jsoned_info()
-function couchdb_new:get_jsoned_info()
-    local info = {
-        mailfrom = self.mailfrom,
-        rcpttos = self.rcpttos,
-        attempts = 0,
-    }
-    return json.encode(info)
+-- {{{ couchdb_new:attach_data()
+function couchdb_new:attach_data(data)
+    self.message = data
 end
 -- }}}
 
 -- {{{ couchdb_new:create_message_root()
 function couchdb_new:create_message_root()
-    local info = self:get_jsoned_info()
+    local info = json.encode(self.data)
     local code, reason, headers, data
 
     -- Keep attempting PUT on new UUIDs until don't get a collision.
@@ -263,42 +228,71 @@ local couchdb_get = {}
 couchdb_get.__index = couchdb_get
 
 -- {{{ couchdb_get.new()
-function couchdb_get.new(data)
+function couchdb_get.new()
     local self = {}
     setmetatable(self, couchdb_get)
 
     self.where = get_conf.string(couchdb_channel)
     self.database = get_conf.string(couchdb_queue)
 
-    self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
-
     return self
 end
 -- }}}
 
--- {{{ couchdb_get:__call()
-function couchdb_get:__call()
+-- {{{ couchdb_get:get_upcoming()
+function couchdb_get:get_upcoming(timestamp)
     local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/_design/attempts/_view/upcoming")
     if code ~= 200 then
         error(reason)
     end
     local info = json.decode(data)
 
-    local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id.."/message?rev="..info._rev)
+    local ret = {}
+    for i, row in ipairs(info.rows) do
+        if row.key <= timestamp then
+            table.insert(ret, row.id)
+        else
+            break
+        end
+    end
+    return ret
+end
+-- }}}
+
+-- {{{ couchdb_get:get_contents()
+function couchdb_get:get_contents(data)
+    local id = data:gsub("^%s*", ""):gsub("%s*$", "")
+    local couchttp, code, reason, headers, data
+
+    couchttp = http_connection.new(self.where)
+    code, reason, headers, data = couchttp:query("HEAD", "/"..self.database.."/"..id)
     if code ~= 200 then
         error(reason)
     end
-    local message = data
+    local rev = strip_quotes(headers["etag"])
 
-    local ret = {
-        mailfrom = info.mailfrom,
-        rcpttos = info.rcpttos,
-        message = message,
-    }
+    couchttp = http_connection.new(self.where)
+    code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..id.."/message?rev="..rev)
+    if code ~= 200 then
+        error(reason)
+    end
+    return data
+end
+-- }}}
 
-    return ret
+-- {{{ couchdb_get:__call()
+function couchdb_get:__call(data)
+    local id = data:gsub("^%s*", ""):gsub("%s*$", "")
+
+    local couchttp = http_connection.new(self.where)
+    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..id)
+    if code ~= 200 then
+        error(reason)
+    end
+    local info = json.decode(data)
+
+    return info
 end
 -- }}}
 
@@ -341,7 +335,7 @@ function couchdb_update:put_helper(info)
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query(
         "PUT",
-        "/"..self.database.."/"..id,
+        "/"..self.database.."/"..self.id,
         {["Content-Type"] = "application/json", ["Content-Length"] = #data},
         data
     )

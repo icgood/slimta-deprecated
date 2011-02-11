@@ -92,10 +92,8 @@ function queue_request_context:store_message_and_request_relay(msg, data)
     local which_engine = get_conf.string(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].new
 
-    local storage = engine.new()
-    storage:set_mailfrom(msg.envelope.sender)
-    storage:set_rcpttos(msg.envelope.recipients)
-    storage:add_data(data)
+    local storage = engine.new(msg)
+    storage:attach_data(data)
 
     local relay_req = relay_request_context.new(msg)
 
@@ -111,6 +109,7 @@ function queue_request_context:handle_messages(socket)
                 error("Message count does not match received")
             end
             local message_data = socket:recv()
+            message.attempts = 0
             message.size = #message_data
             self:store_message_and_request_relay(message, message_data)
         end
