@@ -53,7 +53,10 @@ function smtp_context:__call()
 
     local rec = kernel:resolve_dns(self.host, self.port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket:connect(rec.addr)
+    if not socket:connect(rec.addr) then
+        self.session:shutdown("softfail", "[[socket]]", "", "Connection refused.")
+        return
+    end
 
     self.send_size = get_conf.number(socket_send_size, socket) or 102400
 
