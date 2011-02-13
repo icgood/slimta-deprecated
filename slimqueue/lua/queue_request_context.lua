@@ -41,6 +41,16 @@ local tags = {
         list = "messages",
     },
 
+    {"contents", "message", "client", "queue", "slimta",
+        handle = function (info, attrs, data)
+            if attrs.part then
+                info.contents_i = attrs.part
+            else
+                info.contents = data
+            end
+        end
+    },
+
     {"envelope", "message", "client", "queue", "slimta"},
 
     {"sender", "envelope", "message", "client", "queue", "slimta",
@@ -103,12 +113,27 @@ end
 
 -- {{{ queue_request_context:handle_messages()
 function queue_request_context:handle_messages(socket)
+    -- Receive contents from other ZMQ msg parts.
+    local content_parts = {}
+    while socket:is_rcvmore() do
+        local data = socket:recv()
+        table.insert(content_parts, data)
+    end
+
+    -- Finalize message info and find contents.
     for i, client in ipairs(self.msg_info.clients) do
         for j, message in ipairs(client.messages) do
-            if not socket:is_rcvmore() then
-                error("Message count does not match received")
+            local message_data
+            if message.contents_i then
+                message_data = content_parts[message.contents_i]
+            else
+                message_data = message.contents
             end
-            local message_data = socket:recv()
+
+            if not message_data then
+                error("Message contents missing.")
+            end
+
             message.attempts = 0
             message.size = #message_data
             self:store_message_and_request_relay(message, message_data)
