@@ -8,10 +8,13 @@
 
 #include <ratchet.h>
 
+#include "misc.h"
 #include "slimcommon.h"
 
 extern const char *DEFAULT_CONFIG;
 extern const char *CONFIG_ENVVAR;
+extern const char *DEFAULT_PATH;
+extern const char *PATH_ENVVAR;
 extern const char *entry_script;
 extern const char *global_tables[];
 
@@ -63,6 +66,29 @@ static int load_config (lua_State *L)
 }
 /* }}} */
 
+/* {{{ setup_path() */
+static int setup_path (lua_State *L)
+{
+	/* Get path from env or default. */
+	const char *path = DEFAULT_PATH;
+	lua_getglobal (L, "os");
+	lua_getfield (L, -1, "getenv");
+	lua_pushstring (L, PATH_ENVVAR);
+	lua_call (L, 1, 1); 
+	if (lua_isstring (L, -1))
+		path = lua_tostring (L, -1);
+	lua_pop (L, 2);
+
+	/* Set path into package.path. */
+	lua_getglobal (L, "package");
+	lua_pushstring (L, path);
+	lua_setfield (L, -2, "path");
+	lua_pop (L, 1);
+
+	return 0;
+}
+/* }}} */
+
 /* {{{ setup_kernel() */
 static void setup_kernel (lua_State *L)
 {
@@ -93,6 +119,7 @@ int main (int argc, char *argv[])
 
 	push_argvs_to_global (L, argc, argv);
 	setup_kernel (L);
+	setup_path (L);
 	load_config (L);
 
 	lua_settop (L, 0);
