@@ -54,7 +54,7 @@ function smtp_context:__call()
     local rec = kernel:resolve_dns(self.host, self.port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     if not socket:connect(rec.addr) then
-        self.session:shutdown("softfail", "[[socket]]", "", "Connection refused.")
+        self.session:shutdown("softfail", "[[socket]]", "", "Connection failed.")
         return
     end
 
