@@ -19,7 +19,9 @@ end
 function http_server:build_header_string(headers)
     local ret = ""
     for name, value in pairs(headers) do
-        ret = ret .. name .. ": " .. tostring(value) .. "\r\n"
+        for i, each in ipairs(value) do
+            ret = ret .. name .. ": " .. tostring(each) .. "\r\n"
+        end
     end
     return ret
 end
@@ -32,7 +34,12 @@ function http_server:parse_header_string(data, start)
         local name, value
         name, value, start = data:match("^(.-):%s+(.-)\r\n()", start)
         if name then
-            headers[name:lower()] = value
+            local key = name:lower()
+            if not headers[key] then
+                headers[key] = {value}
+            else
+                table.insert(headers[key], value)
+            end
         end
     until not name
     return headers, start
@@ -117,7 +124,7 @@ function http_server:parse_request_so_far(so_far, unparsed_i, request)
     end
 
     if not request.data then
-        local content_len = tonumber(request.headers['content-length'])
+        local content_len = tonumber(request.headers['content-length'][1])
         if not content_len then
             return true
         end
@@ -148,7 +155,6 @@ function http_server:get_request()
             break
         end
     end
-    slimta.stackdump(request)
 
     return request.command, request.uri, request.headers, request.data
 end

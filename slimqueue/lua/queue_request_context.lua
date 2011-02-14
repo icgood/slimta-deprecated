@@ -39,16 +39,21 @@ local tags = {
 
     {"message", "client", "queue", "slimta",
         list = "messages",
+        handle = function (info, attrs, data)
+            if attrs.id then
+                info.response_id = attrs.id
+            end
+        end,
     },
 
     {"contents", "message", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             if attrs.part then
-                info.contents_i = attrs.part
+                info.contents_i = tonumber(attrs.part)
             else
                 info.contents = data
             end
-        end
+        end,
     },
 
     {"envelope", "message", "client", "queue", "slimta"},
@@ -75,13 +80,6 @@ local tags = {
 }
 -- }}}
 
--- {{{ store_then_request_relay()
-local function store_then_request_relay(storage, relay_req)
-    id = storage()
-    relay_req(id)
-end
--- }}}
-
 local queue_request_context = {}
 queue_request_context.__index = queue_request_context
 
@@ -97,8 +95,16 @@ function queue_request_context.new(endpoint)
 end
 -- }}}
 
--- {{{ queue_request_context:store_message_and_request_relay()
-function queue_request_context:store_message_and_request_relay(msg, data)
+-- {{{ queue_request_context:chain_store_then_request_relay_calls()
+function queue_request_context:chain_store_then_request_relay_calls(message, storage, relay_req)
+    id = storage()
+    message.queue_id = id
+    relay_req(id)
+end
+-- }}}
+
+-- {{{ queue_request_context:store_and_request_relay()
+function queue_request_context:store_and_request_relay(msg, data)
     local which_engine = get_conf.string(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].new
 
@@ -107,7 +113,8 @@ function queue_request_context:store_message_and_request_relay(msg, data)
 
     local relay_req = relay_request_context.new(msg)
 
-    kernel:attach(store_then_request_relay, storage, relay_req)
+    local chain_calls = self.chain_store_then_request_relay_calls
+    return kernel:attach(chain_calls, self, msg, storage, relay_req)
 end
 -- }}}
 
@@ -121,8 +128,11 @@ function queue_request_context:handle_messages(socket)
     end
 
     -- Finalize message info and find contents.
+    local msg_i = 0
     for i, client in ipairs(self.msg_info.clients) do
         for j, message in ipairs(client.messages) do
+            msg_i = msg_i + 1
+
             local message_data
             if message.contents_i then
                 message_data = content_parts[message.contents_i]
@@ -136,9 +146,40 @@ function queue_request_context:handle_messages(socket)
 
             message.attempts = 0
             message.size = #message_data
-            self:store_message_and_request_relay(message, message_data)
+
+            local children = {}
+            local thread = self:store_and_request_relay(message, message_data)
+            table.insert(children, thread)
+            kernel:wait_all(children)
+
+            message.queue_id = id
+            if not message.response_id then
+                message.response_id = msg_i
+            end
         end
     end
+end
+-- }}}
+
+-- {{{ queue_request_context:build_response()
+function queue_request_context:build_response()
+    local tmpl = [[<slimta><queue>
+ <results>
+%s </results>
+</queue></slimta>
+]]
+
+    local msg_tmpl = [[  <message id="%s">%s</message>
+]]
+
+    local msgs = ""
+    for i, client in ipairs(self.msg_info.clients) do
+        for j, msg in ipairs(client.messages) do
+            msgs = msgs .. msg_tmpl:format(msg.response_id, tostring(msg.queue_id))
+        end
+    end
+
+    return tmpl:format(msgs)
 end
 -- }}}
 
@@ -154,7 +195,8 @@ function queue_request_context:__call()
         local data = socket:recv()
         self.msg_info = self.parser:parse_xml(data)
         self:handle_messages(socket)
-        socket:send("yay!")
+        local response = self:build_response()
+        socket:send(response)
     end
 end
 -- }}}

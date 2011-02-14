@@ -81,11 +81,12 @@ end
 
 -- {{{ relay_results_context:try_again_later()
 function relay_results_context:try_again_later(queue_id)
-    local which_engine = get_conf.string(use_storage_engine, msg, data)
-    local engine = storage_engines[which_engine].update
-
-    local storage = engine.new(queue_id)
-    kernel:attach(storage.set_next_attempt, storage)
+    return self:delete_message(queue_id)
+--    local which_engine = get_conf.string(use_storage_engine, msg, data)
+--    local engine = storage_engines[which_engine].update
+--
+--    local storage = engine.new(queue_id)
+--    kernel:attach(storage.set_next_attempt, storage)
 end
 -- }}}
 

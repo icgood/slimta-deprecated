@@ -83,7 +83,10 @@ function xml_wrapper:parse_xml(data)
     self.results = {}
 
     local parser = slimta.xml.new(self, self.start_tag, self.end_tag, self.tag_data)
-    parser:parse(data)
+    local success, err = parser:parse(data)
+    if not success then
+        error(err)
+    end
 
     return self.results
 end

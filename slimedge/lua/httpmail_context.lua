@@ -1,4 +1,6 @@
+require "json"
 local http_server = require "http_server"
+local queue_request_context = require "queue_request_context"
 
 local httpmail_context = {}
 httpmail_context.__index = httpmail_context
@@ -11,6 +13,65 @@ function httpmail_context.new(where)
     self.host, self.port = uri(where)
 
     return self
+end
+-- }}}
+
+-- {{{ httpmail_context:POST()
+function httpmail_context:POST(uri, headers, data)
+    if uri ~= "/email" and uri ~= "/email/" then
+        return {
+            code = 404,
+            message = "Not Found",
+        }
+    end
+
+    if headers['content-type'][1]:lower() ~= 'message/rfc822' then
+        return {
+            code = 406,
+            message = "Not Acceptable",
+            headers = {["Accept"] = {"message/rfc822"}},
+        }
+    end
+
+    local message = {
+        sender = headers['x-sender'][1],
+        recipients = headers['x-recipient'],
+        contents = data,
+    }
+
+    if not message.sender or not message.recipients or not #message.recipients then
+        return {
+            code = 400,
+            message = "Missing X-Sender or X-Recipient header",
+        }
+    end
+
+    local queue_up = queue_request_context.new()
+    local i = queue_up:add_contents(message.contents)
+    queue_up:add_message (message, i)
+
+    local results = queue_up()
+
+    local first_msg = results.messages[1]
+    if first_msg.queue_id then
+        return {
+            code = 202,
+            message = "Queued Successfully",
+            headers = {["Location"] = {"/email/"..first_msg.queue_id}},
+        }
+    else
+        return {
+            code = 500,
+            message = "Message Not Queued",
+            data = json.encode(first_msg.error),
+        }
+    end
+end
+-- }}}
+
+-- {{{ httpmail_context:GET()
+function httpmail_context:GET(uri, headers, data)
+    return {code = 503, message = "Service Unavailable"}
 end
 -- }}}
 

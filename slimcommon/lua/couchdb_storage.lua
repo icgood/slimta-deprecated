@@ -246,7 +246,10 @@ function couchdb_get:get_upcoming(timestamp)
     if code ~= 200 then
         error(reason)
     end
-    local info = json.decode(data)
+    local success, info = pcall(json.decode, data)
+    if not success then
+        info = {rows = {}}
+    end
 
     local ret = {}
     for i, row in ipairs(info.rows) do
