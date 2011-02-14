@@ -101,6 +101,10 @@ function http_server:parse_request_so_far(so_far, unparsed_i, request)
         if i then
             unparsed_i = i
         else
+            if so_far:match("^.-\r\n", unparsed_i) then
+                self.socket:close()
+                error("Malformed HTTP session.")
+            end
             return false, unparsed_i
         end
     end
