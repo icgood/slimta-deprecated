@@ -57,7 +57,7 @@ function httpmail_context:POST(uri, headers, data)
         return {
             code = 202,
             message = "Queued Successfully",
-            headers = {["Location"] = {"/email/"..first_msg.queue_id}},
+            headers = {["X-Queue-Id"] = {first_msg.queue_id}},
         }
     else
         return {
