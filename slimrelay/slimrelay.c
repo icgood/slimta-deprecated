@@ -9,8 +9,11 @@ const char *global_tables[] = {
 
 const char *entry_script = "slimrelay";
 
-const char *DEFAULT_CONFIG = "/etc/slimta/slimrelay.conf";
-const char *CONFIG_ENVVAR = "SLIMRELAY_CONFIG";
+const char *DEFAULT_CONFIG = "/etc/slimta/slimta.conf";
+const char *CONFIG_ENVVAR = "SLIMTA_CONFIG";
+
+const char *DEFAULT_MY_CONFIG = "/etc/slimta/slimrelay.conf";
+const char *MY_CONFIG_ENVVAR = "SLIMRELAY_CONFIG";
 
 const char *DEFAULT_PATH = ";;/var/lib/slimta/slimcommon/lua/?.lua;/var/lib/slimta/slimrelay/lua/?.lua";
 const char *PATH_ENVVAR = "SLIMRELAY_PATH";

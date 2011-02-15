@@ -57,6 +57,8 @@ AC_CONFIG_FILES([Makefile
 		 etc/Makefile
 		 slimcommon/Makefile
 		 slimcommon/lua/Makefile
+		 slimaster/Makefile
+		 slimaster/lua/Makefile
 		 slimrelay/Makefile
 		 slimrelay/lua/Makefile
 		 slimqueue/Makefile

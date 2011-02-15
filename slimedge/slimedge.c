@@ -8,8 +8,11 @@ const char *global_tables[] = {
 
 const char *entry_script = "slimedge";
 
-const char *DEFAULT_CONFIG = "/etc/slimta/slimedge.conf";
-const char *CONFIG_ENVVAR = "SLIMEDGE_CONFIG";
+const char *DEFAULT_CONFIG = "/etc/slimta/slimta.conf";
+const char *CONFIG_ENVVAR = "SLIMTA_CONFIG";
+
+const char *DEFAULT_MY_CONFIG = "/etc/slimta/slimedge.conf";
+const char *MY_CONFIG_ENVVAR = "SLIMEDGE_CONFIG";
 
 const char *DEFAULT_PATH = ";;/var/lib/slimta/slimcommon/lua/?.lua;/var/lib/slimta/slimedge/lua/?.lua";
 const char *PATH_ENVVAR = "SLIMEDGE_PATH";

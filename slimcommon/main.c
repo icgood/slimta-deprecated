@@ -13,6 +13,8 @@
 
 extern const char *DEFAULT_CONFIG;
 extern const char *CONFIG_ENVVAR;
+extern const char *DEFAULT_MY_CONFIG;
+extern const char *MY_CONFIG_ENVVAR;
 extern const char *DEFAULT_PATH;
 extern const char *PATH_ENVVAR;
 extern const char *entry_script;
@@ -37,19 +39,22 @@ static void push_argvs_to_global (lua_State *L, int argc, char **argv)
 /* }}} */
 
 /* {{{ load_config() */
-static int load_config (lua_State *L)
+static int load_config (lua_State *L, const char *def, const char *envvar)
 {
 	int i;
 
 	/* Get config filename from env or default. */
-	const char *filename = DEFAULT_CONFIG;
-	lua_getglobal (L, "os");
-	lua_getfield (L, -1, "getenv");
-	lua_pushstring (L, CONFIG_ENVVAR);
-	lua_call (L, 1, 1); 
-	if (lua_isstring (L, -1))
-		filename = lua_tostring (L, -1);
-	lua_pop (L, 2);
+	const char *filename = def;
+	if (envvar)
+	{
+		lua_getglobal (L, "os");
+		lua_getfield (L, -1, "getenv");
+		lua_pushstring (L, envvar);
+		lua_call (L, 1, 1);
+		if (lua_isstring (L, -1))
+			filename = lua_tostring (L, -1);
+		lua_pop (L, 2);
+	}
 
 	/* Set up globals with given tables pre-created. */
 	for (i=0; global_tables[i] != NULL; i++)
@@ -59,7 +64,7 @@ static int load_config (lua_State *L)
 	}
 
 	/* Load the config file as a Lua thread, set its environment, and call it. */
-	if (luaL_dofile (L, filename) != 0)
+	if (filename && luaL_dofile (L, filename) != 0)
 		return lua_error (L);
 
 	return 0;
@@ -120,7 +125,8 @@ int main (int argc, char *argv[])
 	push_argvs_to_global (L, argc, argv);
 	setup_kernel (L);
 	setup_path (L);
-	load_config (L);
+	load_config (L, DEFAULT_CONFIG, CONFIG_ENVVAR);
+	load_config (L, DEFAULT_MY_CONFIG, MY_CONFIG_ENVVAR);
 
 	lua_settop (L, 0);
 
