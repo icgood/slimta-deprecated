@@ -168,7 +168,10 @@ end
 function http_server:__call()
     local command, uri, headers, data = self:get_request()
 
-    local cmd_handler = self.handlers[command:upper()]
+    local cmd_handler
+    if command then
+        cmd_handler = self.handlers[command:upper()]
+    end
     local response = {code = 501, message = "Not Implemented"}
     if cmd_handler then
         response = cmd_handler(self.handlers, uri, headers, data)
