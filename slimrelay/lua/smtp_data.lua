@@ -12,7 +12,7 @@ function smtp_data.new(storage_type, id)
     end
     self.id = id
     self.engine = engine.get.new()
-    self.iter_size = get_conf.number(smtp_data_iterate_size or 1024)
+    self.iter_size = confnumber(smtp_data_iterate_size or 1024)
 
     return self
 end

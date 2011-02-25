@@ -1,9 +1,6 @@
 local httpmail_context = require "httpmail_context"
 
-local httpmail_channel_str = get_conf.string(httpmail_channel)
-
-uri:register("tcp", ratchet.socket.parse_tcp_uri)
-uri:register("zmq", ratchet.zmqsocket.parse_uri)
+local httpmail_channel_str = confstring(httpmail_channel)
 
 local httpmail = httpmail_context.new(httpmail_channel_str)
 

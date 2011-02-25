@@ -42,7 +42,7 @@ function queue_request_context.new()
     local self = {}
     setmetatable(self, queue_request_context)
 
-    self.endpoint = get_conf.string(queue_request_channel)
+    self.endpoint = confstring(queue_request_channel)
     self.parser = xml_wrapper.new(tags)
     self.contents = {}
     self.messages = {}
@@ -97,9 +97,9 @@ end
 
 -- {{{ queue_request_context:__call()
 function queue_request_context:__call()
-    local t, e = uri(self.endpoint)
-    local socket = ratchet.zmqsocket.new(t)
-    socket:connect(e)
+    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:connect(rec.endpoint)
 
     local msg = self:build_message()
     local num_contents = #self.contents

@@ -1,12 +1,9 @@
 local request_context = require "request_context"
 local results_context = require "results_context"
 
-local results_channel_str = get_conf.string(results_channel)
-local request_channel_str = get_conf.string(request_channel)
-local master_timeout = get_conf.number(master_timeout) or 10.0
-
-uri:register("tcp", ratchet.socket.parse_tcp_uri)
-uri:register("zmq", ratchet.zmqsocket.parse_uri)
+local results_channel_str = confstring(results_channel)
+local request_channel_str = confstring(request_channel)
+local master_timeout = confnumber(master_timeout) or 10.0
 
 local results_channel = results_context.new(results_channel_str)
 local request_channel = request_context.new(request_channel_str, results_channel)

@@ -29,8 +29,8 @@ function couchdb_uuids.new()
     local self = {}
     setmetatable(self, couchdb_uuids)
 
-    self.count = get_conf.number(couchdb_uuids_at_a_time) or 100
-    self.where = get_conf.string(couchdb_channel)
+    self.count = confnumber(couchdb_uuids_at_a_time) or 100
+    self.where = confstring(couchdb_channel)
     self.uuids = {}
 
     return self
@@ -90,8 +90,8 @@ function couchdb_new.new(data)
     local self = {}
     setmetatable(self, couchdb_new)
 
-    self.where = get_conf.string(couchdb_channel)
-    self.database = get_conf.string(couchdb_queue)
+    self.where = confstring(couchdb_channel)
+    self.database = confstring(couchdb_queue)
 
     self.data = data
 
@@ -195,8 +195,8 @@ function couchdb_list.new()
     local self = {}
     setmetatable(self, couchdb_list)
 
-    self.where = get_conf.string(couchdb_channel)
-    self.database = get_conf.string(couchdb_queue)
+    self.where = confstring(couchdb_channel)
+    self.database = confstring(couchdb_queue)
 
     return self
 end
@@ -232,8 +232,8 @@ function couchdb_get.new()
     local self = {}
     setmetatable(self, couchdb_get)
 
-    self.where = get_conf.string(couchdb_channel)
-    self.database = get_conf.string(couchdb_queue)
+    self.where = confstring(couchdb_channel)
+    self.database = confstring(couchdb_queue)
 
     return self
 end
@@ -310,8 +310,8 @@ function couchdb_update.new(data)
     local self = {}
     setmetatable(self, couchdb_update)
 
-    self.where = get_conf.string(couchdb_channel)
-    self.database = get_conf.string(couchdb_queue)
+    self.where = confstring(couchdb_channel)
+    self.database = confstring(couchdb_queue)
 
     self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
 
@@ -356,7 +356,7 @@ function couchdb_update:set_next_attempt()
 
         info.attempts = info.attempts + 1
         local next_attempt_getter = next_queue_attempt_timestamp or default_next_attempt_timestamp
-        info.next_attempt = get_conf.number(next_attempt_getter, info.attempts, info)
+        info.next_attempt = confnumber(next_attempt_getter, info.attempts, info)
 
         code, reason = self:put_helper(info)
     until code ~= 409
@@ -398,8 +398,8 @@ function couchdb_delete.new(data)
     local self = {}
     setmetatable(self, couchdb_delete)
 
-    self.where = get_conf.string(couchdb_channel)
-    self.database = get_conf.string(couchdb_queue)
+    self.where = confstring(couchdb_channel)
+    self.database = confstring(couchdb_queue)
 
     self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
 

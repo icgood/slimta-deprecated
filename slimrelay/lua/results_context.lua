@@ -23,12 +23,12 @@ end
 function results_context:__call()
     -- Save the current thread for unpausing by a method called
     -- from another thread. */
-    self.thread = coroutine.running()
+    self.thread = kernel:running_thread()
 
     -- Set up the ZMQ connector.
-    local type_, endpoint = uri(self.endpoint)
-    local socket = ratchet.zmqsocket.new(type_)
-    socket:connect(endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:connect(rec.endpoint)
 
     -- Wait for messages to send.
     while true do

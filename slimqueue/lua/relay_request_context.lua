@@ -7,7 +7,7 @@ function relay_request_context.new(message)
     local self = {}
     setmetatable(self, relay_request_context)
 
-    self.endpoint = get_conf.string(relay_request_channel)
+    self.endpoint = confstring(relay_request_channel)
     self.message = message
 
     return self
@@ -50,9 +50,9 @@ end
 
 -- {{{ relay_request_context:__call()
 function relay_request_context:__call(data)
-    local t, e = uri(self.endpoint)
-    local socket = ratchet.zmqsocket.new(t)
-    socket:connect(e)
+    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:connect(rec.endpoint)
 
     local msg = self:build_message(data)
 

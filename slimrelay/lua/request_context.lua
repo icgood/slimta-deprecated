@@ -107,9 +107,9 @@ end
 -- {{{ request_context:__call()
 function request_context:__call()
     -- Set up the ZMQ listener.
-    local type_, endpoint = uri(self.endpoint)
-    local socket = ratchet.zmqsocket.new(type_)
-    socket:bind(endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:bind(rec.endpoint)
 
     -- Gather all results messages.
     while true do

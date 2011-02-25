@@ -71,7 +71,7 @@ end
 
 -- {{{ relay_results_context:delete_message()
 function relay_results_context:delete_message(queue_id)
-    local which_engine = get_conf.string(use_storage_engine, msg, data)
+    local which_engine = confstring(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].delete
 
     local storage = engine.new(queue_id)
@@ -81,7 +81,7 @@ end
 
 -- {{{ relay_results_context:try_again_later()
 function relay_results_context:try_again_later(queue_id)
-    local which_engine = get_conf.string(use_storage_engine, msg, data)
+    local which_engine = confstring(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].update
 
     local storage = engine.new(queue_id)
@@ -97,9 +97,9 @@ end
 -- {{{ relay_results_context:__call()
 function relay_results_context:__call()
     -- Set up the ZMQ listener.
-    local type_, endpoint = uri(self.endpoint)
-    local socket = ratchet.zmqsocket.new(type_)
-    socket:bind(endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:bind(rec.endpoint)
 
     -- Gather all results messages.
     while true do

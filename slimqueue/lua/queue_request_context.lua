@@ -105,7 +105,7 @@ end
 
 -- {{{ queue_request_context:store_and_request_relay()
 function queue_request_context:store_and_request_relay(msg, data)
-    local which_engine = get_conf.string(use_storage_engine, msg, data)
+    local which_engine = confstring(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].new
 
     local storage = engine.new(msg)
@@ -186,9 +186,9 @@ end
 -- {{{ queue_request_context:__call()
 function queue_request_context:__call()
     -- Set up the ZMQ listener.
-    local type_, endpoint = uri(self.endpoint)
-    local socket = ratchet.zmqsocket.new(type_)
-    socket:bind(endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:bind(rec.endpoint)
 
     -- Gather all results messages.
     while true do

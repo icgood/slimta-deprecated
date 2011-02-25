@@ -70,6 +70,21 @@ static int slimcommon_number_or_func (lua_State *L)
 }
 /* }}} */
 
+/* {{{ slimcommon_table_or_func() */
+static int slimcommon_table_or_func (lua_State *L)
+{
+	/* Call function with any args before attempting number conversion. */
+	if (lua_isfunction (L, 1))
+	{
+		int args = lua_gettop (L) - 1;
+		lua_call (L, args, 1);
+	}
+	lua_settop (L, 1);
+
+	return 1;
+}
+/* }}} */
+
 /* {{{ slimcommon_uname_index() */
 static int slimcommon_uname_index (lua_State *L)
 {
@@ -208,12 +223,15 @@ static int slimcommon_mkstemp (lua_State *L)
 /* {{{ slimcommon_openlibs () */
 int slimcommon_openlibs (lua_State *L)
 {
-	const luaL_Reg get_conf_funcs[] = {
-		{"string", slimcommon_string_or_func},
-		{"number", slimcommon_number_or_func},
+	const luaL_Reg conf_funcs[] = {
+		{"confstring", slimcommon_string_or_func},
+		{"confnumber", slimcommon_number_or_func},
+		{"conftable", slimcommon_table_or_func},
 		{NULL}
 	};
-	luaL_register (L, "get_conf", get_conf_funcs);
+	lua_pushvalue (L, LUA_GLOBALSINDEX);
+	luaL_register (L, NULL, conf_funcs);
+	lua_pop (L, 1);
 
 	const luaL_Reg funcs[] = {
 		{"stackdump", slimcommon_stackdump},

@@ -12,7 +12,7 @@ function smtp_session.new(data, results_channel)
     self.messages = data.messages
     self.security = data.security
 
-    self.ehlo_as = get_conf.string(hostname, self) or os.getenv("HOSTNAME")
+    self.ehlo_as = confstring(hostname, self) or os.getenv("HOSTNAME")
     self.extensions = {}
 
     self:save_each_response_function()

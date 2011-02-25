@@ -5,7 +5,7 @@ attempt_timer_context.__index = attempt_timer_context
 
 -- {{{ get_message_data_and_send_relay_request()
 local function get_message_data_and_send_relay_request(id)
-    local which_engine = get_conf.string(use_storage_engine, msg, data)
+    local which_engine = confstring(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].get
     local storage = engine.new()
 
@@ -21,7 +21,7 @@ function attempt_timer_context.new()
     local self = {}
     setmetatable(self, attempt_timer_context)
 
-    self.interval = get_conf.number(queue_attempt_poll_interval) or 60
+    self.interval = confnumber(queue_attempt_poll_interval) or 60
 
     return self
 end
@@ -29,7 +29,7 @@ end
 
 -- {{{ attempt_timer_context:get_deliverables()
 function attempt_timer_context:get_deliverables()
-    local which_engine = get_conf.string(use_storage_engine, msg, data)
+    local which_engine = confstring(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].get
     local storage = engine.new()
 

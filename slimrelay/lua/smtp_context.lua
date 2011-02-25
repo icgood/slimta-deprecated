@@ -51,14 +51,14 @@ end
 function smtp_context:__call()
     kernel:set_error_handler(smtp_context.on_error, self)
 
-    local rec = kernel:resolve_dns(self.host, self.port)
+    local rec = ratchet.socket.prepare_tcp(self.host, self.port, dns, conftable(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     if not socket:connect(rec.addr) then
         self.session:shutdown("softfail", "[[socket]]", "", "Connection failed.")
         return
     end
 
-    self.send_size = get_conf.number(socket_send_size, socket) or 102400
+    self.send_size = confnumber(socket_send_size, socket) or 102400
 
     while not self.session.is_finished do
         if self.session:is_waiting() then

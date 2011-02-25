@@ -10,7 +10,7 @@ function httpmail_context.new(where)
     local self = {}
     setmetatable(self, httpmail_context)
 
-    self.host, self.port = uri(where)
+    self.where = where
 
     return self
 end
@@ -25,7 +25,8 @@ function httpmail_context:POST(uri, headers, data)
         }
     end
 
-    if headers['content-type'][1]:lower() ~= 'message/rfc822' then
+    local expected_type = 'message/rfc822'
+    if headers['content-type'][1]:lower():sub(1, #expected_type) ~= expected_type then
         return {
             code = 406,
             message = "Not Acceptable",
@@ -48,7 +49,7 @@ function httpmail_context:POST(uri, headers, data)
 
     local queue_up = queue_request_context.new()
     local i = queue_up:add_contents(message.contents)
-    queue_up:add_message (message, i)
+    queue_up:add_message(message, i)
 
     local results = queue_up()
 
@@ -77,7 +78,7 @@ end
 
 -- {{{ httpmail_context:__call()
 function httpmail_context:__call()
-    local rec = kernel:resolve_dns(self.host, self.port)
+    local rec = ratchet.socket.prepare_uri(self.where, dns, conftable(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)

@@ -104,11 +104,12 @@ static void setup_kernel (lua_State *L)
 	lua_call (L, 0, 1);
 	lua_setglobal (L, "kernel");
 
-	/* Set up 'uri' global by calling ratchet.uri.new(). */
-	lua_getfield (L, -1, "uri");
+	/* Set up 'dns' global by calling ratchet.dns.new(). */
+	lua_getfield (L, -1, "dns");
 	lua_getfield (L, -1, "new");
-	lua_call (L, 0, 1);
-	lua_setglobal (L, "uri");
+	lua_getglobal (L, "kernel");
+	lua_call (L, 1, 1);
+	lua_setglobal (L, "dns");
 	lua_pop (L, 1);
 }
 /* }}} */

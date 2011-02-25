@@ -9,7 +9,7 @@ function http_server.new(socket, handlers)
 
     self.socket = socket
     self.handlers = handlers
-    self.send_size = get_conf.number(socket_send_size or 102400, socket)
+    self.send_size = confnumber(socket_send_size or 102400, socket)
 
     return self
 end
@@ -96,8 +96,8 @@ function http_server:parse_request_so_far(so_far, unparsed_i, request)
     local i
 
     if not request.command or not request.uri then
-        local cmd_pattern = "^(.-)%s+(.-)%s+[hH][tT][tT][pP]%/[%d%.]+\r\n()"
-        request.command, request.uri, i = so_far:match(cmd_pattern, unparsed_i)
+        local cmd_pattern = "^(.-)%s+(.-)%s+[hH][tT][tT][pP]%/([%d%.]+)\r\n()"
+        request.command, request.uri, request.http_ver, i = so_far:match(cmd_pattern, unparsed_i)
         if i then
             unparsed_i = i
         else
@@ -160,21 +160,26 @@ function http_server:get_request()
         end
     end
 
-    return request.command, request.uri, request.headers, request.data
+    --return request.command, request.uri, request.headers, request.data
+    return request
 end
 -- }}}
 
 -- {{{ http_server:__call()
 function http_server:__call()
-    local command, uri, headers, data = self:get_request()
+    --local command, uri, headers, data = self:get_request()
+    local req = self:get_request()
 
     local cmd_handler
-    if command then
-        cmd_handler = self.handlers[command:upper()]
+    if req.command then
+        cmd_handler = self.handlers[req.command:upper()]
     end
     local response = {code = 501, message = "Not Implemented"}
+    if req.http_ver ~= "1.0" then
+        response = {code = 505, message = "Version Not Supported"}
+    end
     if cmd_handler then
-        response = cmd_handler(self.handlers, uri, headers, data)
+        response = cmd_handler(self.handlers, req.uri, req.headers, req.data)
     end
 
     self:send_response(response)
