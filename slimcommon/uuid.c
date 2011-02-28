@@ -42,7 +42,7 @@ static int myuuid_generate (lua_State *L)
 	uuid_t uuid;
 	char uuid_s[UUID_STRING_BUFFER_SIZE];
 	uuid_generate (uuid);
-	uuid_unparse (uuid, uuid_s);
+	uuid_unparse_lower (uuid, uuid_s);
 	lua_pushstring (L, uuid_s);
 	
 	return 1;
