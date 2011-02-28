@@ -34,7 +34,11 @@ local function iterator_func(invariant, i)
         -- We are done iterating over the message, but need to return
         -- the ".\r\n" to end DATA command.
         invariant.done = true
-        return i, ".\r\n"
+        local end_marker = ".\r\n"
+        if #last_part > 0 and last_part ~= "\r\n" then
+            end_marker = "\r\n" .. end_marker
+        end
+        return i, end_marker
     end
 
     piece = last_part .. piece
