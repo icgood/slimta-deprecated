@@ -20,28 +20,39 @@ function attempt_timer_context:get_deliverable(which_engine)
     local storage = engine.new()
 
     local now = slimta.get_now()
-    return storage(now)
+    local ret = storage(now)
+    if ret[1] then
+        return ret
+    end
 end
 -- }}}
 
--- {{{ attempt_timer_context:get_message_data_and_send_relay_request()
-function attempt_timer_context:get_message_data_and_send_relay_request(which_engine, id)
-    local engine = storage_engines[which_engine].get_info
-    local storage = engine.new()
-
-    local info = storage(id)
-    info.storage = {engine = which_engine}
-
-    local relay_req = relay_request_context.new(info)
-    relay_req(id)
+-- {{{ attempt_timer_context:get_and_request_message()
+function attempt_timer_context:get_and_request_message(storage, id, which_engine, relay_req)
+    info = storage(id)
+    info.storage = {
+        engine = which_engine,
+        data = id,
+    }
+    relay_req:add_message(info)
 end
 -- }}}
 
 -- {{{ attempt_timer_context:send_relay_requests()
 function attempt_timer_context:send_relay_requests(which_engine, ids)
+    local engine = storage_engines[which_engine].get_info
+    local storage = engine.new()
+
+    local relay_req = relay_request_context.new()
+
+    local children = {}
     for i, id in ipairs(ids) do
-        kernel:attach(self.get_message_data_and_send_relay_request, self, which_engine, id)
+        local thread = kernel:attach(self.get_and_request_message, self, storage, id, which_engine, relay_req)
+        table.insert(children, thread)
     end
+    kernel:wait_all(children)
+
+    relay_req()
 end
 -- }}}
 
@@ -54,7 +65,9 @@ function attempt_timer_context:__call(data)
         local fires = tfd:read()
         for engine, v in pairs(storage_engines) do
             local ids = self:get_deliverable(engine)
-            self:send_relay_requests(engine, ids)
+            if ids then
+                self:send_relay_requests(engine, ids)
+            end
         end
     end
 end

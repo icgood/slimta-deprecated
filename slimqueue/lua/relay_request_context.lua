@@ -8,17 +8,44 @@ function relay_request_context.new(message)
     setmetatable(self, relay_request_context)
 
     self.endpoint = CONF(relay_request_channel)
-    self.message = message
+    self.nexthops = {}
 
     return self
 end
 -- }}}
 
--- {{{ relay_request_context:get_nexthop()
-function relay_request_context:get_nexthop()
-    local ret = {}
+-- {{{ relay_request_context:add_message()
+function relay_request_context:add_message(message)
+    local nexthop_info = self:get_nexthop(message)
 
-    ret.host, ret.port, ret.protocol = CONF(message_nexthop, self.message)
+    for i, hop in ipairs(self.nexthops) do
+        local equal = true
+        for j, v in pairs(nexthop_info) do
+            if hop[j] ~= v then
+                equal = false
+            end
+        end
+
+        -- We found a nexthop that matches all criteria.
+        if equal then
+            table.insert(hop.messages, message)
+            return
+        end
+    end
+
+    -- We need to make a new nexthop for this message.
+    local new_hop = nexthop_info
+    new_hop.messages = {message}
+    table.insert(self.nexthops, new_hop)
+end
+-- }}}
+
+-- {{{ relay_request_context:get_nexthop()
+function relay_request_context:get_nexthop(message)
+    local ret = CONF(message_nexthop, message)
+    if not ret.host then
+        error("Could not calculate nexthop for message.")
+    end
     if not ret.port then
         ret.port = 25
     end
@@ -31,58 +58,68 @@ end
 -- }}}
 
 -- {{{ relay_request_context:build_message()
-function relay_request_context:build_message(data, nexthop)
-    local msg_tmpl = [[<slimta><deliver>
- <nexthop>
+function relay_request_context:build_message()
+    local root_tmpl = [[<slimta><deliver>
+%s</deliver></slimta>
+]]
+
+    local nexthop_tmpl = [[ <nexthop>
   <protocol>%s</protocol>
   <destination>%s</destination>
   <port>%s</port>
   <security></security>
-  <message queueid="%s">
+%s </nexthop>
+]]
+
+    local msg_tmpl = [[  <message>
    <envelope>
     <sender>%s</sender>
 %s   </envelope>
    <storage engine="%s" size="%d">%s</storage>
   </message>
- </nexthop>
-</deliver></slimta>
 ]]
 
     local rcpt_tmpl = [[    <recipient>%s</recipient>
 ]]
 
-    local rcpts = ""
-    for i, rcpt in ipairs(self.message.envelope.recipients) do
-        rcpts = rcpts .. rcpt_tmpl:format(rcpt)
+    local nexthops = ""
+    for i, hop in ipairs(self.nexthops) do
+        local msgs = ""
+
+        for j, msg in ipairs(hop.messages) do
+            local rcpts = ""
+            for k, rcpt in ipairs(msg.envelope.recipients) do
+                rcpts = rcpts .. rcpt_tmpl:format(rcpt)
+            end
+
+            msgs = msgs .. msg_tmpl:format(
+                msg.envelope.sender,
+                rcpts,
+                msg.storage.engine,
+                msg.size,
+                msg.storage.data
+            )
+        end
+        
+        nexthops = nexthops .. nexthop_tmpl:format(
+            hop.protocol,
+            hop.host,
+            hop.port,
+            msgs
+        )
     end
-    local sender = self.message.envelope.sender
-    local size = self.message.size
-    local engine = self.message.storage.engine
 
-    local msg = msg_tmpl:format(
-        nexthop.protocol,
-        nexthop.host,
-        nexthop.port,
-        data,
-        sender,
-        rcpts,
-        engine,
-        size,
-        data
-    )
-
-    return msg
+    return root_tmpl:format(nexthops)
 end
 -- }}}
 
 -- {{{ relay_request_context:__call()
-function relay_request_context:__call(data)
+function relay_request_context:__call()
     local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:connect(rec.endpoint)
 
-    local nexthop = self:get_nexthop()
-    local msg = self:build_message(data, nexthop)
+    local msg = self:build_message()
 
     print('RP: [' .. msg .. ']')
     socket:send(msg)

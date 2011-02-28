@@ -105,7 +105,7 @@ function queue_request_context:chain_store_then_request_relay_calls(message, sto
 
     message.storage.data = id
     if not dont_send then
-        relay_req(id)
+        relay_req()
     end
 end
 -- }}}
@@ -118,7 +118,8 @@ function queue_request_context:store_and_request_relay(msg, data)
     msg.storage = {engine = which_engine}
 
     local storage = engine.new(msg, data)
-    local relay_req = relay_request_context.new(msg)
+    local relay_req = relay_request_context.new()
+    relay_req:add_message(msg)
 
     local chain_calls = self.chain_store_then_request_relay_calls
     return kernel:attach(chain_calls, self, msg, storage, relay_req)

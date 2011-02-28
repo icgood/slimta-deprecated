@@ -8,6 +8,7 @@ const char *global_tables[] = {
 const char *required_globals[] = {
 	"storage_engines",
 	"use_storage_engine",
+	"message_nexthop",
 	"queue_request_channel",
 	"relay_request_channel",
 	"relay_results_channel",

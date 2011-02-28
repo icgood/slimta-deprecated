@@ -86,30 +86,30 @@ end
 -- {{{ message_results:format_results()
 function message_results:format_results()
     local results_tmpl = [[<slimta><deliver>
-    <results>
-%s    </results>
+ <results>
+%s </results>
 </deliver></slimta>
 ]]
 
-    local success_tmpl = [[        <message>
-            <storage engine="%s">%s</storage>
-            <result type="success"/>
-%s        </message>
+    local success_tmpl = [[  <message>
+   <storage engine="%s">%s</storage>
+   <result type="success"/>
+%s  </message>
 ]]
-    local fail_tmpl = [[        <message>
-            <storage engine="%s">%s</storage>
-            <result type="%s">
-                <command>%s</command>
-                <response code="%s">%s</response>
-            </result>
-        </message>
+    local fail_tmpl = [[  <message>
+   <storage engine="%s">%s</storage>
+   <result type="%s">
+    <command>%s</command>
+    <response code="%s">%s</response>
+   </result>
+  </message>
 ]]
 
     local failrcpt_tmpl = [[
-            <recipient type="%s">
-                %s
-                <response code="%s">%s</response>
-            </recipient>
+   <recipient type="%s">
+    %s
+    <response code="%s">%s</response>
+   </recipient>
 ]]
 
     local msgs = ""
