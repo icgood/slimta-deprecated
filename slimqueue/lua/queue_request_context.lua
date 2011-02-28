@@ -97,20 +97,27 @@ end
 
 -- {{{ queue_request_context:chain_store_then_request_relay_calls()
 function queue_request_context:chain_store_then_request_relay_calls(message, storage, relay_req)
-    id = storage()
-    message.queue_id = id
-    relay_req(id)
+    -- The second, rarely-necessary return value can be used to skip the immediate
+    -- relay attempt. This may be useful when a message is not immediately available
+    -- for reading even when the storage engine has returned a queue ID. The only
+    -- built-in usage of this parameter is for the blackhole storage engine.
+    local id, dont_send = storage()
+
+    message.storage.data = id
+    if not dont_send then
+        relay_req(id)
+    end
 end
 -- }}}
 
 -- {{{ queue_request_context:store_and_request_relay()
 function queue_request_context:store_and_request_relay(msg, data)
-    local which_engine = confstring(use_storage_engine, msg, data)
+    local which_engine = CONF(use_storage_engine, msg, data)
     local engine = storage_engines[which_engine].new
 
-    local storage = engine.new(msg)
-    storage:attach_data(data)
+    msg.storage = {engine = which_engine}
 
+    local storage = engine.new(msg, data)
     local relay_req = relay_request_context.new(msg)
 
     local chain_calls = self.chain_store_then_request_relay_calls
@@ -124,6 +131,7 @@ function queue_request_context:handle_messages(socket)
     local content_parts = {}
     while socket:is_rcvmore() do
         local data = socket:recv()
+        print('QP: [' .. data .. ']')
         table.insert(content_parts, data)
     end
 
@@ -175,7 +183,7 @@ function queue_request_context:build_response()
     local msgs = ""
     for i, client in ipairs(self.msg_info.clients) do
         for j, msg in ipairs(client.messages) do
-            msgs = msgs .. msg_tmpl:format(msg.response_id, tostring(msg.queue_id))
+            msgs = msgs .. msg_tmpl:format(msg.response_id, tostring(msg.storage.data))
         end
     end
 
@@ -193,9 +201,11 @@ function queue_request_context:__call()
     -- Gather all results messages.
     while true do
         local data = socket:recv()
+        print('QP: [' .. data .. ']')
         self.msg_info = self.parser:parse_xml(data)
         self:handle_messages(socket)
         local response = self:build_response()
+        print('QR: [' .. response .. ']')
         socket:send(response)
     end
 end

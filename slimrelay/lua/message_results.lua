@@ -16,7 +16,7 @@ function message_results.new(messages, results_channel, message_placeholder)
     self.results = {}
     for i, msg in ipairs(messages) do
         local r = {}
-        r.qid = msg.qid
+        r.storage = msg.storage
         r.failed_rcpts = {}
         self.results[i] = r
         self:set_result(i, "softfail", "", "421", "Unknown")
@@ -91,11 +91,13 @@ function message_results:format_results()
 </deliver></slimta>
 ]]
 
-    local success_tmpl = [[        <message queueid="%s">
+    local success_tmpl = [[        <message>
+            <storage engine="%s">%s</storage>
             <result type="success"/>
 %s        </message>
 ]]
-    local fail_tmpl = [[        <message queueid="%s">
+    local fail_tmpl = [[        <message>
+            <storage engine="%s">%s</storage>
             <result type="%s">
                 <command>%s</command>
                 <response code="%s">%s</response>
@@ -112,15 +114,17 @@ function message_results:format_results()
 
     local msgs = ""
     for i, r in ipairs(self.results) do
+        local engine = r.storage.engine
+        local data = r.storage.data
         if r.type == "success" then
             -- The message may have been sent successfully but not necessarily to all recipients.
             local rcptmsgs = ""
             for i, rcpt in ipairs(r.failed_rcpts) do
                 rcptmsgs = failrcpt_tmpl:format(rcpt.type, rcpt.addr, tostring(rcpt.code), rcpt.message)
             end
-            msgs = msgs .. success_tmpl:format(r.qid, rcptmsgs)
+            msgs = msgs .. success_tmpl:format(engine, data, rcptmsgs)
         else
-            msgs = msgs .. fail_tmpl:format(r.qid, r.type, r.command, tostring(r.code), r.message)
+            msgs = msgs .. fail_tmpl:format(engine, data, r.type, r.command, tostring(r.code), r.message)
         end
     end
 

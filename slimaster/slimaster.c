@@ -5,6 +5,11 @@ const char *global_tables[] = {
 	NULL
 };
 
+const char *required_globals[] = {
+	"storage_engines",
+	NULL
+};
+
 const char *entry_script = "slimaster";
 
 const char *DEFAULT_CONFIG = "/etc/slimta/slimta.conf";

@@ -12,8 +12,12 @@ local tags = {
 
     {"message", "results", "deliver", "slimta",
         list = "messages",
+    },
+
+    {"storage", "message", "results", "deliver", "slimta",
         handle = function (info, attrs, data)
-            info.queueid = attrs.queueid
+            attrs.data = data
+            info.storage = attrs
         end,
     },
 
@@ -70,27 +74,25 @@ end
 -- }}}
 
 -- {{{ relay_results_context:delete_message()
-function relay_results_context:delete_message(queue_id)
-    local which_engine = confstring(use_storage_engine, msg, data)
-    local engine = storage_engines[which_engine].delete
+function relay_results_context:delete_message(storage)
+    local engine = storage_engines[storage.engine].delete
 
-    local storage = engine.new(queue_id)
+    local storage = engine.new(storage.data)
     kernel:attach(storage)
 end
 -- }}}
 
 -- {{{ relay_results_context:try_again_later()
-function relay_results_context:try_again_later(queue_id)
-    local which_engine = confstring(use_storage_engine, msg, data)
-    local engine = storage_engines[which_engine].update
+function relay_results_context:try_again_later(storage)
+    local engine = storage_engines[storage.engine].set_next_attempt
 
-    local storage = engine.new(queue_id)
-    kernel:attach(storage.set_next_attempt, storage)
+    local storage = engine.new(storage.data)
+    kernel:attach(storage)
 end
 -- }}}
 
 -- {{{ relay_results_context:queue_bounce()
-function relay_results_context:queue_bounce(queue_id)
+function relay_results_context:queue_bounce(storage)
 end
 -- }}}
 
@@ -104,14 +106,15 @@ function relay_results_context:__call()
     -- Gather all results messages.
     while true do
         local data = socket:recv()
+        print('RR: [' .. data .. ']')
         self.results = self.parser:parse_xml(data)
         for i, msg in ipairs(self.results.messages) do
             if msg.type == "success" then
-                self:delete_message(msg.queueid)
+                self:delete_message(msg.storage)
             elseif msg.type == "hardfail" then
-                self:queue_bounce(msg.queueid)
+                self:queue_bounce(msg.storage)
             else
-                self:try_again_later(msg.queueid)
+                self:try_again_later(msg.storage)
             end
         end
     end

@@ -9,7 +9,7 @@ function http_server.new(socket, handlers)
 
     self.socket = socket
     self.handlers = handlers
-    self.send_size = confnumber(socket_send_size or 102400, socket)
+    self.send_size = CONF(socket_send_size or 102400, socket)
 
     return self
 end
@@ -86,6 +86,7 @@ end
 -- {{{ http_server:send_response()
 function http_server:send_response(response)
     local response_str = self:build_response_and_headers(response)
+    print('S: [' .. response_str .. ']')
     self:slow_send(self.socket, response_str, response.data)
     self.socket:close()
 end
@@ -128,6 +129,9 @@ function http_server:parse_request_so_far(so_far, unparsed_i, request)
     end
 
     if not request.data then
+        if not request.headers['content-length'] then
+            return true
+        end
         local content_len = tonumber(request.headers['content-length'][1])
         if not content_len then
             return true
@@ -159,6 +163,7 @@ function http_server:get_request()
             break
         end
     end
+    print('C: [' .. so_far .. ']')
 
     --return request.command, request.uri, request.headers, request.data
     return request

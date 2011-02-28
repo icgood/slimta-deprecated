@@ -19,6 +19,7 @@ extern const char *DEFAULT_PATH;
 extern const char *PATH_ENVVAR;
 extern const char *entry_script;
 extern const char *global_tables[];
+extern const char *required_globals[];
 
 /* {{{ push_argvs_to_global() */
 static void push_argvs_to_global (lua_State *L, int argc, char **argv)
@@ -41,8 +42,6 @@ static void push_argvs_to_global (lua_State *L, int argc, char **argv)
 /* {{{ load_config() */
 static int load_config (lua_State *L, const char *def, const char *envvar)
 {
-	int i;
-
 	/* Get config filename from env or default. */
 	const char *filename = def;
 	if (envvar)
@@ -54,13 +53,6 @@ static int load_config (lua_State *L, const char *def, const char *envvar)
 		if (lua_isstring (L, -1))
 			filename = lua_tostring (L, -1);
 		lua_pop (L, 2);
-	}
-
-	/* Set up globals with given tables pre-created. */
-	for (i=0; global_tables[i] != NULL; i++)
-	{
-		luaL_findtable (L, LUA_GLOBALSINDEX, global_tables[i], 0);
-		lua_pop (L, 1);
 	}
 
 	/* Load the config file as a Lua thread, set its environment, and call it. */
@@ -114,6 +106,40 @@ static void setup_kernel (lua_State *L)
 }
 /* }}} */
 
+/* {{{ setup_globals() */
+static int setup_globals (lua_State *L)
+{
+	int i;
+
+	/* Set up globals with given tables pre-created. */
+	for (i=0; global_tables[i] != NULL; i++)
+	{
+		luaL_findtable (L, LUA_GLOBALSINDEX, global_tables[i], 0);
+		lua_pop (L, 1);
+	}
+
+	return 0;
+}
+/* }}} */
+
+/* {{{ enforce_required_globals() */
+static int enforce_required_globals (lua_State *L)
+{
+	int i;
+
+	/* Check all required config values. */
+	for (i=0; required_globals[i] != NULL; i++)
+	{
+		lua_getglobal (L, required_globals[i]);
+		if (lua_isnil (L, -1))
+			return luaL_error (L, "required config value not set: %s", required_globals[i]);
+		lua_pop (L, 1);
+	}
+
+	return 0;
+}
+/* }}} */
+
 /* {{{ main() */
 int main (int argc, char *argv[])
 {
@@ -126,8 +152,10 @@ int main (int argc, char *argv[])
 	push_argvs_to_global (L, argc, argv);
 	setup_kernel (L);
 	setup_path (L);
+	setup_globals (L);
 	load_config (L, DEFAULT_CONFIG, CONFIG_ENVVAR);
 	load_config (L, DEFAULT_MY_CONFIG, MY_CONFIG_ENVVAR);
+	enforce_required_globals (L);
 
 	lua_settop (L, 0);
 

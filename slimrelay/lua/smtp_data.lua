@@ -2,17 +2,17 @@ local smtp_data = {}
 smtp_data.__index = smtp_data
 
 -- {{{ smtp_data.new()
-function smtp_data.new(storage_type, id)
+function smtp_data.new(storage)
     local self = {}
     setmetatable(self, smtp_data)
 
-    local engine = storage_engines[storage_type]
+    local engine = storage_engines[storage.engine].get_contents
     if not engine then
-        error("invalid storage engine: [" .. engine .."]")
+        error("invalid storage engine: [" .. which_engine .."]")
     end
-    self.id = id
-    self.engine = engine.get.new()
-    self.iter_size = confnumber(smtp_data_iterate_size or 1024)
+    self.data = storage.data
+    self.engine = engine.new()
+    self.iter_size = CONF(smtp_data_iterate_size or 1024)
 
     return self
 end
@@ -86,7 +86,7 @@ end
 
 -- {{{ smtp_data:__call()
 function smtp_data:__call()
-    self.full_message = self.engine:get_contents(self.id)
+    self.full_message = self.engine(self.data)
     if self.unpause_thread then
         kernel:unpause(self.unpause_thread)
         self.unpause_thread = nil

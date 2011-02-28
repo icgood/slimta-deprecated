@@ -37,6 +37,12 @@ if test "x${have_expat}" != "xyes"; then
 	AC_MSG_ERROR([Expat headers and libraries are required for building.])
 fi
 
+AC_CHECK_HEADERS([uuid/uuid.h], [have_uuid=yes], [have_uuid=no])
+AC_SEARCH_LIBS([uuid_generate], [uuid], [], [have_uuid=no], $LUA_LIB)
+if test "x${have_uuid}" != "xyes"; then
+	AC_MSG_ERROR([UUID generation libraries unavailable (see util-linux-ng).])
+fi
+
 # Check for header files.
 AX_LUA_HEADERS
 if test "x${ac_cv_header_lua_h}" != "xyes"; then

@@ -5,6 +5,15 @@ const char *global_tables[] = {
 	NULL
 };
 
+const char *required_globals[] = {
+	"storage_engines",
+	"use_storage_engine",
+	"queue_request_channel",
+	"relay_request_channel",
+	"relay_results_channel",
+	NULL
+};
+
 const char *entry_script = "slimqueue";
 
 const char *DEFAULT_CONFIG = "/etc/slimta/slimta.conf";

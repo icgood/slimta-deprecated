@@ -42,7 +42,7 @@ function queue_request_context.new()
     local self = {}
     setmetatable(self, queue_request_context)
 
-    self.endpoint = confstring(queue_request_channel)
+    self.endpoint = CONF(queue_request_channel)
     self.parser = xml_wrapper.new(tags)
     self.contents = {}
     self.messages = {}

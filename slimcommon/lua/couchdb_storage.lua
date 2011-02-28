@@ -1,7 +1,6 @@
 require "json"
 
 local http_connection = require "http_connection"
-local uuids
 
 -- {{{ default_next_attempt_timestamp()
 local function default_next_attempt_timestamp()
@@ -20,65 +19,6 @@ local function strip_quotes(str)
 end
 -- }}}
 
--- {{{ couchdb_uuids
-local couchdb_uuids = {}
-couchdb_uuids.__index = couchdb_uuids
-
--- {{{ couchdb_uuids.new()
-function couchdb_uuids.new()
-    local self = {}
-    setmetatable(self, couchdb_uuids)
-
-    self.count = confnumber(couchdb_uuids_at_a_time) or 100
-    self.where = confstring(couchdb_channel)
-    self.uuids = {}
-
-    return self
-end
--- }}}
-
--- {{{ couchdb_uuids:get_uuid()
-function couchdb_uuids:get_uuid()
-    local uuid = table.remove(self.uuids)
-    if not uuid then
-        -- Wait for the thread that gets new UUIDs from CouchDB.
-        assert(self.thread, "CouchDB UUID retrieval thread was not started.")
-        kernel:unpause(self.thread, kernel:running_thread())
-        kernel:pause()
-
-        return self:get_uuid()
-    else
-        return uuid
-    end
-end
--- }}}
-
--- {{{ couchdb_uuids:__call()
-function couchdb_uuids:__call()
-    self.thread = kernel:running_thread()
-
-    while true do
-        local to_unpause = kernel:pause()
-
-        local couchttp = http_connection.new(self.where)
-        local code, reason, headers, data = couchttp:query("GET", "/_uuids?count="..self.count)
-        if code ~= 200 then
-            error(reason)
-        end
-
-        local ret = json.decode(data)
-        assert(ret and ret.uuids, "CouchDB did not return UUIDs properly.")
-        self.uuids = ret.uuids
-
-        if to_unpause then
-            kernel:unpause(to_unpause)
-        end
-    end
-end
--- }}}
-
--- }}}
-
 --------------------------------------------------------------------------------
 
 -- {{{ couchdb_new
@@ -86,14 +26,15 @@ local couchdb_new = {}
 couchdb_new.__index = couchdb_new
 
 -- {{{ couchdb_new.new()
-function couchdb_new.new(data)
+function couchdb_new.new(data, contents)
     local self = {}
     setmetatable(self, couchdb_new)
 
-    self.where = confstring(couchdb_channel)
-    self.database = confstring(couchdb_queue)
+    self.where = CONF(couchdb_channel)
+    self.database = CONF(couchdb_queue)
 
     self.data = data
+    self.message = contents
 
     return self
 end
@@ -107,12 +48,18 @@ end
 
 -- {{{ couchdb_new:create_message_root()
 function couchdb_new:create_message_root()
-    local info = json.encode(self.data)
+    local root_info = {
+        envelope = self.data.envelope,
+        attempts = self.data.attempts,
+        size = self.data.size,
+    }
+
+    local info = json.encode(root_info)
     local code, reason, headers, data
 
     -- Keep attempting PUT on new UUIDs until don't get a collision.
     repeat
-        local id = uuids:get_uuid()
+        local id = slimta.uuid.generate()
         local couchttp = http_connection.new(self.where)
         code, reason, headers, data = couchttp:query(
             "PUT",
@@ -186,61 +133,24 @@ end
 
 -- }}}
 
--- {{{ couchdb_list
-local couchdb_list = {}
-couchdb_list.__index = couchdb_list
+-- {{{ couchdb_get_deliverable
+local couchdb_get_deliverable = {}
+couchdb_get_deliverable.__index = couchdb_get_deliverable
 
--- {{{ couchdb_list.new()
-function couchdb_list.new()
+-- {{{ couchdb_get_deliverable.new()
+function couchdb_get_deliverable.new()
     local self = {}
-    setmetatable(self, couchdb_list)
+    setmetatable(self, couchdb_get_deliverable)
 
-    self.where = confstring(couchdb_channel)
-    self.database = confstring(couchdb_queue)
+    self.where = CONF(couchdb_channel)
+    self.database = CONF(couchdb_queue)
 
     return self
 end
 -- }}}
 
--- {{{ couchdb_list:__call()
-function couchdb_list:__call()
-    local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/_all_docs")
-    if code ~= 200 then
-        error(reason)
-    end
-
-    local ret = json.decode(data)
-
-    local list = {}
-    for i, row in ipairs(ret.rows) do
-        table.insert(list, row.id)
-    end
-
-    return list
-end
--- }}}
-
--- }}}
-
--- {{{ couchdb_get
-local couchdb_get = {}
-couchdb_get.__index = couchdb_get
-
--- {{{ couchdb_get.new()
-function couchdb_get.new()
-    local self = {}
-    setmetatable(self, couchdb_get)
-
-    self.where = confstring(couchdb_channel)
-    self.database = confstring(couchdb_queue)
-
-    return self
-end
--- }}}
-
--- {{{ couchdb_get:get_upcoming()
-function couchdb_get:get_upcoming(timestamp)
+-- {{{ couchdb_get_deliverable:__call()
+function couchdb_get_deliverable:__call(timestamp)
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/_design/attempts/_view/upcoming")
     if code ~= 200 then
@@ -263,8 +173,26 @@ function couchdb_get:get_upcoming(timestamp)
 end
 -- }}}
 
--- {{{ couchdb_get:get_contents()
-function couchdb_get:get_contents(data)
+-- }}}
+
+-- {{{ couchdb_get_contents
+local couchdb_get_contents = {}
+couchdb_get_contents.__index = couchdb_get_contents
+
+-- {{{ couchdb_get_contents.new()
+function couchdb_get_contents.new()
+    local self = {}
+    setmetatable(self, couchdb_get_contents)
+
+    self.where = CONF(couchdb_channel)
+    self.database = CONF(couchdb_queue)
+
+    return self
+end
+-- }}}
+
+-- {{{ couchdb_get_contents:__call()
+function couchdb_get_contents:__call(data)
     local id = data:gsub("^%s*", ""):gsub("%s*$", "")
     local couchttp, code, reason, headers, data
 
@@ -284,8 +212,26 @@ function couchdb_get:get_contents(data)
 end
 -- }}}
 
--- {{{ couchdb_get:__call()
-function couchdb_get:__call(data)
+-- }}}
+
+-- {{{ couchdb_get_info
+local couchdb_get_info = {}
+couchdb_get_info.__index = couchdb_get_info
+
+-- {{{ couchdb_get_info.new()
+function couchdb_get_info.new()
+    local self = {}
+    setmetatable(self, couchdb_get_info)
+
+    self.where = CONF(couchdb_channel)
+    self.database = CONF(couchdb_queue)
+
+    return self
+end
+-- }}}
+
+-- {{{ couchdb_get_info:__call()
+function couchdb_get_info:__call(data)
     local id = data:gsub("^%s*", ""):gsub("%s*$", "")
 
     local couchttp = http_connection.new(self.where)
@@ -301,17 +247,17 @@ end
 
 -- }}}
 
--- {{{ couchdb_update
-local couchdb_update = {}
-couchdb_update.__index = couchdb_update
+-- {{{ couchdb_set_next_attempt
+local couchdb_set_next_attempt = {}
+couchdb_set_next_attempt.__index = couchdb_set_next_attempt
 
--- {{{ couchdb_update.new()
-function couchdb_update.new(data)
+-- {{{ couchdb_set_next_attempt.new()
+function couchdb_set_next_attempt.new(data)
     local self = {}
-    setmetatable(self, couchdb_update)
+    setmetatable(self, couchdb_set_next_attempt)
 
-    self.where = confstring(couchdb_channel)
-    self.database = confstring(couchdb_queue)
+    self.where = CONF(couchdb_channel)
+    self.database = CONF(couchdb_queue)
 
     self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
 
@@ -319,8 +265,8 @@ function couchdb_update.new(data)
 end
 -- }}}
 
--- {{{ couchdb_update:get_helper()
-function couchdb_update:get_helper()
+-- {{{ couchdb_set_next_attempt:get_helper()
+function couchdb_set_next_attempt:get_helper()
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
     if code ~= 200 then
@@ -331,8 +277,8 @@ function couchdb_update:get_helper()
 end
 -- }}}
 
--- {{{ couchdb_update:put_helper()
-function couchdb_update:put_helper(info)
+-- {{{ couchdb_set_next_attempt:put_helper()
+function couchdb_set_next_attempt:put_helper(info)
     local data = json.encode(info)
 
     local couchttp = http_connection.new(self.where)
@@ -347,8 +293,8 @@ function couchdb_update:put_helper(info)
 end
 -- }}}
 
--- {{{ couchdb_update:set_next_attempt()
-function couchdb_update:set_next_attempt()
+-- {{{ couchdb_set_next_attempt:__call()
+function couchdb_set_next_attempt:__call()
     local code, reason
 
     repeat
@@ -356,27 +302,7 @@ function couchdb_update:set_next_attempt()
 
         info.attempts = info.attempts + 1
         local next_attempt_getter = next_queue_attempt_timestamp or default_next_attempt_timestamp
-        info.next_attempt = confnumber(next_attempt_getter, info.attempts, info)
-
-        code, reason = self:put_helper(info)
-    until code ~= 409
-
-    if code ~= 201 then
-        error(reason)
-    end
-end
--- }}}
-
--- {{{ couchdb_update:__call()
-function couchdb_update:__call(new_values)
-    local code, reason
-
-    repeat
-        local info = self:get_helper()
-
-        for key, val in pairs(new_values) do
-            info[key] = val
-        end
+        info.next_attempt = CONF(next_attempt_getter, info.attempts, info)
 
         code, reason = self:put_helper(info)
     until code ~= 409
@@ -398,8 +324,8 @@ function couchdb_delete.new(data)
     local self = {}
     setmetatable(self, couchdb_delete)
 
-    self.where = confstring(couchdb_channel)
-    self.database = confstring(couchdb_queue)
+    self.where = CONF(couchdb_channel)
+    self.database = CONF(couchdb_queue)
 
     self.id = data:gsub("^%s*", ""):gsub("%s*$", "")
 
@@ -421,8 +347,6 @@ function couchdb_delete:__call()
     if code ~= 200 then
         error(reason)
     end
-
-    return ret
 end
 -- }}}
 
@@ -430,14 +354,12 @@ end
 
 --------------------------------------------------------------------------------
 
-uuids = couchdb_uuids.new()
-kernel:attach(uuids)
-
 storage_engines["couchdb"] = {
     new = couchdb_new,
-    list = couchdb_list,
-    get = couchdb_get,
-    update = couchdb_update,
+    get_deliverable = couchdb_get_deliverable,
+    get_contents = couchdb_get_contents,
+    get_info = couchdb_get_info,
+    set_next_attempt = couchdb_set_next_attempt,
     delete = couchdb_delete,
 }
 

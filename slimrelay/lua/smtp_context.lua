@@ -10,8 +10,8 @@ function smtp_context.new(nexthop, results_channel)
     setmetatable(self, smtp_context)
 
     for i, msg in ipairs(nexthop.messages) do
-        msg.contents.loader = smtp_data.new(msg.contents.storage, msg.contents.data)
-        kernel:attach(msg.contents.loader)
+        msg.storage.loader = smtp_data.new(msg.storage)
+        kernel:attach(msg.storage.loader)
     end
 
     self.session = smtp_session.new(nexthop, results_channel)
@@ -51,14 +51,14 @@ end
 function smtp_context:__call()
     kernel:set_error_handler(smtp_context.on_error, self)
 
-    local rec = ratchet.socket.prepare_tcp(self.host, self.port, dns, conftable(dns_query_types))
+    local rec = ratchet.socket.prepare_tcp(self.host, self.port, dns, CONF(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     if not socket:connect(rec.addr) then
         self.session:shutdown("softfail", "[[socket]]", "", "Connection failed.")
         return
     end
 
-    self.send_size = confnumber(socket_send_size, socket) or 102400
+    self.send_size = CONF(socket_send_size, socket) or 102400
 
     while not self.session.is_finished do
         if self.session:is_waiting() then

@@ -7,7 +7,7 @@ function relay_request_context.new(message)
     local self = {}
     setmetatable(self, relay_request_context)
 
-    self.endpoint = confstring(relay_request_channel)
+    self.endpoint = CONF(relay_request_channel)
     self.message = message
 
     return self
@@ -26,7 +26,7 @@ function relay_request_context:build_message(data)
    <envelope>
     <sender>%s</sender>
 %s   </envelope>
-   <contents storage="couchdb" size="%d">%s</contents>
+   <storage engine="%s" size="%d">%s</storage>
   </message>
  </nexthop>
 </deliver></slimta>
@@ -41,8 +41,9 @@ function relay_request_context:build_message(data)
     end
     local sender = self.message.envelope.sender
     local size = self.message.size
+    local engine = self.message.storage.engine
 
-    local msg = msg_tmpl:format(data, sender, rcpts, size, data)
+    local msg = msg_tmpl:format(data, sender, rcpts, engine, size, data)
 
     return msg
 end
@@ -56,6 +57,7 @@ function relay_request_context:__call(data)
 
     local msg = self:build_message(data)
 
+    print('RP: [' .. msg .. ']')
     socket:send(msg)
 end
 -- }}}

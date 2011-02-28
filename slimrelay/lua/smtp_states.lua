@@ -103,7 +103,7 @@ new_state("MAIL", true)
 
 function smtp_states.MAIL:build_command()
     local command = "MAIL FROM:<" .. self.message.envelope.sender .. ">"
-    local size = tonumber(self.message.contents.size)
+    local size = tonumber(self.message.storage.size)
     if self.session:has_extension("SIZE") and size then
         command = command .. " size=" .. size
     end
@@ -173,7 +173,7 @@ function smtp_states.DATA_send:build_command()
     if self.session.some_rcpts_accepted then
         local curr = self.session.current_msg
         local curr_msg = self.session.messages[curr]
-        local curr_loader = curr_msg.contents.loader
+        local curr_loader = curr_msg.storage.loader
         return curr_loader
     else
         return ""

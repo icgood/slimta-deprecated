@@ -38,9 +38,6 @@ local tags = {
 
     {"message", "nexthop", "deliver", "slimta",
         list = "messages",
-        handle = function (info, attrs, data)
-            info.qid = attrs["queueid"]
-        end
     },
 
     {"envelope", "message", "nexthop", "deliver", "slimta"},
@@ -64,10 +61,10 @@ local tags = {
         end,
     },
 
-    {"contents", "message", "nexthop", "deliver", "slimta",
+    {"storage", "message", "nexthop", "deliver", "slimta",
         handle = function (info, attrs, data)
             attrs.data = data
-            info.contents = attrs
+            info.storage = attrs
         end,
     },
 

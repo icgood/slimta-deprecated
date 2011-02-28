@@ -33,47 +33,13 @@
 
 #include "misc.h"
 #include "xml.h"
+#include "uuid.h"
 #include "rlimit.h"
 
-/* {{{ slimcommon_string_or_func() */
-static int slimcommon_string_or_func (lua_State *L)
+/* {{{ slimcommon_CONF() */
+static int slimcommon_CONF (lua_State *L)
 {
-	/* Call function with any args before attempting string conversion. */
-	if (lua_isfunction (L, 1))
-	{
-		int args = lua_gettop (L) - 1;
-		lua_call (L, args, 1);
-	}
-	lua_settop (L, 1);
-
-	luaL_callmeta (L, 1, "__tostring");
-	lua_tostring (L, -1);
-
-	return 1;
-}
-/* }}} */
-
-/* {{{ slimcommon_number_or_func() */
-static int slimcommon_number_or_func (lua_State *L)
-{
-	/* Call function with any args before attempting number conversion. */
-	if (lua_isfunction (L, 1))
-	{
-		int args = lua_gettop (L) - 1;
-		lua_call (L, args, 1);
-	}
-	lua_settop (L, 1);
-
-	lua_tonumber (L, 1);
-
-	return 1;
-}
-/* }}} */
-
-/* {{{ slimcommon_table_or_func() */
-static int slimcommon_table_or_func (lua_State *L)
-{
-	/* Call function with any args before attempting number conversion. */
+	/* Call function with any args before returning. */
 	if (lua_isfunction (L, 1))
 	{
 		int args = lua_gettop (L) - 1;
@@ -223,15 +189,8 @@ static int slimcommon_mkstemp (lua_State *L)
 /* {{{ slimcommon_openlibs () */
 int slimcommon_openlibs (lua_State *L)
 {
-	const luaL_Reg conf_funcs[] = {
-		{"confstring", slimcommon_string_or_func},
-		{"confnumber", slimcommon_number_or_func},
-		{"conftable", slimcommon_table_or_func},
-		{NULL}
-	};
-	lua_pushvalue (L, LUA_GLOBALSINDEX);
-	luaL_register (L, NULL, conf_funcs);
-	lua_pop (L, 1);
+	lua_pushcfunction (L, slimcommon_CONF);
+	lua_setglobal (L, "CONF");
 
 	const luaL_Reg funcs[] = {
 		{"stackdump", slimcommon_stackdump},
@@ -245,6 +204,8 @@ int slimcommon_openlibs (lua_State *L)
 	lua_setfield (L, -2, "xml");
 	luaopen_slimta_rlimit (L);
 	lua_setfield (L, -2, "rlimit");
+	luaopen_slimta_uuid (L);
+	lua_setfield (L, -2, "uuid");
 	slimcommon_init_uname (L);
 	lua_setfield (L, -2, "uname");
 

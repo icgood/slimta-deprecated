@@ -112,11 +112,11 @@ end
 
 -- {{{ http_connection:query()
 function http_connection:query(command, uri, headers, data)
-    local rec = ratchet.socket.prepare_uri(self.where, dns, conftable(dns_query_types))
+    local rec = ratchet.socket.prepare_uri(self.where, dns, CONF(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
 
-    self.send_size = confnumber(socket_send_size or 102400, socket)
+    self.send_size = CONF(socket_send_size or 102400, socket)
 
     self:send_request(socket, command, uri, headers, data)
     return self:parse_response(socket)

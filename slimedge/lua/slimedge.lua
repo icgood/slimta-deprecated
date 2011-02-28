@@ -1,6 +1,6 @@
 local httpmail_context = require "httpmail_context"
 
-local httpmail_channel_str = confstring(httpmail_channel)
+local httpmail_channel_str = CONF(httpmail_channel)
 
 local httpmail = httpmail_context.new(httpmail_channel_str)
 

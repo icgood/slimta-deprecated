@@ -1,9 +1,16 @@
 #include <stdlib.h>
 
 const char *global_tables[] = {
-	"protocols",
 	"storage_engines",
-	"connections",
+	"protocols",
+	NULL
+};
+
+const char *required_globals[] = {
+	"storage_engines",
+	"protocols",
+	"request_channel",
+	"results_channel",
 	NULL
 };
 
