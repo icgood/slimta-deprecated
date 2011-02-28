@@ -56,15 +56,18 @@ function httpmail_context:POST(uri, headers, data)
     local first_msg = results.messages[1]
     if first_msg.queue_id then
         return {
-            code = 202,
+            code = 200,
             message = "Queued Successfully",
-            headers = {["X-Queue-Id"] = {first_msg.queue_id}},
+            headers = {["Content-Length"] = {#first_msg.queue_id}},
+            data = first_msg.queue_id,
         }
     else
+        local error_data = json.encode(first_msg.error)
         return {
             code = 500,
             message = "Message Not Queued",
-            data = json.encode(first_msg.error),
+            headers = {["Content-Length"] = {#error_data}},
+            data = error_data,
         }
     end
 end

@@ -52,9 +52,7 @@ function http_server:build_response_and_headers(response)
     if response.headers and #response.headers then
         ret = ret .. self:build_header_string(response.headers)
     end
-    if response.data then
-        ret = ret .. "\r\n"
-    end
+    ret = ret .. "\r\n"
     return ret
 end
 -- }}}
@@ -65,20 +63,24 @@ function http_server:slow_send(socket, request, data)
 
     while #request > self.send_size do
         local to_send = request:sub(1, self.send_size)
+        print('S: [' .. to_send .. ']')
         socket:send(to_send)
         request = request:sub(self.send_size+1)
     end
     if not data then
+        print('S: [' .. request .. ']')
         socket:send(request)
     else
         local to_send = request .. data:sub(1, self.send_size - #request)
+        print('S: [' .. to_send .. ']')
         socket:send(to_send)
         data = data:sub(self.send_size - #request + 1)
-        repeat
+        while data ~= "" do
             to_send = data:sub(1, self.send_size)
+            print('S: [' .. to_send .. ']')
             socket:send(to_send)
             data = data:sub(self.send_size+1)
-        until data == ""
+        end
     end
 end
 -- }}}
@@ -86,8 +88,8 @@ end
 -- {{{ http_server:send_response()
 function http_server:send_response(response)
     local response_str = self:build_response_and_headers(response)
-    print('S: [' .. response_str .. ']')
     self:slow_send(self.socket, response_str, response.data)
+    self.socket:shutdown("both")
     self.socket:close()
 end
 -- }}}
@@ -164,6 +166,7 @@ function http_server:get_request()
         end
     end
     print('C: [' .. so_far .. ']')
+    self.socket:shutdown("read")
 
     --return request.command, request.uri, request.headers, request.data
     return request

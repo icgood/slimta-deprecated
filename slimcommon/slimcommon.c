@@ -39,15 +39,21 @@
 /* {{{ slimcommon_CONF() */
 static int slimcommon_CONF (lua_State *L)
 {
+	int top = lua_gettop (L);
+
 	/* Call function with any args before returning. */
 	if (lua_isfunction (L, 1))
 	{
 		int args = lua_gettop (L) - 1;
-		lua_call (L, args, 1);
+		lua_call (L, args, LUA_MULTRET);
+		int new_top = lua_gettop (L);
+		return new_top;
 	}
-	lua_settop (L, 1);
-
-	return 1;
+	else
+	{
+		lua_settop (L, 1);
+		return 1;
+	}
 }
 /* }}} */
 
