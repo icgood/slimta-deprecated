@@ -37,24 +37,13 @@
 #include "rlimit.h"
 
 /* {{{ slimcommon_CONF() */
-static int slimcommon_CONF (lua_State *L)
-{
-	int top = lua_gettop (L);
-
-	/* Call function with any args before returning. */
-	if (lua_isfunction (L, 1))
-	{
-		int args = lua_gettop (L) - 1;
-		lua_call (L, args, LUA_MULTRET);
-		int new_top = lua_gettop (L);
-		return new_top;
-	}
-	else
-	{
-		lua_settop (L, 1);
-		return 1;
-	}
-}
+#define slimcommon_CONF "return function (v, ...)\n" \
+	"	if type(v) == 'function' then\n" \
+	"		return v(...)\n" \
+	"	else\n" \
+	"		return v\n" \
+	"	end\n" \
+	"end\n" \
 /* }}} */
 
 /* {{{ slimcommon_uname_index() */
@@ -195,8 +184,13 @@ static int slimcommon_mkstemp (lua_State *L)
 /* {{{ slimcommon_openlibs () */
 int slimcommon_openlibs (lua_State *L)
 {
-	lua_pushcfunction (L, slimcommon_CONF);
-	lua_setglobal (L, "CONF");
+	const struct luafunc luaglobalfuncs[] = {
+		{"CONF", slimcommon_CONF},
+		{NULL}
+	};
+	lua_pushvalue (L, LUA_GLOBALSINDEX);
+	register_luafuncs (L, -1, luaglobalfuncs);
+	lua_pop (L, 1);
 
 	const luaL_Reg funcs[] = {
 		{"stackdump", slimcommon_stackdump},

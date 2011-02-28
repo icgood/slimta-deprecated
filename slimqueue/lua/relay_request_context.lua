@@ -14,13 +14,29 @@ function relay_request_context.new(message)
 end
 -- }}}
 
+-- {{{ relay_request_context:get_nexthop()
+function relay_request_context:get_nexthop()
+    local ret = {}
+
+    ret.host, ret.port, ret.protocol = CONF(message_nexthop, self.message)
+    if not ret.port then
+        ret.port = 25
+    end
+    if not ret.protocol then
+        ret.protocol = "SMTP"
+    end
+
+    return ret
+end
+-- }}}
+
 -- {{{ relay_request_context:build_message()
-function relay_request_context:build_message(data)
+function relay_request_context:build_message(data, nexthop)
     local msg_tmpl = [[<slimta><deliver>
  <nexthop>
-  <protocol>SMTP</protocol>
-  <destination>mx1.emailsrvr.com</destination>
-  <port>25</port>
+  <protocol>%s</protocol>
+  <destination>%s</destination>
+  <port>%s</port>
   <security></security>
   <message queueid="%s">
    <envelope>
@@ -43,7 +59,17 @@ function relay_request_context:build_message(data)
     local size = self.message.size
     local engine = self.message.storage.engine
 
-    local msg = msg_tmpl:format(data, sender, rcpts, engine, size, data)
+    local msg = msg_tmpl:format(
+        nexthop.protocol,
+        nexthop.host,
+        nexthop.port,
+        data,
+        sender,
+        rcpts,
+        engine,
+        size,
+        data
+    )
 
     return msg
 end
@@ -55,7 +81,8 @@ function relay_request_context:__call(data)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:connect(rec.endpoint)
 
-    local msg = self:build_message(data)
+    local nexthop = self:get_nexthop()
+    local msg = self:build_message(data, nexthop)
 
     print('RP: [' .. msg .. ']')
     socket:send(msg)
