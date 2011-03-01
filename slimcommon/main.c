@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -20,6 +21,56 @@ extern const char *PATH_ENVVAR;
 extern const char *entry_script;
 extern const char *global_tables[];
 extern const char *required_globals[];
+
+/* {{{ handle_exit() */
+#if HAVE_ON_EXIT
+static void handle_exit (int ret, void *data)
+{
+	lua_State *L = (lua_State *) data;
+#else
+lua_State *L_global = NULL;
+static void handle_exit (void)
+{
+	lua_State *L = L_global;
+#endif
+	/* Uncomment these lines to check for global namespace pollution on exit.
+	 * lua_settop (L, 0);
+	 * lua_pushvalue (L, LUA_GLOBALSINDEX);
+	 * for (lua_pushnil (L); lua_next (L, 1) != 0; lua_pop (L, 1))
+	 * {
+	 * 	const char *key = lua_tostring (L, -2);
+	 * 	printf ("%s\n", key);
+	 * }
+	 */
+
+	lua_close (L);
+}
+/* }}} */
+
+/* {{{ handle_exitsig() */
+static void handle_exitsig (int signum)
+{
+	exit (0);
+}
+/* }}} */
+
+/* {{{ setup_exit_handler() */
+static void setup_exit_handler (lua_State *L)
+{
+#if HAVE_ON_EXIT
+	on_exit (handle_exit, L);
+#else
+	L_global = L;
+	atexit (handle_exit);
+#endif
+
+	struct sigaction act;
+	memset (&act, 0, sizeof (act));
+	act.sa_handler = handle_exitsig;
+	sigaction (SIGINT, &act, NULL);
+	sigaction (SIGTERM, &act, NULL);
+}
+/* }}} */
 
 /* {{{ push_argvs_to_global() */
 static void push_argvs_to_global (lua_State *L, int argc, char **argv)
@@ -146,6 +197,7 @@ int main (int argc, char *argv[])
 	int ret;
 
 	lua_State *L = luaL_newstate ();
+	setup_exit_handler (L);
 	luaL_openlibs (L);
 	slimcommon_openlibs (L);
 

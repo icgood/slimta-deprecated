@@ -29,7 +29,7 @@ end
 
 -- {{{ attempt_timer_context:get_and_request_message()
 function attempt_timer_context:get_and_request_message(storage, id, which_engine, relay_req)
-    info = storage(id)
+    local info = storage(id)
     info.storage = {
         engine = which_engine,
         data = id,
