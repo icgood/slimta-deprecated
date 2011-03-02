@@ -2,15 +2,15 @@ require "json"
 local http_server = require "http_server"
 local queue_request_context = require "queue_request_context"
 
+local httpmail_channel_str = CONF(httpmail_channel)
+
 local httpmail_context = {}
 httpmail_context.__index = httpmail_context
 
 -- {{{ httpmail_context.new()
-function httpmail_context.new(where)
+function httpmail_context.new()
     local self = {}
     setmetatable(self, httpmail_context)
-
-    self.where = where
 
     return self
 end
@@ -37,14 +37,20 @@ function httpmail_context:POST(uri, headers, data)
     local message = {
         sender = headers['x-sender'][1],
         recipients = headers['x-recipient'],
+        ehlo = headers['x-ehlo'],
         contents = data,
     }
 
-    if not message.sender or not message.recipients or not #message.recipients then
-        return {
-            code = 400,
-            message = "Missing X-Sender or X-Recipient header",
-        }
+    local checks = {
+        sender = function (d) if not d then return "Missing X-Sender header" end end,
+        recipients = function (d) if not d then return "Missing X-Recipient headers" end end,
+        ehlo = function (d) if not d then return "Missing X-Ehlo headers" end end,
+    }
+    for k, v in pairs(checks) do
+        local err = v(message[k])
+        if err then
+            return {code = 400, message = err}
+        end
     end
 
     local queue_up = queue_request_context.new()
@@ -81,7 +87,7 @@ end
 
 -- {{{ httpmail_context:__call()
 function httpmail_context:__call()
-    local rec = ratchet.socket.prepare_uri(self.where, dns, CONF(dns_query_types))
+    local rec = ratchet.socket.prepare_uri(httpmail_channel_str, dns, CONF(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)

@@ -303,6 +303,9 @@ function couchdb_set_next_attempt:__call()
         info.attempts = info.attempts + 1
         local next_attempt_getter = next_queue_attempt_timestamp or default_next_attempt_timestamp
         info.next_attempt = CONF(next_attempt_getter, info.attempts, info)
+        if not info.next_attempt then
+            return false
+        end
 
         code, reason = self:put_helper(info)
     until code ~= 409
@@ -310,6 +313,8 @@ function couchdb_set_next_attempt:__call()
     if code ~= 201 then
         error(reason)
     end
+
+    return true
 end
 -- }}}
 

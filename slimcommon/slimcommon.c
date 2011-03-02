@@ -87,6 +87,22 @@ static int slimcommon_init_uname (lua_State *L)
 }
 /* }}} */
 
+/* {{{ slimcommon_interp() */
+static int slimcommon_interp (lua_State *L)
+{
+	luaL_checktype (L, 1, LUA_TSTRING);
+	luaL_checkany (L, 2);
+
+	lua_getfield (L, 1, "gsub");
+	lua_pushvalue (L, 1);
+	lua_pushliteral (L, "%$%((.-)%)");
+	lua_pushvalue (L, 2);
+	lua_call (L, 3, 1);
+
+	return 1;
+}
+/* }}} */
+
 /* {{{ slimcommon_stackdump() */
 static int slimcommon_stackdump (lua_State *L)
 {
@@ -193,6 +209,7 @@ int slimcommon_openlibs (lua_State *L)
 	lua_pop (L, 1);
 
 	const luaL_Reg funcs[] = {
+		{"interp", slimcommon_interp},
 		{"stackdump", slimcommon_stackdump},
 		{"add_path", slimcommon_add_path},
 		{"get_now", slimcommon_get_now},

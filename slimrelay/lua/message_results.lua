@@ -3,12 +3,12 @@ local message_results = {}
 message_results.__index = message_results
 
 -- {{{ message_results.new()
-function message_results.new(messages, results_channel, message_placeholder)
+function message_results.new(messages, results_channel, protocol)
     local self = {}
     setmetatable(self, message_results)
 
     self.results_channel = results_channel
-    self.message_placeholder = message_placeholder
+    self.protocol = protocol
 
     -- Initialize all messages to temp-failed state.
     self.messages = messages
@@ -44,7 +44,7 @@ function message_results:set_result(i, type_, command, code, message)
             end
         end
         r.code = code
-        r.message = message:gsub("%s*$", "")
+        r.message = slimta.xml.escape(message:gsub("%s*$", ""))
     end
 end
 -- }}}
@@ -65,7 +65,7 @@ end
 function message_results:add_softfailed_rcpt(which, code, message)
     local n = self.current
     local addr = self.messages[n].envelope.recipients[which]
-    local msg = message:gsub("%s*$", "")
+    local msg = slimta.xml.escape(message:gsub("%s*$", ""))
     local f = {addr = addr, type = "softfail", code = code, message = msg}
     local r = self.results[n]
     table.insert(r.failed_rcpts, f)
@@ -76,7 +76,7 @@ end
 function message_results:add_hardfailed_rcpt(which, code, message)
     local n = self.current
     local addr = self.messages[n].envelope.recipients[which]
-    local msg = message:gsub("%s*$", "")
+    local msg = slimta.xml.escape(message:gsub("%s*$", ""))
     local f = {addr = addr, type = "hardfail", code = code, message = msg}
     local r = self.results[n]
     table.insert(r.failed_rcpts, f)
@@ -91,40 +91,53 @@ function message_results:format_results()
 </deliver></slimta>
 ]]
 
-    local success_tmpl = [[  <message>
-   <storage engine="%s">%s</storage>
+    local success_tmpl = [[  <message protocol="$(protocol)">
+   <storage engine="$(engine)">$(data)</storage>
    <result type="success"/>
-%s  </message>
+$(failed_recipients)  </message>
 ]]
-    local fail_tmpl = [[  <message>
-   <storage engine="%s">%s</storage>
-   <result type="%s">
-    <command>%s</command>
-    <response code="%s">%s</response>
+    local fail_tmpl = [[  <message protocol="$(protocol)">
+   <storage engine="$(engine)">$(data)</storage>
+   <result type="$(fail_type)">
+    <command>$(command)</command>
+    <response code="$(code)">$(message)</response>
    </result>
-  </message>
+$(failed_recipients)  </message>
 ]]
 
     local failrcpt_tmpl = [[
-   <recipient type="%s">
-    %s
-    <response code="%s">%s</response>
+   <recipient type="$(fail_type)">
+    $(recipient)
+    <response code="$(code)">$(message)</response>
    </recipient>
 ]]
 
     local msgs = ""
     for i, r in ipairs(self.results) do
-        local engine = r.storage.engine
-        local data = r.storage.data
+        local rcptmsgs = ""
+        for i, rcpt in ipairs(r.failed_rcpts) do
+            rcptmsgs = rcptmsgs .. slimta.interp(failrcpt_tmpl, {
+                fail_type = rcpt.type,
+                recipient = rcpt.addr,
+                code = rcpt.code,
+                message = rcpt.message,
+            })
+        end
+
+        local substitutions = {
+            protocol = self.protocol,
+            engine = r.storage.engine,
+            data = r.storage.data,
+            fail_type = r.type,
+            command = r.command,
+            code = r.code,
+            message = r.message,
+            failed_recipients = rcptmsgs,
+        }
         if r.type == "success" then
-            -- The message may have been sent successfully but not necessarily to all recipients.
-            local rcptmsgs = ""
-            for i, rcpt in ipairs(r.failed_rcpts) do
-                rcptmsgs = failrcpt_tmpl:format(rcpt.type, rcpt.addr, tostring(rcpt.code), rcpt.message)
-            end
-            msgs = msgs .. success_tmpl:format(engine, data, rcptmsgs)
+            msgs = msgs .. slimta.interp(success_tmpl, substitutions)
         else
-            msgs = msgs .. fail_tmpl:format(engine, data, r.type, r.command, tostring(r.code), r.message)
+            msgs = msgs .. slimta.interp(fail_tmpl, substitutions)
         end
     end
 

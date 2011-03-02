@@ -145,6 +145,28 @@ static int myxml_new (lua_State *L)
 }
 /* }}} */
 
+/* {{{ myxml_escape() */
+static int myxml_escape(lua_State *L)
+{
+	luaL_checkstring (L, 1);
+	lua_settop (L, 1);
+
+	lua_getfield (L, -1, "gsub");
+	lua_pushvalue (L, -2);
+	lua_pushliteral (L, "%<");
+	lua_pushliteral (L, "&lt;");
+	lua_call (L, 3, 1);
+
+	lua_getfield (L, -1, "gsub");
+	lua_pushvalue (L, -2);
+	lua_pushliteral (L, "%>");
+	lua_pushliteral (L, "&gt;");
+	lua_call (L, 3, 1);
+
+	return 1;
+}
+/* }}} */
+
 /* {{{ myxml_gc() */
 static int myxml_gc (lua_State *L)
 {
@@ -197,6 +219,7 @@ int luaopen_slimta_xml (lua_State *L)
 {
 	static const luaL_Reg funcs[] = {
 		{"new", myxml_new},
+		{"escape", myxml_escape},
 		{NULL}
 	};
 

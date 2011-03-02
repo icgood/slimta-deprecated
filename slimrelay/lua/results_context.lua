@@ -1,13 +1,13 @@
 
+local results_channel_str = CONF(results_channel)
+
 local results_context = {}
 results_context.__index = results_context
 
 -- {{{ results_context.new()
-function results_context.new(endpoint)
+function results_context.new()
     local self = {}
     setmetatable(self, results_context)
-
-    self.endpoint = endpoint
 
     return self
 end
@@ -26,7 +26,7 @@ function results_context:__call()
     self.thread = kernel:running_thread()
 
     -- Set up the ZMQ connector.
-    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(results_channel_str)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:connect(rec.endpoint)
 

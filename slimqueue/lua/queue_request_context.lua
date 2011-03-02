@@ -1,6 +1,9 @@
 
 local xml_wrapper = require "xml_wrapper"
 local relay_request_context = require "relay_request_context"
+local generate_bounce = require "generate_bounce"
+
+local queue_request_channel_str = CONF(queue_request_channel)
 
 -- {{{ tags table
 local tags = {
@@ -77,6 +80,30 @@ local tags = {
         end,
     },
 
+    {"bounce", "client", "queue", "slimta",
+        list = "bounces",
+        handle = function (info, attrs, data)
+            info.protocol = attrs.protocol
+            if attrs.id then
+                info.response_id = attrs.id
+            end
+        end,
+    },
+
+    {"storage", "bounce", "client", "queue", "slimta",
+        handle = function (info, attrs, data)
+            attrs.data = data
+            info.orig_storage = attrs
+        end,
+    },
+
+    {"error", "bounce", "client", "queue", "slimta",
+        handle = function (info, attrs, data)
+            info.code = attrs.code
+            info.message = data:gsub("^%s*", ""):gsub("%s*$", "")
+        end,
+    },
+
 }
 -- }}}
 
@@ -84,11 +111,10 @@ local queue_request_context = {}
 queue_request_context.__index = queue_request_context
 
 -- {{{ queue_request_context.new()
-function queue_request_context.new(endpoint)
+function queue_request_context.new()
     local self = {}
     setmetatable(self, queue_request_context)
 
-    self.endpoint = endpoint
     self.parser = xml_wrapper.new(tags)
 
     return self
@@ -126,6 +152,26 @@ function queue_request_context:store_and_request_relay(msg, data)
 end
 -- }}}
 
+-- {{{ queue_request_context:handle_new_message()
+function queue_request_context:handle_new_message(message, content_parts)
+    local message_data
+    if message.contents_i then
+        message_data = content_parts[message.contents_i]
+    else
+        message_data = message.contents
+    end
+
+    if not message_data then
+        error("Message contents missing.")
+    end
+
+    message.attempts = 0
+    message.size = #message_data
+
+    return self:store_and_request_relay(message, message_data)
+end
+-- }}}
+
 -- {{{ queue_request_context:handle_messages()
 function queue_request_context:handle_messages(socket)
     -- Receive contents from other ZMQ msg parts.
@@ -138,35 +184,35 @@ function queue_request_context:handle_messages(socket)
 
     -- Finalize message info and find contents.
     local msg_i = 0
+    local children = {}
     for i, client in ipairs(self.msg_info.clients) do
-        for j, message in ipairs(client.messages) do
-            msg_i = msg_i + 1
+        if client.messages then
+            for j, message in ipairs(client.messages) do
+                msg_i = msg_i + 1
+                if not message.response_id then
+                    message.response_id = msg_i
+                end
 
-            local message_data
-            if message.contents_i then
-                message_data = content_parts[message.contents_i]
-            else
-                message_data = message.contents
+                local thread = self:handle_new_message(message, content_parts, msg_i)
+                table.insert(children, thread)
             end
+        end
 
-            if not message_data then
-                error("Message contents missing.")
-            end
+        if client.bounces then
+            for j, bounce in ipairs(client.bounces) do
+                msg_i = msg_i + 1
+                if not bounce.response_id then
+                    bounce.response_id = msg_i
+                end
 
-            message.attempts = 0
-            message.size = #message_data
-
-            local children = {}
-            local thread = self:store_and_request_relay(message, message_data)
-            table.insert(children, thread)
-            kernel:wait_all(children)
-
-            message.queue_id = id
-            if not message.response_id then
-                message.response_id = msg_i
+                local gen_bounce = generate_bounce.new(bounce)
+                local thread = kernel:attach(gen_bounce)
+                table.insert(children, thread)
             end
         end
     end
+
+    kernel:wait_all(children)
 end
 -- }}}
 
@@ -180,11 +226,21 @@ function queue_request_context:build_response()
 
     local msg_tmpl = [[  <message id="%s">%s</message>
 ]]
+    local bounce_tmpl = [[  <bounce id="%s">%s</bounce>
+]]
 
     local msgs = ""
     for i, client in ipairs(self.msg_info.clients) do
-        for j, msg in ipairs(client.messages) do
-            msgs = msgs .. msg_tmpl:format(msg.response_id, tostring(msg.storage.data))
+        if client.messages then
+            for j, msg in ipairs(client.messages) do
+                msgs = msgs .. msg_tmpl:format(msg.response_id, tostring(msg.storage.data))
+            end
+        end
+
+        if client.bounces then
+            for j, bounce in ipairs(client.bounces) do
+                msgs = msgs .. bounce_tmpl:format(bounce.response_id, tostring(bounce.storage.data))
+            end
         end
     end
 
@@ -195,7 +251,7 @@ end
 -- {{{ queue_request_context:__call()
 function queue_request_context:__call()
     -- Set up the ZMQ listener.
-    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(queue_request_channel_str)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:bind(rec.endpoint)
 

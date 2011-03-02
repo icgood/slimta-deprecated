@@ -1,6 +1,8 @@
 
 local xml_wrapper = require "xml_wrapper"
 
+local queue_request_channel_str = CONF(queue_request_channel)
+
 -- {{{ tags table
 local tags = {
 
@@ -42,7 +44,6 @@ function queue_request_context.new()
     local self = {}
     setmetatable(self, queue_request_context)
 
-    self.endpoint = CONF(queue_request_channel)
     self.parser = xml_wrapper.new(tags)
     self.contents = {}
     self.messages = {}
@@ -97,7 +98,7 @@ end
 
 -- {{{ queue_request_context:__call()
 function queue_request_context:__call()
-    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(queue_request_channel_str)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:connect(rec.endpoint)
 

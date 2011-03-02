@@ -1,4 +1,7 @@
+
 local relay_request_context = require "relay_request_context"
+
+local interval = CONF(queue_attempt_poll_interval) or 60
 
 local attempt_timer_context = {}
 attempt_timer_context.__index = attempt_timer_context
@@ -7,8 +10,6 @@ attempt_timer_context.__index = attempt_timer_context
 function attempt_timer_context.new()
     local self = {}
     setmetatable(self, attempt_timer_context)
-
-    self.interval = CONF(queue_attempt_poll_interval) or 60
 
     return self
 end
@@ -59,7 +60,7 @@ end
 -- {{{ attempt_timer_context:__call()
 function attempt_timer_context:__call(data)
     local tfd = ratchet.timerfd.new()
-    tfd:settime(self.interval, self.interval)
+    tfd:settime(interval, interval)
 
     while true do
         local fires = tfd:read()

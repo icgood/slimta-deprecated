@@ -1,4 +1,6 @@
 
+local relay_request_channel_str = CONF(relay_request_channel)
+
 local relay_request_context = {}
 relay_request_context.__index = relay_request_context
 
@@ -7,7 +9,6 @@ function relay_request_context.new(message)
     local self = {}
     setmetatable(self, relay_request_context)
 
-    self.endpoint = CONF(relay_request_channel)
     self.nexthops = {}
 
     return self
@@ -64,18 +65,18 @@ function relay_request_context:build_message()
 ]]
 
     local nexthop_tmpl = [[ <nexthop>
-  <protocol>%s</protocol>
-  <destination>%s</destination>
-  <port>%s</port>
+  <protocol>$(protocol)</protocol>
+  <destination>$(destination)</destination>
+  <port>$(port)</port>
   <security></security>
-%s </nexthop>
+$(messages) </nexthop>
 ]]
 
     local msg_tmpl = [[  <message>
    <envelope>
-    <sender>%s</sender>
-%s   </envelope>
-   <storage engine="%s" size="%d">%s</storage>
+    <sender>$(sender)</sender>
+$(recipients)   </envelope>
+   <storage engine="$(engine)" size="$(size)">$(data)</storage>
   </message>
 ]]
 
@@ -92,21 +93,21 @@ function relay_request_context:build_message()
                 rcpts = rcpts .. rcpt_tmpl:format(rcpt)
             end
 
-            msgs = msgs .. msg_tmpl:format(
-                msg.envelope.sender,
-                rcpts,
-                msg.storage.engine,
-                msg.size,
-                msg.storage.data
-            )
+            msgs = msgs .. slimta.interp(msg_tmpl, {
+                sender = msg.envelope.sender,
+                recipients = rcpts,
+                size = msg.size,
+                engine = msg.storage.engine,
+                data = msg.storage.data,
+            })
         end
         
-        nexthops = nexthops .. nexthop_tmpl:format(
-            hop.protocol,
-            hop.host,
-            hop.port,
-            msgs
-        )
+        nexthops = nexthops .. slimta.interp(nexthop_tmpl, {
+            protocol = hop.protocol,
+            destination = hop.host,
+            port = hop.port,
+            messages = msgs,
+        })
     end
 
     return root_tmpl:format(nexthops)
@@ -115,7 +116,7 @@ end
 
 -- {{{ relay_request_context:__call()
 function relay_request_context:__call()
-    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(relay_request_channel_str)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:connect(rec.endpoint)
 

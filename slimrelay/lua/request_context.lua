@@ -1,6 +1,8 @@
 
 local xml_wrapper = require "xml_wrapper"
 
+local request_channel_str = CONF(request_channel)
+
 -- {{{ tags table
 local tags = {
 
@@ -75,11 +77,10 @@ local request_context = {}
 request_context.__index = request_context
 
 -- {{{ request_context.new()
-function request_context.new(endpoint, results_channel)
+function request_context.new(results_channel)
     local self = {}
     setmetatable(self, request_context)
 
-    self.endpoint = endpoint
     self.results_channel = results_channel
     self.parser = xml_wrapper.new(tags)
 
@@ -104,7 +105,7 @@ end
 -- {{{ request_context:__call()
 function request_context:__call()
     -- Set up the ZMQ listener.
-    local rec = ratchet.zmqsocket.prepare_uri(self.endpoint)
+    local rec = ratchet.zmqsocket.prepare_uri(request_channel_str)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:bind(rec.endpoint)
 

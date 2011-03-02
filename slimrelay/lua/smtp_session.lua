@@ -23,7 +23,7 @@ function smtp_session.new(data, results_channel)
         to_send = {smtp_states.EHLO.new(self)},
     }
 
-    self.results = message_results.new(self.messages, results_channel, self.message_placeholder)
+    self.results = message_results.new(self.messages, results_channel, "SMTP")
 
     return self
 end

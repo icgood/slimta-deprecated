@@ -43,7 +43,9 @@ end
 -- {{{ smtp_context:on_error()
 function smtp_context:on_error(err)
     print("ERROR: "..err)
-    self.session:shutdown("softfail", "[[socket]]", "", err)
+
+    -- See RFC 5321 Section 3.8. for reasoning behind code 451.
+    self.session:shutdown("softfail", "[[socket]]", "451", err)
 end
 -- }}}
 
@@ -54,7 +56,8 @@ function smtp_context:__call()
     local rec = ratchet.socket.prepare_tcp(self.host, self.port, dns, CONF(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     if not socket:connect(rec.addr) then
-        self.session:shutdown("softfail", "[[socket]]", "", "Connection failed.")
+        -- See RFC 5321 Section 3.8. for reasoning behind code 451.
+        self.session:shutdown("softfail", "[[socket]]", "451", "Connection failed.")
         return
     end
 
