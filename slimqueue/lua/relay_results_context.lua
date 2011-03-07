@@ -78,8 +78,16 @@ function relay_results_context.new()
 end
 -- }}}
 
+-- {{{ relay_results_context:on_delete_error()
+function relay_results_context:on_delete_error()
+    -- No-op.
+end
+-- }}}
+
 -- {{{ relay_results_context:delete_message()
 function relay_results_context:delete_message(msg)
+    kernel:set_error_handler(self.on_delete_error, self)
+
     local engine = storage_engines[msg.storage.engine].delete
 
     local storage = engine.new(msg.storage.data)

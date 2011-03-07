@@ -188,7 +188,7 @@ static void printf_index (lua_State *L, int i)
 			break;
 		}
 		case LUA_TBOOLEAN: {
-			printf (lua_toboolean (L, 1) ? "true" : "false");
+			printf (lua_toboolean (L, i) ? "true" : "false");
 			break;
 		}
 		case LUA_TNUMBER: {

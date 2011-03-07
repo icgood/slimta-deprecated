@@ -44,12 +44,15 @@ static void handle_exit (void)
 	 */
 
 	lua_close (L);
+
+	_exit (0);
 }
 /* }}} */
 
 /* {{{ handle_exitsig() */
 static void handle_exitsig (int signum)
 {
+	printf ("\n");
 	exit (0);
 }
 /* }}} */
@@ -146,14 +149,6 @@ static void setup_kernel (lua_State *L)
 	lua_getfield (L, -1, "new");
 	lua_call (L, 0, 1);
 	lua_setglobal (L, "kernel");
-
-	/* Set up 'dns' global by calling ratchet.dns.new(). */
-	lua_getfield (L, -1, "dns");
-	lua_getfield (L, -1, "new");
-	lua_getglobal (L, "kernel");
-	lua_call (L, 1, 1);
-	lua_setglobal (L, "dns");
-	lua_pop (L, 1);
 }
 /* }}} */
 

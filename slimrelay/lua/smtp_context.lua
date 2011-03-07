@@ -53,7 +53,7 @@ end
 function smtp_context:__call()
     kernel:set_error_handler(smtp_context.on_error, self)
 
-    local rec = ratchet.socket.prepare_tcp(self.host, self.port, dns, CONF(dns_query_types))
+    local rec = ratchet.socket.prepare_tcp(self.host, self.port, CONF(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     if not socket:connect(rec.addr) then
         -- See RFC 5321 Section 3.8. for reasoning behind code 451.

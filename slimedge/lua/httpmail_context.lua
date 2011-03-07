@@ -87,7 +87,7 @@ end
 
 -- {{{ httpmail_context:__call()
 function httpmail_context:__call()
-    local rec = ratchet.socket.prepare_uri(httpmail_channel_str, dns, CONF(dns_query_types))
+    local rec = ratchet.socket.prepare_uri(httpmail_channel_str, CONF(dns_query_types))
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)

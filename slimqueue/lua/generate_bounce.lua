@@ -82,8 +82,17 @@ function generate_bounce:build_bounce_data(orig, orig_data)
 end
 -- }}}
 
+-- {{{ generate_bounce:on_error()
+function generate_bounce:on_error(err)
+    self.bounce.storage = nil
+    self.bounce.storage_error = err
+end
+-- }}}
+
 -- {{{ generate_bounce:__call()
 function generate_bounce:__call()
+    kernel:set_error_handler(self.on_error, self)
+
     local orig, orig_data = self:get_original_message()
     self:set_bounce_envelope(orig)
     local bounce_data = self:build_bounce_data(orig, orig_data)

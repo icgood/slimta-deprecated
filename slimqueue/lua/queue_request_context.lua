@@ -121,8 +121,17 @@ function queue_request_context.new()
 end
 -- }}}
 
+-- {{{ queue_request_context:on_storage_error()
+function queue_request_context:on_storage_error(message, err)
+    message.storage = nil
+    message.storage_error = err
+end
+-- }}}
+
 -- {{{ queue_request_context:chain_store_then_request_relay_calls()
 function queue_request_context:chain_store_then_request_relay_calls(message, storage, relay_req)
+    kernel:set_error_handler(self.on_storage_error, message)
+
     -- The second, rarely-necessary return value can be used to skip the immediate
     -- relay attempt. This may be useful when a message is not immediately available
     -- for reading even when the storage engine has returned a queue ID. The only
@@ -228,18 +237,35 @@ function queue_request_context:build_response()
 ]]
     local bounce_tmpl = [[  <bounce id="%s">%s</bounce>
 ]]
+    local msg_error_tmpl = [[  <message id="%s">
+   <error>%s</error>
+  </message>
+]]
+
+    local bounce_error_tmpl = [[  <bounce id="%s">
+   <error>%s</error>
+  </bounce>
+]]
 
     local msgs = ""
     for i, client in ipairs(self.msg_info.clients) do
         if client.messages then
             for j, msg in ipairs(client.messages) do
-                msgs = msgs .. msg_tmpl:format(msg.response_id, tostring(msg.storage.data))
+                if msg.storage then
+                    msgs = msgs .. msg_tmpl:format(msg.response_id, msg.storage.data)
+                else
+                    msgs = msgs .. msg_error_tmpl:format(msg.response_id, msg.storage_error)
+                end
             end
         end
 
         if client.bounces then
             for j, bounce in ipairs(client.bounces) do
-                msgs = msgs .. bounce_tmpl:format(bounce.response_id, tostring(bounce.storage.data))
+                if bounce.storage then
+                    msgs = msgs .. bounce_tmpl:format(bounce.response_id, bounce.storage.data)
+                else
+                    msgs = msgs .. bounce_error_tmpl:format(bounce.response_id, bounce.storage_error)
+                end
             end
         end
     end
