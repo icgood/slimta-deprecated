@@ -82,6 +82,14 @@ function smtp_data:get()
 end
 -- }}}
 
+-- {{{ smtp_data:act()
+function smtp_data:act(context, socket, more_coming)
+    for i, piece in self:iter() do
+        context:queue_send(socket, piece, more_coming)
+    end
+end
+-- }}}
+
 -- {{{ smtp_data:brief()
 function smtp_data:brief()
     return "[[MESSAGE CONTENTS]]"

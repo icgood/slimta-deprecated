@@ -80,10 +80,8 @@ function smtp_context:__call()
                 if type(data) == "string" then
                     self:queue_send(socket, data, more_coming)
                 else
-                    -- We want to send an iterable object, such as message data.
-                    for i, piece in data:iter() do
-                        self:queue_send(socket, piece, more_coming)
-                    end
+                    -- We have an object that acts on its own, such as message data.
+                    data:act(self, socket, more_coming)
                 end
             until not more_coming
         end

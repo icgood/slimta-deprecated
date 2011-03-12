@@ -13,14 +13,17 @@ function smtp_session.new(data, results_channel)
     self.security = data.security
 
     self.ehlo_as = CONF(hostname, self) or os.getenv("HOSTNAME")
-    self.extensions = {}
+    self:reset_extensions()
 
     self:save_each_response_function()
 
     self.current_msg = 0
     self.commands = {
         waiting_for = {smtp_states.Banner.new(self)},
-        to_send = {smtp_states.EHLO.new(self)},
+        to_send = {
+            smtp_states.EHLO.new(self),
+            smtp_states.STARTTLS.new(self),
+        },
     }
 
     self.results = message_results.new(self.messages, results_channel, "SMTP")
@@ -41,11 +44,18 @@ smtp_session.on_action = {
     end,
 
     quit = function (self)
-        self.commands.to_send = {smtp_states.QUIT(self)}
+        self.commands.to_send = {smtp_states.QUIT.new(self)}
     end,
 
     try_helo = function (self)
-        self.commands.to_send = {smtp_states.HELO(self)}
+        self.commands.to_send = {smtp_states.HELO.new(self)}
+    end,
+
+    initiate_tls = function (self)
+        self.commands.to_send = {
+            smtp_states.Encrypt.new(self),
+            smtp_states.EHLO.new(self),
+        }
     end,
 
     fail_message = function (self, command, code, message)
@@ -178,15 +188,31 @@ function smtp_session:send_more()
         self:queue_next_msg_commands()
     end
 
-    -- Dequeue command from to_send and enqueue in waiting_for.
+    -- Dequeue command from to_send.
     local command = table.remove(self.commands.to_send, 1)
-    table.insert(self.commands.waiting_for, command)
 
     -- Build command string and whether it supports pipelining.
     local data = command:build_command()
     local more = command.supports_pipeline and self:has_extension("PIPELINING")
 
-    return data, more
+    if data then
+        -- Some "commands" are not command-response, like
+        -- initiating TLS encryption.
+        if command.parse_response then
+            table.insert(self.commands.waiting_for, command)
+        end
+
+        return data, more
+    else
+        -- If build_command() returned nothing, recurse.
+        return self:send_more()
+    end
+end
+-- }}}
+
+-- {{{ smtp_session:reset_extensions()
+function smtp_session:reset_extensions()
+    self.extensions = {}
 end
 -- }}}
 

@@ -1,4 +1,5 @@
 local smtp_data = require "smtp_data"
+local smtp_encrypt = require "smtp_encrypt"
 
 local smtp_states = {}
 
@@ -86,6 +87,7 @@ function smtp_states.EHLO:parse_response(code, response)
         end
     end
 
+    self.session:reset_extensions()
     local greeting = false
     for line in response:gmatch("(.-)%s-\n") do
         if not greeting then
@@ -95,6 +97,32 @@ function smtp_states.EHLO:parse_response(code, response)
             self.session:add_extension(line:match(pattern))
         end
     end
+end
+-- }}}
+
+-- {{{ STARTTLS
+new_state("STARTTLS")
+
+function smtp_states.STARTTLS:build_command()
+    if self.session:has_extension("STARTTLS") then
+        return "STARTTLS\r\n"
+    else
+        return
+    end
+end
+
+function smtp_states.STARTTLS:parse_response(code, response)
+    if code == 220 then
+        return "initiate_tls"
+    end
+end
+-- }}}
+
+-- {{{ Encrypt
+new_state("Encrypt")
+
+function smtp_states.Encrypt:build_command()
+    return smtp_encrypt.new(self.session)
 end
 -- }}}
 
@@ -176,7 +204,7 @@ function smtp_states.DATA_send:build_command()
         local curr_loader = curr_msg.storage.loader
         return curr_loader
     else
-        return ""
+        return ".\r\n"
     end
 end
 
