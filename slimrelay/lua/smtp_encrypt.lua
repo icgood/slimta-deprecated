@@ -16,7 +16,9 @@ end
 function smtp_encrypt:act(context, socket)
     local enc = socket:encrypt(ssl)
     enc:client_handshake()
-    enc:check_certificate_chain()
+    
+    local got_cert, verified = enc:verify_certificate()
+    assert(got_cert and verified)
 end
 -- }}}
 
