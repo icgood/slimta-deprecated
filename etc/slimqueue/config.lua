@@ -21,9 +21,7 @@ attempt_timer_context.new(5, relay_request_uri)
 --------------------------------------------------------------------------------
 -- {{{ Setup storage engine usage logic.
 
--- {{{ config.queue.which_storage
 config.queue.which_storage.value = "couchdb"
--- }}}
 
 -- }}} -------------------------------------------------------------------------
 
@@ -32,11 +30,8 @@ config.queue.which_storage.value = "couchdb"
 
 require "modules.engines.nexthop.mx"
 
--- {{{ config.queue.which_nexthop
 config.queue.which_nexthop.value = "mx"
--- }}}
 
--- {{{ config.modules.engines.nexthop.mx.pick_one
 config.modules.engines.nexthop.mx.pick_one.func = function (mxs, attempts)
     -- Cycle to a new MX every NN attempts, looping back to the first
     -- one after all have been tried. Return values must start at 1.
@@ -44,7 +39,6 @@ config.modules.engines.nexthop.mx.pick_one.func = function (mxs, attempts)
 
     return math.fmod(math.floor(attempts/next_mx_every_NN), mxs.n) + 1
 end
--- }}}
 
 -- }}} -------------------------------------------------------------------------
 
@@ -53,13 +47,9 @@ end
 
 require "modules.engines.failure.bounce"
 
--- {{{ config.queue.which_failure
 config.queue.which_failure.value = "bounce"
--- }}}
 
--- {{{ config.modules.engines.failure.bounce.request_uri
 config.modules.engines.failure.bounce.request_uri = "zmq:req:tcp://127.0.0.1:4554"
--- }}}
 
 -- }}} -------------------------------------------------------------------------
 
@@ -68,17 +58,11 @@ config.modules.engines.failure.bounce.request_uri = "zmq:req:tcp://127.0.0.1:455
 
 require "modules.engines.attempting.linear"
 
--- {{{ config.queue.which_attempting
 config.queue.which_attempting.value = "linear"
--- }}}
 
--- {{{ config.modules.engines.attempting.linear.seconds
 config.modules.engines.attempting.linear.seconds.value = 5
--- }}}
 
--- {{{ config.modules.engines.attempting.linear.retries
 config.modules.engines.attempting.linear.retries.value = 5
--- }}}
 
 -- }}} -------------------------------------------------------------------------
 

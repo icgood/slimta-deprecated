@@ -1,15 +1,18 @@
 
 --------------------------------------------------------------------------------
--- {{{ Load up protocols that will be used.
+-- {{{ Create queue request channel.
 
-require "modules.protocols.edge.httpmail"
+-- Channel to send requests for new queued messages.
+queue_request_channel = queue_request_context.new("zmq:req:tcp://127.0.0.1:4554")
 
 -- }}} -------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
--- {{{ Create queue-request and edge protocol channels.
+-- {{{ Setup edge protocols that will be used.
 
-queue_request_channel = queue_request_context.new("zmq:req:tcp://127.0.0.1:4554")
+require "modules.protocols.edge.httpmail"
+
+-- Channel to listen for HTTP-Mail traffic.
 modules.protocols.edge.httpmail.new("tcp://*:8025", queue_request_channel)
 
 -- }}} -------------------------------------------------------------------------

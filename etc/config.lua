@@ -2,16 +2,12 @@
 --------------------------------------------------------------------------------
 -- {{{ Global configuration options.
 
--- {{{ config.socket.send_size
 config.socket.send_size.func = function (socket)
     -- socket(7) option SO_SNDBUF returns double the desired value.
     return socket.SO_SNDBUF / 2
 end
---- }}}
 
--- {{{ config.dns.a_queries
 config.dns.a_queries.value = {"ipv6", "ipv4"}
--- }}}
 
 -- }}} -------------------------------------------------------------------------
 
@@ -19,13 +15,9 @@ config.dns.a_queries.value = {"ipv6", "ipv4"}
 -- {{{ Load up storage engines that will be used.
 require "modules.engines.storage.couchdb"
 
--- {{{ config.modules.engines.storage.couchdb.uri
 config.modules.engines.storage.couchdb.uri.value = "tcp://slimta2:5984"
--- }}}
 
--- {{{ config.modules.engines.storage.couchdb.queue
 config.modules.engines.storage.couchdb.queue.value = "queue"
--- }}}
 
 -- }}} -------------------------------------------------------------------------
 
