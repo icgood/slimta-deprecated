@@ -1,11 +1,7 @@
-relaydatadir = $(pkgdatadir)/relay
-commondatadir = $(pkgdatadir)/common
 
-bin_PROGRAMS = slimrelay
+loc1dir = $(pkglibdir)/slimrelay/
+dist_loc1_DATA = request_context.lua \
+		 results_context.lua \
+		 session_results.lua \
+		 setup.lua
 
-slimrelay_LDFLAGS = @LUA_LIB@
-slimrelay_CFLAGS = -I../slimcommon/
-slimrelay_LDADD = ../slimcommon/libslimcommon.la
-slimrelay_SOURCES = slimrelay.c
-
-SUBDIRS = lua

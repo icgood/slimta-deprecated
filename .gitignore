@@ -22,7 +22,7 @@ Makefile
 *.la
 *.lo
 *.o
-slimedge/slimedge
-slimrelay/slimrelay
-slimqueue/slimqueue
-slimaster/slimaster
+main/slimedge
+main/slimrelay
+main/slimqueue
+main/slimaster

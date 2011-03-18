@@ -1,11 +1,4 @@
-masterdatadir = $(pkgdatadir)/master
-commondatadir = $(pkgdatadir)/common
 
-bin_PROGRAMS = slimaster
+loc1dir = $(pkglibdir)/slimaster/
+dist_loc1_DATA = 
 
-slimaster_LDFLAGS = @LUA_LIB@
-slimaster_CFLAGS = -I../slimcommon/
-slimaster_LDADD = ../slimcommon/libslimcommon.la
-slimaster_SOURCES = slimaster.c
-
-SUBDIRS = lua

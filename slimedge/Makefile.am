@@ -1,11 +1,5 @@
-edgedatadir = $(pkgdatadir)/edge
-commondatadir = $(pkgdatadir)/common
 
-bin_PROGRAMS = slimedge
+loc1dir = $(pkglibdir)/slimedge/
+dist_loc1_DATA = queue_request_context.lua \
+		 setup.lua
 
-slimedge_LDFLAGS = @LUA_LIB@
-slimedge_CFLAGS = -I../slimcommon/
-slimedge_LDADD = ../slimcommon/libslimcommon.la
-slimedge_SOURCES = slimedge.c
-
-SUBDIRS = lua

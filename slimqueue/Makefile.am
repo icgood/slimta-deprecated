@@ -1,11 +1,10 @@
-queuedatadir = $(pkgdatadir)/queue
-commondatadir = $(pkgdatadir)/common
 
-bin_PROGRAMS = slimqueue
+loc1dir = $(pkglibdir)/slimqueue/
+dist_loc1_DATA = attempt_timer_context.lua \
+		 generate_bounce.lua \
+		 header_generation.lua \
+		 queue_request_context.lua \
+		 relay_request_context.lua \
+		 relay_results_context.lua \
+		 setup.lua
 
-slimqueue_LDFLAGS = @LUA_LIB@
-slimqueue_CFLAGS = -I../slimcommon/ 
-slimqueue_LDADD = ../slimcommon/libslimcommon.la
-slimqueue_SOURCES = slimqueue.c
-
-SUBDIRS = lua

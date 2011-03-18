@@ -1,2 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = etc slimcommon slimaster slimedge slimqueue slimrelay
+SUBDIRS = etc \
+	  main \
+	  slimedge \
+	  slimqueue \
+	  slimrelay \
+	  slimaster \
+	  modules

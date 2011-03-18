@@ -7,7 +7,7 @@ AM_INIT_AUTOMAKE
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([slimrelay/slimrelay.c])
+AC_CONFIG_SRCDIR([main/slimrelay.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Check for programs.
@@ -64,14 +64,24 @@ AC_FUNC_STRERROR_R
 
 AC_CONFIG_FILES([Makefile
 		 etc/Makefile
-		 slimcommon/Makefile
-		 slimcommon/lua/Makefile
-		 slimaster/Makefile
-		 slimaster/lua/Makefile
-		 slimrelay/Makefile
-		 slimrelay/lua/Makefile
-		 slimqueue/Makefile
-		 slimqueue/lua/Makefile
+		 main/Makefile
+
 		 slimedge/Makefile
-		 slimedge/lua/Makefile])
+		 slimqueue/Makefile
+		 slimrelay/Makefile
+		 slimaster/Makefile
+
+		 modules/Makefile
+		 modules/protocols/Makefile
+		 modules/protocols/http/Makefile
+		 modules/protocols/edge/Makefile
+		 modules/protocols/relay/Makefile
+		 modules/protocols/relay/smtp/Makefile
+		 modules/engines/Makefile
+		 modules/engines/storage/Makefile
+		 modules/engines/nexthop/Makefile
+		 modules/engines/failure/Makefile
+		 modules/engines/attempting/Makefile
+])
+
 AC_OUTPUT
