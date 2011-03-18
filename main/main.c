@@ -13,16 +13,24 @@
 #include "misc.h"
 #include "slimta.h"
 
-extern const char *require_files[];
+#include "config.h"
 
-static const char *DEFAULT_CONF_PATH = "/etc/slimta/?";
+extern const char *which_configs[];
+extern const char *which_setups[];
+
+#ifndef SYSCONFDIR
+static const char *DEFAULT_CONF_PATH = "/etc/" PACKAGE;
+#else
+static const char *DEFAULT_CONF_PATH = SYSCONFDIR "/slimta";
+#endif
 static const char *CONF_PATH_ENVVAR = "SLIMTA_CONF_PATH";
 
-static const char *DEFAULT_LIB_PATH = "/var/lib/slimta/?.lua;/var/lib/slimta/?/init.lua";
+#ifndef PKGLIBDIR
+static const char *DEFAULT_LIB_PATH = "/var/lib/slimta";
+#else
+static const char *DEFAULT_LIB_PATH = PKGLIBDIR;
+#endif
 static const char *LIB_PATH_ENVVAR = "SLIMTA_LIB_PATH";
-
-static const char *DEFAULT_LIB_CPATH = "/var/lib/slimta/?.so";
-static const char *LIB_CPATH_ENVVAR = "SLIMTA_LIB_CPATH";
 
 static const char *global_tables[] = {
 	"modules",
@@ -121,8 +129,8 @@ static void setup_kernel (lua_State *L)
 }
 /* }}} */
 
-/* {{{ setup_paths() */
-static int setup_paths (lua_State *L)
+/* {{{ set_paths() */
+static int set_paths (lua_State *L)
 {
 	int i = 0;
 
@@ -133,7 +141,7 @@ static int setup_paths (lua_State *L)
 	lua_pushliteral (L, ";");
 	lua_rawseti (L, -2, ++i);
 
-	/* Add the config path(s). */
+	/* Add the config path for ?.conf. */
 	lua_getglobal (L, "os");
 	lua_getfield (L, -1, "getenv");
 	lua_remove (L, -2);
@@ -144,9 +152,11 @@ static int setup_paths (lua_State *L)
 		lua_pushstring (L, DEFAULT_CONF_PATH);
 		lua_replace (L, -2);
 	}
+	lua_pushliteral (L, "/?.conf");
+	lua_concat (L, 2);
 	lua_rawseti (L, -2, ++i);
 
-	/* Add the lib path(s). */
+	/* Add the lib path for ?.lua. */
 	lua_getglobal (L, "os");
 	lua_getfield (L, -1, "getenv");
 	lua_remove (L, -2);
@@ -157,6 +167,23 @@ static int setup_paths (lua_State *L)
 		lua_pushstring (L, DEFAULT_LIB_PATH);
 		lua_replace (L, -2);
 	}
+	lua_pushliteral (L, "/?.lua");
+	lua_concat (L, 2);
+	lua_rawseti (L, -2, ++i);
+
+	/* Add the lib path for ?/init.lua. */
+	lua_getglobal (L, "os");
+	lua_getfield (L, -1, "getenv");
+	lua_remove (L, -2);
+	lua_pushstring (L, LIB_PATH_ENVVAR);
+	lua_call (L, 1, 1);
+	if (!lua_isstring (L, -1))
+	{
+		lua_pushstring (L, DEFAULT_LIB_PATH);
+		lua_replace (L, -2);
+	}
+	lua_pushliteral (L, "/?/init.lua");
+	lua_concat (L, 2);
 	lua_rawseti (L, -2, ++i);
 
 	/* Concatenate table values. */
@@ -175,8 +202,8 @@ static int setup_paths (lua_State *L)
 }
 /* }}} */
 
-/* {{{ setup_cpaths() */
-static int setup_cpaths (lua_State *L)
+/* {{{ set_cpaths() */
+static int set_cpaths (lua_State *L)
 {
 	int i = 0;
 
@@ -187,17 +214,19 @@ static int setup_cpaths (lua_State *L)
 	lua_pushliteral (L, ";");
 	lua_rawseti (L, -2, ++i);
 
-	/* Add the lib path(s). */
+	/* Add the lib path for ?.so. */
 	lua_getglobal (L, "os");
 	lua_getfield (L, -1, "getenv");
 	lua_remove (L, -2);
-	lua_pushstring (L, LIB_CPATH_ENVVAR);
+	lua_pushstring (L, LIB_PATH_ENVVAR);
 	lua_call (L, 1, 1);
 	if (!lua_isstring (L, -1))
 	{
-		lua_pushstring (L, DEFAULT_LIB_CPATH);
+		lua_pushstring (L, DEFAULT_LIB_PATH);
 		lua_replace (L, -2);
 	}
+	lua_pushliteral (L, "/?.so");
+	lua_concat (L, 2);
 	lua_rawseti (L, -2, ++i);
 
 	/* Concatenate table values. */
@@ -232,16 +261,33 @@ static int setup_globals (lua_State *L)
 }
 /* }}} */
 
-/* {{{ run_require_on_files() */
-static int run_require_on_files (lua_State *L)
+/* {{{ run_require_on_configs() */
+static int run_require_on_configs (lua_State *L)
 {
 	int i;
 
-	/* Run require(f) for each f in require_files. */
-	for (i=0; require_files[i] != NULL; i++)
+	/* Run require(f) for each f in which_configs. */
+	for (i=0; which_configs[i] != NULL; i++)
 	{
 		lua_getglobal (L, "require");
-		lua_pushstring (L, require_files[i]);
+		lua_pushstring (L, which_configs[i]);
+		lua_call (L, 1, 0);
+	}
+
+	return 0;
+}
+/* }}} */
+
+/* {{{ run_require_on_setups() */
+static int run_require_on_setups (lua_State *L)
+{
+	int i;
+
+	/* Run require(f) for each f in which_setups. */
+	for (i=0; which_setups[i] != NULL; i++)
+	{
+		lua_getglobal (L, "require");
+		lua_pushstring (L, which_setups[i]);
 		lua_call (L, 1, 0);
 	}
 
@@ -273,12 +319,14 @@ int main (int argc, char *argv[])
 
 	push_argvs_to_global (L, argc, argv);
 	setup_kernel (L);
-	setup_paths (L);
-	setup_cpaths (L);
 	setup_globals (L);
 	lua_settop (L, 0);
 
-	run_require_on_files (L);
+	set_paths (L);
+	set_cpaths (L);
+	run_require_on_setups (L);
+	run_require_on_configs (L);
+
 	hand_control_to_kernel (L);
 
 	return 0;
