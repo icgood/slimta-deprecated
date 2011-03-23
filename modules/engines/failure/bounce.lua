@@ -102,8 +102,8 @@ end
 
 slimta.config.new("config.modules.engines.failure.bounce.request_uri")
 
--- {{{ modules.engines.failure.bounce()
-function modules.engines.failure.bounce(msgs)
+-- {{{ failure_bounce()
+local function failure_bounce(msgs)
     local uri = config.modules.engines.failure.bounce.request_uri()
     if not uri then
         error("config.modules.engines.failure.bounce.request_uri required.")
@@ -112,5 +112,7 @@ function modules.engines.failure.bounce(msgs)
     return ctx()
 end
 -- }}}
+
+modules.engines.failure = failure_bounce
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

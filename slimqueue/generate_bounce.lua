@@ -18,7 +18,7 @@ end
 -- {{{ generate_bounce:store_and_request_relay()
 function generate_bounce:store_and_request_relay(data)
     local msg = self.bounce
-    local which_engine = config.queue.which_storage(msg, data)
+    local which_engine = msg.orig_storage.engine
     local engine = modules.engines.storage[which_engine].new
 
     msg.storage = {engine = which_engine}

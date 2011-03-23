@@ -155,7 +155,7 @@ end
 
 -- {{{ queue_request_context:store_and_request_relay()
 function queue_request_context:store_and_request_relay(msg, data)
-    local which_engine = config.queue.which_storage(msg, data)
+    local which_engine = config.queue.default_storage(msg, data)
     local engine = modules.engines.storage[which_engine].new
 
     msg.storage = {engine = which_engine}

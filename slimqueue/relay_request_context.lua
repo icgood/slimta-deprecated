@@ -42,10 +42,8 @@ end
 
 -- {{{ relay_request_context:get_nexthop()
 function relay_request_context:get_nexthop(message)
-    local which = config.queue.which_nexthop()
-    local engine = modules.engines.nexthop[which]
 
-    local ret = engine(message)
+    local ret = modules.engines.nexthop(message)
     if not ret or not ret.host or not ret.port or not ret.protocol then
         error("Invalid nexthop for message.")
     end

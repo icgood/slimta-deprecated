@@ -3,6 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -15,7 +16,7 @@
 
 #include "config.h"
 
-extern const char *which_configs[];
+extern const char *which_config;
 extern const char *which_setups[];
 
 #ifndef SYSCONFDIR
@@ -39,9 +40,7 @@ static const char *global_tables[] = {
 	"modules.protocols.relay",
 	"modules.protocols.edge",
 	"modules.engines.storage",
-	"modules.engines.nexthop",
-	"modules.engines.attempting",
-	"modules.engines.failure",
+	"modules.engines",
 
 	NULL
 };
@@ -139,21 +138,6 @@ static int set_paths (lua_State *L)
 	/* Set up initial (default) path set. */
 	lua_newtable (L);
 	lua_pushliteral (L, ";");
-	lua_rawseti (L, -2, ++i);
-
-	/* Add the config path for ?.conf. */
-	lua_getglobal (L, "os");
-	lua_getfield (L, -1, "getenv");
-	lua_remove (L, -2);
-	lua_pushstring (L, CONF_PATH_ENVVAR);
-	lua_call (L, 1, 1);
-	if (!lua_isstring (L, -1))
-	{
-		lua_pushstring (L, DEFAULT_CONF_PATH);
-		lua_replace (L, -2);
-	}
-	lua_pushliteral (L, "/?.conf");
-	lua_concat (L, 2);
 	lua_rawseti (L, -2, ++i);
 
 	/* Add the lib path for ?.lua. */
@@ -261,18 +245,65 @@ static int setup_globals (lua_State *L)
 }
 /* }}} */
 
-/* {{{ run_require_on_configs() */
-static int run_require_on_configs (lua_State *L)
+/* {{{ global_configs_dodir() */
+static int global_configs_dodir (lua_State *L, const char *fromdir)
 {
-	int i;
+	lua_pushstring (L, fromdir);
+	lua_pushliteral (L, "/conf.d/");
+	lua_concat (L, 2);
 
-	/* Run require(f) for each f in which_configs. */
-	for (i=0; which_configs[i] != NULL; i++)
+	DIR *dir = opendir (lua_tostring (L, -1));
+	if (!dir)
+		return handle_perror (L);
+	
+	struct dirent *entry;
+	while ((entry = readdir (dir)) != NULL)
 	{
-		lua_getglobal (L, "require");
-		lua_pushstring (L, which_configs[i]);
-		lua_call (L, 1, 0);
+		lua_getglobal (L, "dofile");
+		lua_pushvalue (L, -2);
+
+		lua_getfield (L, 2, "match");
+		lua_pushstring (L, entry->d_name);
+		lua_pushliteral (L, ".-%.conf");
+		lua_call (L, 2, 1);
+
+		if (!lua_isnil (L, -1))
+		{
+			lua_concat (L, 2);
+			lua_call (L, 1, 0);
+		}
+		else
+			lua_pop (L, 3);
 	}
+
+	closedir (dir);
+	lua_pop (L, 1);
+
+	return 0;
+}
+/* }}} */
+
+/* {{{ run_dofile_on_configs() */
+static int run_dofile_on_configs (lua_State *L)
+{
+	lua_getglobal (L, "dofile");
+
+	lua_getglobal (L, "os");
+	lua_getfield (L, -1, "getenv");
+	lua_remove (L, -2);
+	lua_pushstring (L, CONF_PATH_ENVVAR);
+	lua_call (L, 1, 1);
+	if (!lua_isstring (L, -1))
+	{
+		lua_pushstring (L, DEFAULT_CONF_PATH);
+		lua_replace (L, -2);
+	}
+	global_configs_dodir(L, lua_tostring (L, -1));
+	lua_pushliteral (L, "/");
+	lua_pushstring (L, which_config);
+	lua_concat (L, 3);
+
+	lua_call (L, 1, 0);
 
 	return 0;
 }
@@ -325,7 +356,7 @@ int main (int argc, char *argv[])
 	set_paths (L);
 	set_cpaths (L);
 	run_require_on_setups (L);
-	run_require_on_configs (L);
+	run_dofile_on_configs (L);
 
 	hand_control_to_kernel (L);
 

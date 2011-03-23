@@ -108,10 +108,7 @@ end
 
 -- {{{ relay_results_context:fail_message()
 function relay_results_context:fail_message(msg)
-    local which = config.queue.which_failure()
-    local engine = modules.engines.failure[which]
-    engine({msg})
-
+    modules.engine.failure({msg})
     self:delete_message(msg)
 end
 -- }}}

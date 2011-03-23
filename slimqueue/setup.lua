@@ -11,10 +11,7 @@ require "slimqueue.relay_results_context"
 --------------------------------------------------------------------------------
 -- {{{ Setup config options and their defaults.
 
-slimta.config.new("config.queue.which_failure", "bounce")
-slimta.config.new("config.queue.which_storage", "couchdb")
-slimta.config.new("config.queue.which_nexthop", "mx")
-slimta.config.new("config.queue.which_attempting", "linear")
+slimta.config.new("config.queue.default_storage", "couchdb")
 
 -- }}} -------------------------------------------------------------------------
 

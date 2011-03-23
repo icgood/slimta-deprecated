@@ -294,15 +294,6 @@ function couchdb_set_next_attempt:put_helper(info)
 end
 -- }}}
 
--- {{{ couchdb_set_next_attempt:build_next_attempt_timestamp()
-function couchdb_set_next_attempt:build_next_attempt_timestamp(info)
-    local which = config.queue.which_attempting()
-    local attempting_engine = modules.engines.attempting[which]
-
-    return attempting_engine(info.attempts, info)
-end
--- }}}
-
 -- {{{ couchdb_set_next_attempt:__call()
 function couchdb_set_next_attempt:__call()
     local code, reason
@@ -312,7 +303,7 @@ function couchdb_set_next_attempt:__call()
 
         info.attempts = info.attempts + 1
         local next_attempt_getter = next_queue_attempt_timestamp or default_next_attempt_timestamp
-        info.next_attempt = self:build_next_attempt_timestamp(info)
+        info.next_attempt = modules.engines.attempting(info.attempts, info)
         if not info.next_attempt then
             return false
         end

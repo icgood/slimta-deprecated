@@ -1,8 +1,8 @@
 
 slimta.config.new("config.modules.engines.nexthop.mx.pick_one", 1)
 
--- {{{ modules.engines.nexthop.mx()
-function modules.engines.nexthop.mx(msg)
+-- {{{ nexthop_mx()
+local function nexthop_mx(msg)
     local domain = msg.envelope.recipients[1]:match("%@(.-)$")
     local rec = ratchet.dns.query(domain, "mx")
 
@@ -22,5 +22,7 @@ function modules.engines.nexthop.mx(msg)
     }
 end
 -- }}}
+
+modules.engines.nexthop = nexthop_mx
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

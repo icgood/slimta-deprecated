@@ -5,12 +5,13 @@ attempt_timer_context = {}
 attempt_timer_context.__index = attempt_timer_context
 
 -- {{{ attempt_timer_context.new()
-function attempt_timer_context.new(interval, relay_req_uri)
+function attempt_timer_context.new(interval, relay_req_uri, which_storage)
     local self = {}
     setmetatable(self, attempt_timer_context)
 
     self.interval = interval
     self.relay_req_uri = relay_req_uri
+    self.which_storage = which_storage
 
     kernel:attach(self)
 
@@ -19,9 +20,9 @@ end
 -- }}}
 
 -- {{{ attempt_timer_context:get_deliverable()
-function attempt_timer_context:get_deliverable(which_engine)
-    local engine = modules.engines.storage[which_engine].get_deliverable
-    local storage = engine.new()
+function attempt_timer_context:get_deliverable()
+    local engine = modules.engines.storage[self.which_storage]
+    local storage = engine.get_deliverable.new()
 
     local now = slimta.get_now()
     local ret = storage(now)
@@ -32,10 +33,10 @@ end
 -- }}}
 
 -- {{{ attempt_timer_context:get_and_request_message()
-function attempt_timer_context:get_and_request_message(storage, id, which_engine, relay_req)
+function attempt_timer_context:get_and_request_message(storage, id, relay_req)
     local info = storage(id)
     info.storage = {
-        engine = which_engine,
+        engine = self.which_storage,
         data = id,
     }
     relay_req:add_message(info)
@@ -43,15 +44,15 @@ end
 -- }}}
 
 -- {{{ attempt_timer_context:send_relay_requests()
-function attempt_timer_context:send_relay_requests(which_engine, ids)
-    local engine = modules.engines.storage[which_engine].get_info
+function attempt_timer_context:send_relay_requests(ids)
+    local engine = modules.engines.storage[self.which_storage].get_info
     local storage = engine.new()
 
     local relay_req = relay_request_context.new(self.relay_req_uri)
 
     local children = {}
     for i, id in ipairs(ids) do
-        local thread = kernel:attach(self.get_and_request_message, self, storage, id, which_engine, relay_req)
+        local thread = kernel:attach(self.get_and_request_message, self, storage, id, relay_req)
         table.insert(children, thread)
     end
     kernel:wait_all(children)
@@ -66,11 +67,9 @@ function attempt_timer_context:__call(data)
     tfd:settime(self.interval, self.interval)
 
     while true do
-        for engine, v in pairs(modules.engines.storage) do
-            local ids = self:get_deliverable(engine)
-            if ids then
-                self:send_relay_requests(engine, ids)
-            end
+        local ids = self:get_deliverable()
+        if ids then
+            self:send_relay_requests(ids)
         end
 
         local fires = tfd:read()
