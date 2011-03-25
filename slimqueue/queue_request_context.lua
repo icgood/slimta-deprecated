@@ -144,7 +144,6 @@ end
 
 -- {{{ queue_request_context:on_storage_error()
 function queue_request_context:on_storage_error(message, err)
-    slimta.stackdump(message, err)
     message.storage = nil
     message.storage_error = err
 end
@@ -154,22 +153,14 @@ end
 function queue_request_context:chain_store_then_request_relay_calls(message, message_data, storage, relay_req)
     kernel:set_error_handler(self.on_storage_error, self, message)
 
-    local info, reason = storage:create_message_root()
-    if not info then
-        error(reason)
-    end
+    -- Create the message container and get access data.
+    message.storage.data = storage:create_message_root()
 
-    message.storage.data = info.id
-
+    -- Run pre-storage modules and add message data to storage container.
     message_data = self:handle_prestorage_modules(message, message_data)
-    storage:attach_data(message_data)
+    storage:create_message_body(message_data)
 
-    local ret, reason = storage:create_message_body(info)
-    if not ret then
-        storage:delete_message_root(info)
-        error(reason)
-    end
-
+    -- Send message data, unless storage engine says not to.
     if not storage.dont_send then
         relay_req()
     end

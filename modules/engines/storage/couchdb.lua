@@ -74,16 +74,16 @@ function couchdb_new:create_message_root()
         error(reason)
     end
 
-    local info = json.decode(data)
+    self.info = json.decode(data)
 
-    return info
+    return self.info.id
 end
 -- }}}
 
 -- {{{ couchdb_new:delete_message_root()
-function couchdb_new:delete_message_root(info)
+function couchdb_new:delete_message_root()
     local couchttp = http_connection.new(self.where)
-    local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..info.id.."?rev="..info.rev)
+    local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..self.info.id.."?rev="..self.info.rev)
     if code ~= 200 then
         error(reason)
     end
@@ -93,21 +93,19 @@ end
 -- }}}
 
 -- {{{ couchdb_new:create_message_body()
-function couchdb_new:create_message_body(info)
+function couchdb_new:create_message_body(message_data)
     local couchttp = http_connection.new(self.where)
     local code, reason, headers, data = couchttp:query(
         "PUT",
-        "/"..self.database.."/"..info.id.."/message?rev="..info.rev,
-        {["Content-Type"] = "message/rfc822", ["Content-Length"] = #self.message},
-        self.message
+        "/"..self.database.."/"..self.info.id.."/message?rev="..self.info.rev,
+        {["Content-Type"] = "message/rfc822", ["Content-Length"] = #message_data},
+        message_data
     )
     if code ~= 201 then
         error(reason)
     end
 
-    local info = json.decode(data)
-
-    return info
+    return true
 end
 -- }}}
 

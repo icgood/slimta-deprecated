@@ -47,8 +47,6 @@ end
 
 -- {{{ add_received_header()
 local function add_received_header(msg, info)
-    slimta.stackdump(info)
-
     local parts = {}
 
     build_from_section(info, parts)
