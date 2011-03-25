@@ -40,7 +40,7 @@ static const char *global_tables[] = {
 	"modules.protocols.relay",
 	"modules.protocols.edge",
 	"modules.engines.storage",
-	"modules.engines",
+	"modules.engines.prestorage",
 
 	NULL
 };

@@ -2,6 +2,7 @@
 local xml_wrapper = require "modules.engines.xml_wrapper"
 local relay_request_context = require "slimqueue.relay_request_context"
 local generate_bounce = require "slimqueue.generate_bounce"
+local message_wrapper = require "slimqueue.message_wrapper"
 
 -- {{{ tags table
 local tags = {
@@ -20,6 +21,12 @@ local tags = {
         list = "clients",
     },
 
+    {"ehlo", "client", "queue", "slimta",
+        handle = function (info, attrs, data)
+            info.ehlo = data:match("%S+")
+        end,
+    },
+
     {"protocol", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             info.protocol = data:match("%S+")
@@ -29,6 +36,12 @@ local tags = {
     {"host", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             info.host = data:match("%S+")
+        end,
+    },
+
+    {"ip", "client", "queue", "slimta",
+        handle = function (info, attrs, data)
+            info.ip = data:match("%S+")
         end,
     },
 
@@ -131,23 +144,33 @@ end
 
 -- {{{ queue_request_context:on_storage_error()
 function queue_request_context:on_storage_error(message, err)
+    slimta.stackdump(message, err)
     message.storage = nil
     message.storage_error = err
 end
 -- }}}
 
 -- {{{ queue_request_context:chain_store_then_request_relay_calls()
-function queue_request_context:chain_store_then_request_relay_calls(message, storage, relay_req)
-    kernel:set_error_handler(self.on_storage_error, message)
+function queue_request_context:chain_store_then_request_relay_calls(message, message_data, storage, relay_req)
+    kernel:set_error_handler(self.on_storage_error, self, message)
 
-    -- The second, rarely-necessary return value can be used to skip the immediate
-    -- relay attempt. This may be useful when a message is not immediately available
-    -- for reading even when the storage engine has returned a queue ID. The only
-    -- built-in usage of this parameter is for the blackhole storage engine.
-    local id, dont_send = storage()
+    local info, reason = storage:create_message_root()
+    if not info then
+        error(reason)
+    end
 
-    message.storage.data = id
-    if not dont_send then
+    message.storage.data = info.id
+
+    message_data = self:handle_prestorage_modules(message, message_data)
+    storage:attach_data(message_data)
+
+    local ret, reason = storage:create_message_body(info)
+    if not ret then
+        storage:delete_message_root(info)
+        error(reason)
+    end
+
+    if not storage.dont_send then
         relay_req()
     end
 end
@@ -160,12 +183,28 @@ function queue_request_context:store_and_request_relay(msg, data)
 
     msg.storage = {engine = which_engine}
 
-    local storage = engine.new(msg, data)
+    local storage = engine.new(msg)
     local relay_req = relay_request_context.new(self.relay_req_uri)
     relay_req:add_message(msg)
 
     local chain_calls = self.chain_store_then_request_relay_calls
-    return kernel:attach(chain_calls, self, msg, storage, relay_req)
+    return kernel:attach(chain_calls, self, msg, data, storage, relay_req)
+end
+-- }}}
+
+-- {{{ queue_request_context:handle_prestorage_modules()
+function queue_request_context:handle_prestorage_modules(message, data)
+    -- Check if no prestorage modules are loaded.
+    if not modules.engines.prestorage[1] then
+        return data
+    end
+
+    local wrapper = message_wrapper.new(data)
+    for i, mod in ipairs(modules.engines.prestorage) do
+        mod(wrapper, message)
+    end
+
+    return wrapper:finalize()
 end
 -- }}}
 
@@ -205,18 +244,24 @@ function queue_request_context:handle_messages(socket)
     for i, client in ipairs(self.msg_info.clients) do
         if client.messages then
             for j, message in ipairs(client.messages) do
+                message.client = client
+                message.server = self.msg_info.host
+
                 msg_i = msg_i + 1
                 if not message.response_id then
                     message.response_id = msg_i
                 end
 
-                local thread = self:handle_new_message(message, content_parts, msg_i)
+                local thread = self:handle_new_message(message, content_parts)
                 table.insert(children, thread)
             end
         end
 
         if client.bounces then
             for j, bounce in ipairs(client.bounces) do
+                bounce.client = bounce
+                bounce.server = self.msg_info.host
+
                 msg_i = msg_i + 1
                 if not bounce.response_id then
                     bounce.response_id = msg_i

@@ -27,7 +27,7 @@ local couchdb_new = {}
 couchdb_new.__index = couchdb_new
 
 -- {{{ couchdb_new.new()
-function couchdb_new.new(data, contents)
+function couchdb_new.new(data)
     local self = {}
     setmetatable(self, couchdb_new)
 
@@ -35,7 +35,6 @@ function couchdb_new.new(data, contents)
     self.database = config.modules.engines.storage.couchdb.queue()
 
     self.data = data
-    self.message = contents
 
     return self
 end
@@ -109,26 +108,6 @@ function couchdb_new:create_message_body(info)
     local info = json.decode(data)
 
     return info
-end
--- }}}
-
--- {{{ couchdb_new:__call()
-function couchdb_new:__call()
-    local ret, reason
-
-    ret, reason = self:create_message_root()
-    if not ret then
-        error(reason)
-    end
-    local info = ret
-
-    ret, reason = self:create_message_body(info)
-    if not ret then
-        self:delete_message_root(info)
-        error(reason)
-    end
-
-    return info.id
 end
 -- }}}
 

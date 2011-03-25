@@ -79,6 +79,7 @@ AC_CONFIG_FILES([Makefile
 		 modules/protocols/relay/smtp/Makefile
 		 modules/engines/Makefile
 		 modules/engines/storage/Makefile
+		 modules/engines/prestorage/Makefile
 		 modules/engines/nexthop/Makefile
 		 modules/engines/failure/Makefile
 		 modules/engines/attempting/Makefile
