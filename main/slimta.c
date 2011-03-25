@@ -19,8 +19,6 @@
  * THE SOFTWARE.
  */
 
-#include "config.h"
-
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
@@ -33,9 +31,10 @@
 
 #include "misc.h"
 #include "xml.h"
-#include "config.h"
 #include "uuid.h"
 #include "rlimit.h"
+
+#include "config.h"
 
 /* {{{ slimta_uname_index() */
 static int slimta_uname_index (lua_State *L)
@@ -200,6 +199,8 @@ int slimta_openlibs (lua_State *L)
 	};
 	luaL_register (L, "slimta", funcs);
 
+	lua_pushstring (L, PACKAGE_VERSION);
+	lua_setfield (L, -2, "version");
 	luaopen_slimta_xml (L);
 	lua_setfield (L, -2, "xml");
 	luaopen_slimta_rlimit (L);
