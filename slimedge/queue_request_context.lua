@@ -106,6 +106,7 @@ end
 -- {{{ channel:build_message()
 function channel:build_message()
     local tmpl = [[<slimta><queue>
+ <host>%s</host>
 %s</queue></slimta>
 ]]
     local client_tmpl = [[ <client>
@@ -137,7 +138,9 @@ function channel:build_message()
         clients = clients .. client_tmpl:format(client.protocol, client.ehlo, msgs)
     end
 
-    return tmpl:format(clients)
+    local whoami = config.edge.fqdn()
+
+    return tmpl:format(whoami, clients)
 end
 -- }}}
 

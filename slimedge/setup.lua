@@ -9,6 +9,7 @@ require "slimedge.queue_request_context"
 --------------------------------------------------------------------------------
 -- {{{ Setup config options and their defaults.
 
+slimta.config.new("config.edge.fqdn", io.popen("hostname --fqdn"):read())
 
 -- }}} -------------------------------------------------------------------------
 
