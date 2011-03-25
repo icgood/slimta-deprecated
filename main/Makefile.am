@@ -2,7 +2,7 @@
 noinst_LTLIBRARIES = libcommon.la libmain.la
 
 libcommon_la_SOURCES = misc.h misc.c \
-		       config.h config.c \
+		       myconfig.h myconfig.c \
 		       xml.h xml.c \
 		       rlimit.h rlimit.c \
 		       uuid.h uuid.c \
