@@ -86,8 +86,9 @@ end
 -- {{{ smtp_data:act()
 function smtp_data:act(context, socket, more_coming)
     for i, piece in self:iter() do
-        context:queue_send(socket, piece, more_coming)
+        context:queue_send(socket, piece, true)
     end
+    context:queue_send(socket, "", more_coming)
 end
 -- }}}
 
