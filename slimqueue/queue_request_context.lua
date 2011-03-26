@@ -63,6 +63,7 @@ local tags = {
             if attrs.id then
                 info.response_id = attrs.id
             end
+            info.timestamp = attrs.timestamp
         end,
     },
 

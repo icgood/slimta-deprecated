@@ -62,8 +62,8 @@ function httpmail_context:POST(uri, headers, data)
     local queue_up = self.queue_request_channel:new_request()
     local i = queue_up:add_client("HTTP", ehlo)
     local j = queue_up:add_contents(message.contents)
-    queue_up:add_message(message, i, j)
-
+    local timestamp = os.time()
+    queue_up:add_message(message, i, j, timestamp)
     local results = queue_up()
 
     local first_msg = results.messages[1]

@@ -50,6 +50,7 @@ end
 function couchdb_new:create_message_root()
     local root_info = {
         envelope = self.data.envelope,
+        timestamp = self.data.timestamp,
         attempts = self.data.attempts,
         size = self.data.size,
     }

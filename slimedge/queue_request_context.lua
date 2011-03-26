@@ -98,8 +98,14 @@ end
 -- }}}
 
 -- {{{ channel:add_message()
-function channel:add_message(info, client_i, contents_i)
-    table.insert(self.clients[client_i].messages, {info = info, i = contents_i})
+function channel:add_message(info, client_i, contents_i, timestamp)
+    local msg = {
+        info = info,
+        i = contents_i,
+        timestamp = timestamp,
+    }
+
+    table.insert(self.clients[client_i].messages, msg)
 end
 -- }}}
 
@@ -114,7 +120,7 @@ function channel:build_message()
   <ehlo>%s</ehlo>
 %s </client>
 ]]
-    local msg_tmpl = [[  <message>
+    local msg_tmpl = [[  <message timestamp="%s">
    <envelope>
     <sender>%s</sender>
 %s   </envelope>
@@ -133,7 +139,7 @@ function channel:build_message()
             for k, rcpt in ipairs(msg.info.recipients) do
                 rcpts = rcpts .. rcpt_tmpl:format(rcpt)
             end
-            msgs = msgs .. msg_tmpl:format(msg.info.sender, rcpts, msg.i)
+            msgs = msgs .. msg_tmpl:format(msg.timestamp, msg.info.sender, rcpts, msg.i)
         end
         clients = clients .. client_tmpl:format(client.protocol, client.ehlo, msgs)
     end

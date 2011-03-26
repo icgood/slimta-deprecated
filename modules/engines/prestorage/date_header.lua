@@ -2,11 +2,11 @@
 slimta.config.new("config.modules.engines.prestorage.date_header.build_date", nil)
 
 -- {{{ add_date_header()
-local function add_date_header(msg)
+local function add_date_header(msg, info)
     if not msg.headers.date then
-        local date = config.modules.engines.prestorage.date_header.build_date()
+        local date = config.modules.engines.prestorage.date_header.build_date(info.timestamp)
         if not date then
-            date = os.date("%a, %d %b %Y %T %z")
+            date = os.date("%a, %d %b %Y %T %z", info.timestamp)
         end
 
         msg:add_header("Date", date)
