@@ -196,7 +196,7 @@ function queue_request_context:handle_prestorage_modules(message, data)
         mod(wrapper, message)
     end
 
-    return wrapper:finalize()
+    return tostring(wrapper)
 end
 -- }}}
 

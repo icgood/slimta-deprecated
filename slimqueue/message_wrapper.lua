@@ -72,19 +72,13 @@ function message.new(data)
         return nil, "Message data had no header-content divide"
     end
 
-    self:reset()
-
-    return self
-end
--- }}}
-
--- {{{ message:reset()
-function message:reset()
     self.contents = nil
     self.headers = {}
     self.header_stack = {}
 
     self:load_headers()
+
+    return self
 end
 -- }}}
 
@@ -132,7 +126,7 @@ function message:add_header(name, value, after_existing)
             table.insert(self.headers[key], 1, value)
         end
     else
-        self.headers[key] = {value, i = 1}
+        self.headers[key] = {value}
     end
 
     if after_existing then
@@ -165,19 +159,24 @@ function message:delete_header(name)
 end
 -- }}}
 
--- {{{ message:finalize()
-function message:finalize()
+-- {{{ message:__tostring()
+function message:__tostring()
     local headers = ""
+    local header_i = {}
 
     for i, name in ipairs(self.header_stack) do
         local key = name:lower()
         local this_header_vals = self.headers[key]
+        
+        if not header_i[key] then
+            header_i[key] = 1
+        end
 
-        local value = this_header_vals[this_header_vals.i]
+        local value = this_header_vals[header_i[key]]
         if not value then
             error("[" .. name .. "] header stack occurances did not match value depth, use add_header() instead of modifying manually.")
         end
-        this_header_vals.i = this_header_vals.i + 1
+        header_i[key] = header_i[key] + 1
 
         headers = headers .. name .. ": " .. header_fold(name, value) .. "\r\n"
     end
