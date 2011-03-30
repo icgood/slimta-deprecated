@@ -3,11 +3,12 @@ local http_server = {}
 http_server.__index = http_server
 
 -- {{{ http_server.new()
-function http_server.new(socket, handlers)
+function http_server.new(socket, from, handlers)
     local self = {}
     setmetatable(self, http_server)
 
     self.socket = socket
+    self.from = from
     self.handlers = handlers
     self.send_size = config.socket.send_size(socket)
 
@@ -186,7 +187,7 @@ function http_server:__call()
         response = {code = 505, message = "Version Not Supported"}
     end
     if cmd_handler then
-        response = cmd_handler(self.handlers, req.uri, req.headers, req.data)
+        response = cmd_handler(self.handlers, req.uri, req.headers, req.data, self.from)
     end
 
     self:send_response(response)

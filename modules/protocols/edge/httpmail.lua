@@ -20,7 +20,7 @@ end
 -- }}}
 
 -- {{{ httpmail_context:POST()
-function httpmail_context:POST(uri, headers, data)
+function httpmail_context:POST(uri, headers, data, from)
     if uri ~= "/email" and uri ~= "/email/" then
         return {
             code = 404,
@@ -60,7 +60,7 @@ function httpmail_context:POST(uri, headers, data)
     end
 
     local queue_up = self.queue_request_channel:new_request()
-    local i = queue_up:add_client("HTTP", ehlo, self.from_ip)
+    local i = queue_up:add_client("HTTP", ehlo, from)
     local j = queue_up:add_contents(message.contents)
     local timestamp = os.time()
     queue_up:add_message(message, i, j, timestamp)
@@ -87,7 +87,7 @@ end
 -- }}}
 
 -- {{{ httpmail_context:GET()
-function httpmail_context:GET(uri, headers, data)
+function httpmail_context:GET(uri, headers, data, from)
     return {code = 503, message = "Service Unavailable"}
 end
 -- }}}
@@ -102,8 +102,7 @@ function httpmail_context:__call()
 
     while true do
         local client, from_ip = socket:accept()
-        self.from_ip = from_ip
-        local client_handler = modules.engines.http.server.new(client, self)
+        local client_handler = modules.engines.http.server.new(client, from_ip, self)
         kernel:attach(client_handler)
     end
 end
