@@ -1,1 +1,1 @@
-SUBDIRS = http relay edge
+SUBDIRS = http smtp relay edge

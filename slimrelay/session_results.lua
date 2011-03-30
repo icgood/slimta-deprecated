@@ -62,23 +62,21 @@ end
 -- }}}
 
 -- {{{ session_results:add_softfailed_rcpt()
-function session_results:add_softfailed_rcpt(which, code, message)
-    local n = self.current
-    local addr = self.messages[n].envelope.recipients[which]
+function session_results:add_softfailed_rcpt(msg_i, rcpt_j, code, message)
+    local addr = self.messages[msg_i].envelope.recipients[rcpt_j]
     local msg = slimta.xml.escape(message:gsub("%s*$", ""))
     local f = {addr = addr, type = "softfail", code = code, message = msg}
-    local r = self.results[n]
+    local r = self.results[msg_i]
     table.insert(r.failed_rcpts, f)
 end
 -- }}}
 
 -- {{{ session_results:add_hardfailed_rcpt()
-function session_results:add_hardfailed_rcpt(which, code, message)
-    local n = self.current
-    local addr = self.messages[n].envelope.recipients[which]
+function session_results:add_hardfailed_rcpt(msg_i, rcpt_j, code, message)
+    local addr = self.messages[msg_i].envelope.recipients[rcpt_j]
     local msg = slimta.xml.escape(message:gsub("%s*$", ""))
     local f = {addr = addr, type = "hardfail", code = code, message = msg}
-    local r = self.results[n]
+    local r = self.results[msg_i]
     table.insert(r.failed_rcpts, f)
 end
 -- }}}

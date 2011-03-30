@@ -1,18 +1,13 @@
-local smtp_data = {}
-smtp_data.__index = smtp_data
 
--- {{{ smtp_data.new()
-function smtp_data.new(storage)
+local data_sender = {}
+data_sender.__index = data_sender
+
+-- {{{ data_sender.new()
+function data_sender.new(data)
     local self = {}
-    setmetatable(self, smtp_data)
+    setmetatable(self, data_sender)
 
-    local which = storage.engine:lower()
-    local engine = modules.engines.storage[which]
-    if not engine then
-        error("invalid storage engine: [" .. which .."]")
-    end
-    self.data = storage.data
-    self.engine = engine.get_contents.new()
+    self.data = data
     self.iter_size = config.relay.data.iterate_size()
 
     return self
@@ -56,58 +51,25 @@ local function iterator_func(invariant, i)
 end
 -- }}}
 
--- {{{ smtp_data:iter()
-function smtp_data:iter()
-    if not self.full_message then
-        self.unpause_thread = kernel:running_thread()
-        kernel:pause()
-    end
-
+-- {{{ data_sender:iter()
+function data_sender:iter()
     local invariant = {send_size = self.iter_size,
                        last_part = "",
                        done = false,
-                       full_message = self.full_message}
+                       full_message = self.data}
 
     return iterator_func, invariant, 1
 end
 -- }}}
 
--- {{{ smtp_data:get()
-function smtp_data:get()
-    if not self.full_message then
-        self.unpause_thread = kernel:running_thread()
-        kernel:pause()
-    end
-
-    return self.full_message
-end
--- }}}
-
--- {{{ smtp_data:act()
-function smtp_data:act(context, socket, more_coming)
+-- {{{ data_sender:send()
+function data_sender:send(io)
     for i, piece in self:iter() do
-        context:queue_send(socket, piece, true)
-    end
-    context:queue_send(socket, "", more_coming)
-end
--- }}}
-
--- {{{ smtp_data:brief()
-function smtp_data:brief()
-    return "[[MESSAGE CONTENTS]]"
-end
--- }}}
-
--- {{{ smtp_data:__call()
-function smtp_data:__call()
-    self.full_message = self.engine(self.data)
-    if self.unpause_thread then
-        kernel:unpause(self.unpause_thread)
-        self.unpause_thread = nil
+        io:buffered_send(piece)
     end
 end
 -- }}}
 
-return smtp_data
+return data_sender
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

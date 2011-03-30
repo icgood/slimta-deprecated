@@ -2,7 +2,7 @@
 local smtp_io = require "modules.protocols.smtp.smtp_io"
 local smtp_extensions = require "modules.protocols.smtp.smtp_extensions"
 local smtp_reply = require "modules.protocols.smtp.smtp_reply"
-local smtp_data = require "modules.protocols.smtp.client.smtp_data"
+local data_sender = require "modules.protocols.smtp.client.data_sender"
 
 local smtp_client = {}
 smtp_client.__index = smtp_client
@@ -47,8 +47,6 @@ end
 
 -- {{{ smtp_client:ehlo()
 function smtp_client:ehlo(ehlo_as)
-    self.ehlo_as = ehlo_as
-
     local ehlo = smtp_reply.new()
     table.insert(self.recv_queue, ehlo)
 
@@ -56,6 +54,10 @@ function smtp_client:ehlo(ehlo_as)
     self.io:send_command(command)
 
     self:recv_batch()
+    if ehlo.code == "250" then
+        self.extensions:reset()
+        self.extensions:parse_string(ehlo.message)
+    end
 
     return ehlo
 end
@@ -63,8 +65,6 @@ end
 
 -- {{{ smtp_client:helo()
 function smtp_client:helo(helo_as)
-    self.ehlo_as = helo_as
-
     local ehlo = smtp_reply.new()
     table.insert(self.recv_queue, ehlo)
 
@@ -78,7 +78,7 @@ end
 -- }}}
 
 -- {{{ smtp_client:starttls()
-function smtp_client:starttls(tls)
+function smtp_client:starttls()
     local starttls = smtp_reply.new()
     table.insert(self.recv_queue, starttls)
 
@@ -145,7 +145,35 @@ function smtp_client:send_data(data)
     local send_data = smtp_reply.new()
     table.insert(self.recv_queue, send_data)
 
-    data:send(self.io)
+    local data_sender = data_sender.new(data)
+    data_sender:send(self.io)
+
+    self:recv_batch()
+
+    return send_data
+end
+-- }}}
+
+-- {{{ smtp_client:send_empty_data()
+function smtp_client:send_empty_data()
+    local send_data = smtp_reply.new()
+    table.insert(self.recv_queue, send_data)
+
+    self.io:send_command(".")
+
+    self:recv_batch()
+
+    return send_data
+end
+-- }}}
+
+-- {{{ smtp_client:rset()
+function smtp_client:rset()
+    local rset = smtp_reply.new()
+    table.insert(self.recv_queue, rset)
+
+    local command = "RSET"
+    self.io:send_command(command)
 
     self:recv_batch()
 

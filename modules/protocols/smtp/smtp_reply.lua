@@ -13,7 +13,7 @@ end
 
 -- {{{ smtp_reply:recv()
 function smtp_reply:recv(io)
-    self.code, self.message = io:recv_response()
+    self.code, self.message = io:recv_reply()
 end
 -- }}}
 

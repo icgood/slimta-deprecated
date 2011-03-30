@@ -259,7 +259,7 @@ function queue_request_context:handle_messages(socket)
                     bounce.response_id = msg_i
                 end
 
-                local gen_bounce = generate_bounce.new(bounce)
+                local gen_bounce = generate_bounce.new(bounce, self.relay_req_uri)
                 local thread = kernel:attach(gen_bounce)
                 table.insert(children, thread)
             end

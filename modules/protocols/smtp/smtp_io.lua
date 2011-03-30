@@ -10,7 +10,7 @@ function smtp_io.new(socket)
     self.socket = socket
     self.send_size = config.socket.send_size(socket)
 
-    self.send_buffer = ""
+    self.send_buffer = {}
     self.recv_buffer = ""
 
     return self
@@ -45,23 +45,25 @@ end
 
 -- {{{ smtp_io:buffered_send()
 function smtp_io:buffered_send(data)
-    self.send_buffer = self.send_buffer .. data
+    table.insert(self.send_buffer, data)
 end
 -- }}}
 
 -- {{{ smtp_io:flush_send()
 function smtp_io:flush_send()
-    while #self.send_buffer > self.send_size do
-        local to_send = self.send_buffer:sub(1, self.send_size)
+    local send_buffer = table.concat(self.send_buffer)
+    self.send_buffer = {}
+
+    while #send_buffer > self.send_size do
+        local to_send = send_buffer:sub(1, self.send_size)
         self.socket:send(to_send)
         io.stderr:write("C: ["..to_send.."]\n")
-        self.send_buffer = self.send_buffer:sub(self.send_size+1)
+        send_buffer = send_buffer:sub(self.send_size+1)
     end
 
-    if #self.send_buffer > 0 then
-        self.socket:send(self.send_buffer)
-        io.stderr:write("C: ["..self.send_buffer.."]\n")
-        self.send_buffer = ""
+    if #send_buffer > 0 then
+        self.socket:send(send_buffer)
+        io.stderr:write("C: ["..send_buffer.."]\n")
     end
 end
 -- }}}
@@ -69,10 +71,11 @@ end
 -- {{{ smtp_io:recv_reply()
 function smtp_io:recv_reply()
     local pattern
-    local code, message_lines = {}
+    local code, message_lines = nil, {}
     local bad_line_pattern = "^(.-)%\r?%\n()"
+    local incomplete = true
 
-    while true do
+    while incomplete do
         local input, done = self:buffered_recv()
 
         -- Build the full reply pattern once we know the code.
@@ -91,21 +94,29 @@ function smtp_io:recv_reply()
 
         -- Check for lines that match the pattern.
         if pattern then
-            local splitter, line, end_i = input:match(pattern)
-            if line then
-                table.insert(message_lines, line)
-                self.recv_buffer = self.recv_buffer:sub(end_i+1)
-
-                if splitter ~= "-" then
-                    break
-                end
-            else
-                local bad_line, end_i = input:match(bad_line_pattern)
-                if bad_line then
+            local start_i = 1
+            repeat
+                local splitter, line, end_i = input:match(pattern, start_i)
+                if line then
+                    table.insert(message_lines, line)
                     self.recv_buffer = self.recv_buffer:sub(end_i+1)
-                    return nil, bad_line
+
+                    if splitter ~= "-" then
+                        incomplete = false
+                        start_i = nil
+                    else
+                        start_i = end_i
+                    end
+                else
+                    local bad_line, end_i = input:match(bad_line_pattern)
+                    if bad_line then
+                        self.recv_buffer = self.recv_buffer:sub(end_i+1)
+                        return nil, bad_line
+                    else
+                        start_i = nil
+                    end
                 end
-            end
+            until not start_i
         end
 
         -- Handle timeouts and premature closure.

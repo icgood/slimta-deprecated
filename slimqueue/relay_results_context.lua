@@ -108,7 +108,7 @@ end
 
 -- {{{ relay_results_context:fail_message()
 function relay_results_context:fail_message(msg)
-    modules.engine.failure({msg})
+    modules.engines.failure({msg})
     self:delete_message(msg)
 end
 -- }}}

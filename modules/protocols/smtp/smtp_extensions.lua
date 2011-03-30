@@ -37,9 +37,15 @@ end
 
 -- {{{ smtp_extensions:parse_string()
 function smtp_extensions:parse_string(str)
-    local pattern = "^%s*(%w[%w%-]*)(.*)$"
+    local pattern = "^%s*(%w[%w%-]*)%s*(.-)%s*$"
+    local header
+    str = str .. "\r\n" -- incoming strings will not have a final endline.
     for line in str:gmatch("(.-)%\r?%\n") do
-        self:add_extension(line:match(pattern))
+        if not header then
+            header = line
+        else
+            self:add(line:match(pattern))
+        end
     end
 end
 -- }}}

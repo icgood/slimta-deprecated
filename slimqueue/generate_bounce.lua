@@ -1,15 +1,17 @@
 
 local relay_request_context = require "slimqueue.relay_request_context"
+local message_wrapper = require "slimqueue.message_wrapper"
 
 local generate_bounce = {}
 generate_bounce.__index = generate_bounce
 
 -- {{{ generate_bounce.new()
-function generate_bounce.new(bounce)
+function generate_bounce.new(bounce, relay_req_uri)
     local self = {}
     setmetatable(self, generate_bounce)
 
     self.bounce = bounce
+    self.relay_req_uri = relay_req_uri
 
     return self
 end
@@ -23,15 +25,37 @@ function generate_bounce:store_and_request_relay(data)
 
     msg.storage = {engine = which_engine}
 
-    local storage = engine.new(msg, data)
-    local relay_req = relay_request_context.new()
+    local storage = engine.new(msg)
+    local relay_req = relay_request_context.new(self.relay_req_uri)
     relay_req:add_message(msg)
 
-    local id, dont_send = storage()
-    msg.storage.data = id
-    if not dont_send then
+    -- Create the message container and get access data.
+    msg.storage.data = storage:create_message_root()
+
+    -- Run pre-storage modules and add message data to storage container.
+    data = self:handle_prestorage_modules(msg, data)
+    storage:create_message_body(data)
+
+    -- Send message data, unless storage engine says not to.
+    if not storage.dont_send then
         relay_req()
     end
+end
+-- }}}
+
+-- {{{ generate_bounce:handle_prestorage_modules()
+function generate_bounce:handle_prestorage_modules(message, data)
+    -- Check if no prestorage modules are loaded.
+    if not modules.engines.prestorage[1] then
+        return data
+    end
+
+    local wrapper = message_wrapper.new(data)
+    for i, mod in ipairs(modules.engines.prestorage) do
+        mod(wrapper, message)
+    end
+
+    return tostring(wrapper)
 end
 -- }}}
 
@@ -92,6 +116,8 @@ end
 -- {{{ generate_bounce:__call()
 function generate_bounce:__call()
     kernel:set_error_handler(self.on_error, self)
+
+    self.bounce.server = "localhost"
 
     local orig, orig_data = self:get_original_message()
     self:set_bounce_envelope(orig)

@@ -37,6 +37,7 @@ static const char *global_tables[] = {
 	"modules",
 
 	"modules.protocols.http",
+	"modules.protocols.smtp",
 	"modules.protocols.relay",
 	"modules.protocols.edge",
 	"modules.engines.storage",

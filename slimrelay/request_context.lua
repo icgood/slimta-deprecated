@@ -1,4 +1,5 @@
 
+local session_results = require "slimrelay.session_results"
 local xml_wrapper = require "modules.engines.xml_wrapper"
 
 -- {{{ tags table
@@ -32,7 +33,14 @@ local tags = {
 
     {"security", "nexthop", "deliver", "slimta",
         handle = function (info, attrs, data)
-            -- Put security stuff here.
+            local method = data:match("%S+") or "TLSv1"
+            local when = attrs.when or "starttls"
+            local mode = attrs.mode or "try"
+            info.security = {
+                method = method,
+                mode = mode:lower(),
+                when = when:lower(),
+            }
         end,
     },
 
@@ -95,7 +103,8 @@ function request_context:create_sessions()
         local which = nexthop.protocol:lower()
         local proto = modules.protocols.relay[which]
         if proto then
-            local proto_channel = proto.new(nexthop, self.results_channel)
+            local results = session_results.new(nexthop.messages, self.results_channel, nexthop.protocol)
+            local proto_channel = proto.new(nexthop, results)
             kernel:attach(proto_channel)
         else
             error("Unsupported protocol: " .. which)
