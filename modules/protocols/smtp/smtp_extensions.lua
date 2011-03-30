@@ -19,14 +19,14 @@ function smtp_extensions:reset()
 end
 -- }}}
 
--- {{{ smtp_extensions:has_extension()
-function smtp_extensions:has_extension(ext)
+-- {{{ smtp_extensions:has()
+function smtp_extensions:has(ext)
     return self.extensions[ext:upper()]
 end
 -- }}}
 
--- {{{ smtp_extensions:add_extension()
-function smtp_extensions:add_extension(ext, param)
+-- {{{ smtp_extensions:add()
+function smtp_extensions:add(ext, param)
     if param and #param > 0 then
         self.extensions[ext:upper()] = param
     else

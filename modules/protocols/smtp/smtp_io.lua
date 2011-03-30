@@ -44,15 +44,21 @@ end
 -- }}}
 
 -- {{{ smtp_io:buffered_send()
-function smtp_io:buffered_send(data, more_coming)
+function smtp_io:buffered_send(data)
     self.send_buffer = self.send_buffer .. data
+end
+-- }}}
+
+-- {{{ smtp_io:flush_send()
+function smtp_io:flush_send()
     while #self.send_buffer > self.send_size do
         local to_send = self.send_buffer:sub(1, self.send_size)
         self.socket:send(to_send)
         io.stderr:write("C: ["..to_send.."]\n")
         self.send_buffer = self.send_buffer:sub(self.send_size+1)
     end
-    if not more_coming then
+
+    if #self.send_buffer > 0 then
         self.socket:send(self.send_buffer)
         io.stderr:write("C: ["..self.send_buffer.."]\n")
         self.send_buffer = ""
@@ -160,8 +166,8 @@ end
 -- }}}
 
 -- {{{ smtp_io:send_command()
-function smtp_io:send_command(command, more_coming)
-    return self:buffered_send(tostring(command), more_coming)
+function smtp_io:send_command(command)
+    return self:buffered_send(command.."\r\n")
 end
 -- }}}
 

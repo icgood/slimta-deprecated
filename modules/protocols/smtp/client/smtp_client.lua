@@ -1,9 +1,8 @@
 
 local smtp_io = require "modules.protocols.smtp.smtp_io"
-local smtp_error = require "modules.protocols.smtp.smtp_error"
 local smtp_extensions = require "modules.protocols.smtp.smtp_extensions"
-local smtp_command = require "modules.protocols.smtp.smtp_command"
 local smtp_reply = require "modules.protocols.smtp.smtp_reply"
+local smtp_data = require "modules.protocols.smtp.client.smtp_data"
 
 local smtp_client = {}
 smtp_client.__index = smtp_client
@@ -14,109 +13,158 @@ function smtp_client.new(socket)
     setmetatable(self, smtp_client)
 
     self.io = smtp_io.new(socket)
-    self.ext = smtp_extensions.new()
+    self.extensions = smtp_extensions.new()
+
+    self.recv_queue = {}
 
     return self
 end
 -- }}}
 
--- {{{ smtp_client:simple_command()
-function smtp_client:simple_command(name, param)
-    local command = smtp_command.new(name, param)
+-- {{{ smtp_client:recv_batch()
+function smtp_client:recv_batch()
+    self.io:flush_send()
+
+    repeat
+        local reply = table.remove(self.recv_queue, 1)
+        if reply then
+            reply:recv(self.io)
+        end
+    until not reply
+end
+-- }}}
+
+-- {{{ smtp_client:get_banner()
+function smtp_client:get_banner()
+    local banner = smtp_reply.new()
+    table.insert(self.recv_queue, banner)
+
+    self:recv_batch()
+
+    return banner
+end
+-- }}}
+
+-- {{{ smtp_client:ehlo()
+function smtp_client:ehlo(ehlo_as)
+    self.ehlo_as = ehlo_as
+
+    local ehlo = smtp_reply.new()
+    table.insert(self.recv_queue, ehlo)
+
+    local command = "EHLO " .. ehlo_as
     self.io:send_command(command)
-    return smtp_reply.new(command, self.io:recv_reply())
+
+    self:recv_batch()
+
+    return ehlo
 end
 -- }}}
 
--- {{{ smtp_client:handle_banner()
-function smtp_client:handle_banner()
-    local command = smtp_command.new("[BANNER]")
-    local reply = smtp_reply.new(command, self.io:recv_reply())
+-- {{{ smtp_client:helo()
+function smtp_client:helo(helo_as)
+    self.ehlo_as = helo_as
 
-    if reply.code ~= "220" then
-        error(reply:unexpected_code())
-    end
+    local ehlo = smtp_reply.new()
+    table.insert(self.recv_queue, ehlo)
+
+    local command = "HELO " .. helo_as
+    self.io:send_command(command)
+
+    self:recv_batch()
+
+    return ehlo
 end
 -- }}}
 
--- {{{ smtp_client:handle_hello()
-function smtp_client:handle_hello(ehlo_as, use_helo)
-    local cmd = "EHLO"
-    if use_helo then
-        cmd = "HELO"
-    end
-    local reply = self:simple_command(cmd, ehlo_as)
+-- {{{ smtp_client:starttls()
+function smtp_client:starttls(tls)
+    local starttls = smtp_reply.new()
+    table.insert(self.recv_queue, starttls)
 
-    if reply.code:sub(1, 1) == "5" and not use_helo then
-        return self:handle_hello(ehlo_as, true)
-    end
+    local command = "STARTTLS"
+    self.io:send_command(command)
 
-    if reply.code ~= "250" then
-        error(reply:unexpected_code())
-    end
+    self:recv_batch()
 
-    if not use_helo then
-        self.ext:parse_string(reply.message)
-    end
+    return starttls
 end
 -- }}}
 
--- {{{ smtp_client:tls_handshake()
-function smtp_client:tls_handshake(ehlo_as, tls)
-    if not self.ext:has_extensions("STARTTLS") then
-        return smtp_error.new("remote host does not support STARTTLS extension")
+-- {{{ smtp_client:mailfrom()
+function smtp_client:mailfrom(address, data_size)
+    local mailfrom = smtp_reply.new()
+    table.insert(self.recv_queue, mailfrom)
+
+    local command = "MAIL FROM:<"..address..">"
+    if data_size and self.extensions:has("SIZE") then
+        command = command .. " SIZE=" .. data_size
+    end
+    self.io:send_command(command)
+
+    if not self.extensions:has("PIPELINING") then
+        self:recv_batch()
     end
 
-    local reply = self:simple_command("STARTTLS")
-
-    if reply.code == "220" then
-        local enc = socket:encrypt(ssl)
-        enc:client_handshake()
-
-        local got_cert, verified = enc:verify_certificate()
-        if not got_cert then
-            return smtp_error.new("did not receive TLS certificate")
-        elseif not verified then
-            return smtp_error.new("received non-verifiable TLS certificate")
-        end
-
-        self.ext:reset()
-        self:handle_hello(ehlo_as)
-    else
-        return reply:unexpected_code()
-    end
+    return mailfrom
 end
 -- }}}
 
--- {{{ smtp_client:handle_tls()
-function smtp_client:handle_tls(ehlo_as, tls, tls_mode)
-    if tls_mode ~= "off" then
-        local err = self:tls_handshake(ehlo_as, tls)
-        if err and tls_mode == "force" then
-            error(err)
-        end
+-- {{{ smtp_client:rcptto()
+function smtp_client:rcptto(address)
+    local rcptto = smtp_reply.new()
+    table.insert(self.recv_queue, rcptto)
+
+    local command = "RCPT TO:<"..address..">"
+    self.io:send_command(command)
+
+    if not self.extensions:has("PIPELINING") then
+        self:recv_batch()
     end
+
+    return rcptto
 end
 -- }}}
 
--- {{{ smtp_client:handshake()
-function smtp_client:handshake(ehlo_as, tls, tls_mode)
-    self:handle_banner()
-    self:handle_hello(ehlo_as)
-    self:handle_tls(ehlo_as, tls, tls_mode)
+-- {{{ smtp_client:data()
+function smtp_client:data()
+    local data = smtp_reply.new()
+    table.insert(self.recv_queue, data)
+
+    local command = "DATA"
+    self.io:send_command(command)
+
+    self:recv_batch()
+
+    return data
+end
+-- }}}
+
+-- {{{ smtp_client:send_data()
+function smtp_client:send_data(data)
+    local send_data = smtp_reply.new()
+    table.insert(self.recv_queue, send_data)
+
+    data:send(self.io)
+
+    self:recv_batch()
+
+    return send_data
 end
 -- }}}
 
 -- {{{ smtp_client:quit()
 function smtp_client:quit()
-    self:simple_command("QUIT")
-    return self:quit_immediately()
-end
--- }}}
+    local quit = smtp_reply.new()
+    table.insert(self.recv_queue, quit)
 
--- {{{ smtp_client:quit_immediately()
-function smtp_client:quit_immediately()
-    return self.io:close()
+    local command = "QUIT"
+    self.io:send_command(command)
+
+    self:recv_batch()
+    self.io:close()
+
+    return quit
 end
 -- }}}
 

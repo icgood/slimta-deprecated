@@ -175,7 +175,6 @@ end
 
 -- {{{ http_server:__call()
 function http_server:__call()
-    --local command, uri, headers, data = self:get_request()
     local req = self:get_request()
 
     local cmd_handler
