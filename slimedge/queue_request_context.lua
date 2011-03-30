@@ -85,10 +85,18 @@ end
 -- }}}
 
 -- {{{ channel:add_client()
-function channel:add_client(protocol, ehlo)
+function channel:add_client(protocol, ehlo, from_ip)
+    local ptr = ratchet.dns.query(from_ip, "ptr")
+    local from_host = ""
+    if ptr then
+        from_host = ptr[1]
+    end
+
     local client = {
         protocol = protocol,
         ehlo = ehlo,
+        ip = from_ip,
+        host = from_host,
         messages = {},
     }
 
@@ -118,6 +126,8 @@ function channel:build_message()
     local client_tmpl = [[ <client>
   <protocol>%s</protocol>
   <ehlo>%s</ehlo>
+  <ip>%s</ip>
+  <host>%s</host>
 %s </client>
 ]]
     local msg_tmpl = [[  <message timestamp="%s">
@@ -141,7 +151,7 @@ function channel:build_message()
             end
             msgs = msgs .. msg_tmpl:format(msg.timestamp, msg.info.sender, rcpts, msg.i)
         end
-        clients = clients .. client_tmpl:format(client.protocol, client.ehlo, msgs)
+        clients = clients .. client_tmpl:format(client.protocol, client.ehlo, client.ip, client.host, msgs)
     end
 
     local whoami = config.edge.fqdn()

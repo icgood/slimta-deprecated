@@ -60,7 +60,7 @@ function httpmail_context:POST(uri, headers, data)
     end
 
     local queue_up = self.queue_request_channel:new_request()
-    local i = queue_up:add_client("HTTP", ehlo)
+    local i = queue_up:add_client("HTTP", ehlo, self.from_ip)
     local j = queue_up:add_contents(message.contents)
     local timestamp = os.time()
     queue_up:add_message(message, i, j, timestamp)
@@ -101,7 +101,8 @@ function httpmail_context:__call()
     socket:listen()
 
     while true do
-        local client = socket:accept()
+        local client, from_ip = socket:accept()
+        self.from_ip = from_ip
         local client_handler = modules.engines.http.server.new(client, self)
         kernel:attach(client_handler)
     end

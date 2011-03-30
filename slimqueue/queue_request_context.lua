@@ -45,12 +45,6 @@ local tags = {
         end,
     },
 
-    {"port", "client", "queue", "slimta",
-        handle = function (info, attrs, data)
-            info.port = data:match("%d+")
-        end,
-    },
-
     {"security", "client", "queue", "slimta",
         handle = function (info, attrs, data)
             -- Put security stuff here.
