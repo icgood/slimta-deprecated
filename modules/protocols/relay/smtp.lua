@@ -1,5 +1,5 @@
 
-require "modules.protocols.smtp.client"
+require "modules.engines.smtp.client"
 
 local data_loader = require "modules.engines.storage.data_loader"
 
@@ -259,7 +259,7 @@ function smtp_relay:__call()
         -- See RFC 5321 Section 3.8. for reasoning behind code 451.
     end
 
-    local client = modules.protocols.smtp.client.new(socket)
+    local client = modules.engines.smtp.client.new(socket)
 
     self:negotiate_ssl(client, socket)
     self:handshake(client)

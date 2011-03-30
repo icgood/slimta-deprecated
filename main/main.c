@@ -34,12 +34,12 @@ static const char *DEFAULT_LIB_PATH = PKGLIBDIR;
 static const char *LIB_PATH_ENVVAR = "SLIMTA_LIB_PATH";
 
 static const char *global_tables[] = {
-	"modules",
-
-	"modules.protocols.http",
-	"modules.protocols.smtp",
 	"modules.protocols.relay",
 	"modules.protocols.edge",
+
+	"modules.engines",
+	"modules.engines.http",
+	"modules.engines.smtp",
 	"modules.engines.storage",
 	"modules.engines.prestorage",
 

@@ -1,7 +1,7 @@
 
 require "modules.engines.json"
 
-local http_connection = require "modules.protocols.http.client"
+require "modules.engines.http.client"
 
 -- {{{ default_next_attempt_timestamp()
 local function default_next_attempt_timestamp()
@@ -61,7 +61,7 @@ function couchdb_new:create_message_root()
     -- Keep attempting PUT on new UUIDs until don't get a collision.
     repeat
         local id = slimta.uuid.generate()
-        local couchttp = http_connection.new(self.where)
+        local couchttp = modules.engines.http.client.new(self.where)
         code, reason, headers, data = couchttp:query(
             "PUT",
             "/"..self.database.."/"..id,
@@ -83,7 +83,7 @@ end
 
 -- {{{ couchdb_new:delete_message_root()
 function couchdb_new:delete_message_root()
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..self.info.id.."?rev="..self.info.rev)
     if code ~= 200 then
         error(reason)
@@ -95,7 +95,7 @@ end
 
 -- {{{ couchdb_new:create_message_body()
 function couchdb_new:create_message_body(message_data)
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query(
         "PUT",
         "/"..self.database.."/"..self.info.id.."/message?rev="..self.info.rev,
@@ -130,7 +130,7 @@ end
 
 -- {{{ couchdb_get_deliverable:__call()
 function couchdb_get_deliverable:__call(timestamp)
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/_design/attempts/_view/upcoming")
     if code ~= 200 then
         error(reason)
@@ -175,14 +175,14 @@ function couchdb_get_contents:__call(data)
     local id = data:gsub("^%s*", ""):gsub("%s*$", "")
     local couchttp, code, reason, headers, data
 
-    couchttp = http_connection.new(self.where)
+    couchttp = modules.engines.http.client.new(self.where)
     code, reason, headers, data = couchttp:query("HEAD", "/"..self.database.."/"..id)
     if code ~= 200 then
         error(reason)
     end
     local rev = strip_quotes(headers["etag"])
 
-    couchttp = http_connection.new(self.where)
+    couchttp = modules.engines.http.client.new(self.where)
     code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..id.."/message?rev="..rev)
     if code ~= 200 then
         error(reason)
@@ -213,7 +213,7 @@ end
 function couchdb_get_info:__call(data)
     local id = data:gsub("^%s*", ""):gsub("%s*$", "")
 
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..id)
     if code ~= 200 then
         error(reason)
@@ -246,7 +246,7 @@ end
 
 -- {{{ couchdb_set_next_attempt:get_helper()
 function couchdb_set_next_attempt:get_helper()
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query("GET", "/"..self.database.."/"..self.id)
     if code ~= 200 then
         error(reason)
@@ -260,7 +260,7 @@ end
 function couchdb_set_next_attempt:put_helper(info)
     local data = json.encode(info)
 
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query(
         "PUT",
         "/"..self.database.."/"..self.id,
@@ -319,14 +319,14 @@ end
 
 -- {{{ couchdb_delete:__call()
 function couchdb_delete:__call()
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query("HEAD", "/"..self.database.."/"..self.id)
     if code ~= 200 then
         error(reason)
     end
     local rev = strip_quotes(headers["etag"])
 
-    local couchttp = http_connection.new(self.where)
+    local couchttp = modules.engines.http.client.new(self.where)
     local code, reason, headers, data = couchttp:query("DELETE", "/"..self.database.."/"..self.id.."?rev="..rev)
     if code ~= 200 then
         error(reason)

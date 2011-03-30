@@ -73,10 +73,6 @@ AC_CONFIG_FILES([Makefile
 
 		 modules/Makefile
 		 modules/protocols/Makefile
-		 modules/protocols/http/Makefile
-		 modules/protocols/smtp/Makefile
-		 modules/protocols/smtp/client/Makefile
-		 modules/protocols/smtp/server/Makefile
 		 modules/protocols/edge/Makefile
 		 modules/protocols/relay/Makefile
 		 modules/engines/Makefile
@@ -85,6 +81,10 @@ AC_CONFIG_FILES([Makefile
 		 modules/engines/nexthop/Makefile
 		 modules/engines/failure/Makefile
 		 modules/engines/attempting/Makefile
+		 modules/engines/http/Makefile
+		 modules/engines/smtp/Makefile
+		 modules/engines/smtp/client/Makefile
+		 modules/engines/smtp/server/Makefile
 ])
 
 AC_OUTPUT

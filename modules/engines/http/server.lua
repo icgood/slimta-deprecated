@@ -193,6 +193,6 @@ function http_server:__call()
 end
 -- }}}
 
-return http_server
+modules.engines.http.server = http_server
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

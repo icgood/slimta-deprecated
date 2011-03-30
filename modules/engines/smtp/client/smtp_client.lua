@@ -1,8 +1,8 @@
 
-local smtp_io = require "modules.protocols.smtp.smtp_io"
-local smtp_extensions = require "modules.protocols.smtp.smtp_extensions"
-local smtp_reply = require "modules.protocols.smtp.smtp_reply"
-local data_sender = require "modules.protocols.smtp.client.data_sender"
+local smtp_io = require "modules.engines.smtp.smtp_io"
+local smtp_extensions = require "modules.engines.smtp.smtp_extensions"
+local smtp_reply = require "modules.engines.smtp.smtp_reply"
+local data_sender = require "modules.engines.smtp.client.data_sender"
 
 local smtp_client = {}
 smtp_client.__index = smtp_client

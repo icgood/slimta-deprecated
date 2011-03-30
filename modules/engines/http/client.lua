@@ -123,6 +123,6 @@ function http_client:query(command, uri, headers, data)
 end
 -- }}}
 
-return http_client
+modules.engines.http.client = http_client
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

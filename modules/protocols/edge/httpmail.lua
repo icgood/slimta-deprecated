@@ -1,6 +1,6 @@
 
 require "modules.engines.json"
-local http_server = require "modules.protocols.http.server"
+require "modules.engines.http.server"
 
 local httpmail_context = {}
 httpmail_context.__index = httpmail_context
@@ -102,7 +102,7 @@ function httpmail_context:__call()
 
     while true do
         local client = socket:accept()
-        local client_handler = http_server.new(client, self)
+        local client_handler = modules.engines.http.server.new(client, self)
         kernel:attach(client_handler)
     end
 end
