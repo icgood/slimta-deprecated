@@ -31,15 +31,15 @@ smtp_server.__index = smtp_server
 smtp_server.commands = {}
 
 -- {{{ smtp_server.new()
-function smtp_server.new(socket, from_ip, handlers)
+function smtp_server.new(socket, handlers)
     local self = {}
     setmetatable(self, smtp_server)
 
-    self.from_ip = from_ip
     self.handlers = handlers
     self.io = smtp_io.new(socket)
 
     self.extensions = smtp_extensions.new()
+    self.extensions:add("8BITMIME")
     self.extensions:add("PIPELINING")
     self.extensions:add("ENHANCEDSTATUSCODES")
 
@@ -94,6 +94,15 @@ function smtp_server:get_message_data()
 
     self:send_ESC_reply(reply)
     self.io:flush_send()
+end
+-- }}}
+
+-- {{{ smtp_server:close()
+function smtp_server:close()
+    if self.handlers.CLOSE then
+        self.handlers:CLOSE()
+    end
+    self.io:close()
 end
 -- }}}
 
@@ -155,7 +164,7 @@ end
 function smtp_server.commands.BANNER(self)
     local reply = {
         code = "220",
-        message = "ESMTP Welcome to slimta " .. slimta.version .. ".",
+        message = "ESMTP Welcome to slimta " .. slimta.version,
     }
 
     if self.handlers.BANNER then
@@ -441,7 +450,8 @@ function smtp_server.commands.QUIT(self, arg)
 
     self:send_ESC_reply(reply)
     self.io:flush_send()
-    self.io:close()
+
+    self:close()
 end
 -- }}}
 
