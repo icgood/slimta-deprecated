@@ -18,12 +18,6 @@ function smtp_edge.new(uri, queue_request_channel)
 end
 -- }}}
 
--- {{{ smtp_edge:BANNER()
-function smtp_edge:BANNER()
-    return "220", "ESMTP Welcome to slimta " .. slimta.version .. "."
-end
--- }}}
-
 -- {{{ smtp_edge:__call()
 function smtp_edge:__call()
     local rec = ratchet.socket.prepare_uri(self.uri, config.dns.a_queries())

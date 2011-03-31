@@ -48,7 +48,8 @@ end
 -- }}}
 
 -- {{{ smtp_server:send_ESC_reply()
-function smtp_server:send_ESC_reply(code, message, esc)
+function smtp_server:send_ESC_reply(reply)
+    local code, message, esc = reply.code, reply.message, reply.enhanced_status_code
     local code_class = code:sub(1, 1)
 
     if code_class == "2" or code_class == "4" or code_class == "5" then
@@ -81,12 +82,17 @@ function smtp_server:get_message_data()
 
     local data, err = reader:recv()
 
-    code, message, esc = "250", "Message Accepted for Delivery", "2.6.0"
+    local reply = {
+        code = "250",
+        message = "Message Accepted for Delivery",
+        enhanced_status_code = "2.6.0"
+    }
+
     if self.handlers.HAVE_DATA then
-        code, message, esc = self.handlers:HAVE_DATA(data, err)
+        self.handlers:HAVE_DATA(reply, data, err)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 end
 -- }}}
@@ -127,34 +133,40 @@ end
 
 -- {{{ smtp_server.commands.BANNER()
 function smtp_server.commands.BANNER(self)
-    local code, message = "220", "Banner"
+    local reply = {
+        code = "220",
+        message = "ESMTP Welcome to slimta " .. slimta.version .. ".",
+    }
+
     if self.handlers.BANNER then
-        code, message = self.handlers:BANNER()
+        self.handlers:BANNER(reply)
     end
 
-    self.io:send_reply(code, message)
+    self.io:send_reply(reply.code, reply.message)
     self.io:flush_send()
 end
 -- }}}
 
 -- {{{ smtp_server.commands.EHLO()
 function smtp_server.commands.EHLO(self, ehlo_as)
-    local code, greeting = "250", "Hello " .. ehlo_as
+    local reply = {
+        code = "250",
+        message = "Hello " .. ehlo_as,
+    }
+
     if self.handlers.EHLO then
-        code, greeting = self.handlers:EHLO(ehlo_as)
+        self.handlers:EHLO(reply, ehlo_as)
     end
 
     -- Add extensions, if success code.
-    if code == "250" then
-        message = self.extensions:build_string(greeting)
-    else
-        message = greeting
+    if reply.code == "250" then
+        reply.message = self.extensions:build_string(reply.message)
     end
 
-    self.io:send_reply(code, message)
+    self.io:send_reply(reply.code, reply.message)
     self.io:flush_send()
 
-    if code == "250" then
+    if reply.code == "250" then
         self.have_mailfrom = nil
         self.have_rcptto = nil
 
@@ -165,15 +177,19 @@ end
 
 -- {{{ smtp_server.commands.HELO()
 function smtp_server.commands.HELO(self, ehlo_as)
-    local code, greeting = "250", "Hello " .. ehlo_as
+    local reply = {
+        code = "250",
+        message = "Hello " .. ehlo_as,
+    }
+
     if self.handlers.EHLO then
-        code, greeting = self.handlers:EHLO(ehlo_as)
+        self.handlers:EHLO(reply, ehlo_as)
     end
 
-    self.io:send_reply(code, greeting)
+    self.io:send_reply(reply.code, reply.greeting)
     self.io:flush_send()
 
-    if code == "250" then
+    if reply.code == "250" then
         self.have_mailfrom = nil
         self.have_rcptto = nil
 
@@ -193,15 +209,20 @@ function smtp_server.commands.STARTTLS(self, arg)
         return self:bad_sequence("STARTTLS", arg)
     end
 
-    local code, message, esc = "220", "Go ahead", "2.7.0"
+    local reply = {
+        code = "220",
+        message = "Go ahead",
+        enhanced_status_code = "2.7.0"
+    }
+
     if self.handlers.STARTTLS then
-        code, message, esc = self.handlers:STARTTLS()
+        self.handlers:STARTTLS(reply)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 
-    if code == "220" then
+    if reply.code == "220" then
         local enc = self.io.socket:encrypt(ssl.TLSv1)
         enc:server_handshake()
 
@@ -252,15 +273,20 @@ function smtp_server.commands.MAIL(self, arg)
     end
 
     -- Normal handling of command based on address.
-    local code, message, esc = "250", "Sender <"..address.."> Ok", "2.1.0"
+    local reply = {
+        code = "250",
+        message = "Sender <"..address.."> Ok",
+        enhanced_status_code = "2.1.0"
+    }
+
     if self.handlers.MAIL then
-        code, message, esc = self.handlers:MAIL(address)
+        self.handlers:MAIL(reply, address)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 
-    self.have_mailfrom = self.have_mailfrom or (code == "250")
+    self.have_mailfrom = self.have_mailfrom or (reply.code == "250")
 end
 -- }}}
 
@@ -285,15 +311,20 @@ function smtp_server.commands.RCPT(self, arg)
     end
 
     -- Normal handling of command based on address.
-    local code, message, esc = "250", "Recipient <"..address.."> Ok", "2.1.5"
+    local reply = {
+        code = "250",
+        message = "Recipient <"..address.."> Ok",
+        enhanced_status_code = "2.1.5"
+    }
+
     if self.handlers.RCPT then
-        code, message, esc = self.handlers:RCPT(address)
+        self.handlers:RCPT(reply, address)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 
-    self.have_rcptto = self.have_rcptto or (code == "250")
+    self.have_rcptto = self.have_rcptto or (reply.code == "250")
 end
 -- }}}
 
@@ -309,15 +340,19 @@ function smtp_server.commands.DATA(self, arg)
         return self:bad_sequence("DATA", arg, "No valid recipients given")
     end
 
-    local code, message, esc = "354", "Start mail input; end with <CRLF>.<CRLF>"
+    local reply = {
+        code = "354",
+        message = "Start mail input; end with <CRLF>.<CRLF>",
+    }
+
     if self.handlers.DATA then
-        code, message, esc = self.handlers:DATA()
+        self.handlers:DATA(reply)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 
-    if code == "354" then
+    if reply.code == "354" then
         self:get_message_data()
     end
 end
@@ -329,15 +364,19 @@ function smtp_server.commands.RSET(self, arg)
         return self:bad_arguments("RSET", arg)
     end
 
-    local code, message, esc = "250", "Ok"
+    local reply = {
+        code = "250",
+        message = "Ok",
+    }
+
     if self.handlers.RSET then
-        code, message, esc = self.handlers:RSET()
+        self.handlers:RSET(reply)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 
-    if code == "250" then
+    if reply.code == "250" then
         self.have_mailfrom = nil
         self.have_rcptto = nil
     end
@@ -346,12 +385,16 @@ end
 
 -- {{{ smtp_server.commands.NOOP()
 function smtp_server.commands.NOOP(self)
-    local code, message, esc = "250", "Ok"
+    local reply = {
+        code = "250",
+        message = "Ok",
+    }
+
     if self.handlers.NOOP then
-        code, message, esc = self.handlers:NOOP()
+        self.handlers:NOOP(reply)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 end
 -- }}}
@@ -362,12 +405,16 @@ function smtp_server.commands.QUIT(self, arg)
         return self:bad_arguments("QUIT", arg)
     end
 
-    local code, message, esc = "221", "Bye"
+    local reply = {
+        code = "221",
+        message = "Bye",
+    }
+
     if self.handlers.QUIT then
-        code, message, esc = self.handlers:QUIT()
+        self.handlers:QUIT(reply)
     end
 
-    self:send_ESC_reply(code, message, esc)
+    self:send_ESC_reply(reply)
     self.io:flush_send()
     self.io:close()
 end
