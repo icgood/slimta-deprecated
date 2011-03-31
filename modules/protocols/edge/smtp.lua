@@ -36,6 +36,7 @@ function smtp_edge:__call()
         local client, from_ip = socket:accept()
         local client_handler = modules.engines.smtp.server.new(client, from_ip, self)
         client_handler.extensions:add("STARTTLS")
+        --client_handler.extensions:add("SIZE", "100000")
         kernel:attach(client_handler)
     end
 end
