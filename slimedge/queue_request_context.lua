@@ -53,20 +53,16 @@ end
 
 -- {{{ queue_request_context:new_request()
 function queue_request_context:new_request()
-    local rec = ratchet.zmqsocket.prepare_uri(self.uri)
-    local socket = ratchet.zmqsocket.new(rec.type)
-    socket:connect(rec.endpoint)
-
-    return channel.new(socket, rec)
+    return channel.new(self.uri, rec)
 end
 -- }}}
 
 -- {{{ channel.new()
-function channel.new(socket, rec)
+function channel.new(uri, rec)
     local self = {}
     setmetatable(self, channel)
 
-    self.socket = socket
+    self.uri = uri
     self.rec = rec
 
     self.parser = xml_wrapper.new(tags)
@@ -74,6 +70,15 @@ function channel.new(socket, rec)
     self.clients = {}
 
     return self
+end
+-- }}}
+
+-- {{{ channel:reset_messages_and_contents()
+function channel:reset_messages_and_contents()
+    self.contents = {}
+    for i, client in ipairs(self.clients) do
+        client.messages = {}
+    end
 end
 -- }}}
 
@@ -162,24 +167,30 @@ end
 
 -- {{{ channel:__call()
 function channel:__call()
+    local rec = ratchet.zmqsocket.prepare_uri(self.uri)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:connect(rec.endpoint)
+
     local msg = self:build_message()
     local num_contents = #self.contents
 
     if num_contents > 0 then
-        self.socket:send(msg, true)
+        socket:send(msg, true)
         for i, data in ipairs(self.contents) do
             if num_contents == i then
-                self.socket:send(data)
+                socket:send(data)
             else
-                self.socket:send(data, true)
+                socket:send(data, true)
             end
         end
     else
-        self.socket:send(msg)
+        socket:send(msg)
     end
 
-    local data = self.socket:recv()
+    local data = socket:recv()
     local results = self.parser:parse_xml(data)
+
+    self:reset_messages_and_contents()
 
     return results
 end
