@@ -101,28 +101,48 @@ end
 
 -- {{{ smtp_server:unknown_command()
 function smtp_server:unknown_command(command, arg, message)
-    self:send_ESC_reply("500", message or "Syntax error, command unrecognized", "5.5.2")
+    local reply = {
+        code = "500",
+        message = message or "Syntax error, command unrecognized",
+        enhanced_status_code = "5.5.2",
+    }
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 end
 -- }}}
 
 -- {{{ smtp_server:unknown_parameter()
 function smtp_server:unknown_parameter(command, arg, message)
-    self:send_ESC_reply("504", message or "Command parameter not implemented", "5.5.4")
+    local reply = {
+        code = "504",
+        message = message or "Command parameter not implemented",
+        enhanced_status_code = "5.5.4",
+    }
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 end
 -- }}}
 
 -- {{{ smtp_server:bad_sequence()
 function smtp_server:bad_sequence(command, arg, message)
-    self:send_ESC_reply("503", message or "Bad sequence of commands", "5.5.1")
+    local reply = {
+        code = "503",
+        message = message or "Bad sequence of commands",
+        enhanced_status_code = "5.5.1",
+    }
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 end
 -- }}}
 
 -- {{{ smtp_server:bad_arguments()
 function smtp_server:bad_arguments(command, arg, message)
-    self:send_ESC_reply("501", message or "Syntax error in parameters or arguments", "5.5.4")
+    local reply = {
+        code = "501",
+        message = message or "Syntax error in parameters or arguments",
+        enhanced_status_code = "5.5.4",
+    }
+    self:send_ESC_reply(reply)
     self.io:flush_send()
 end
 -- }}}
@@ -263,7 +283,12 @@ function smtp_server.commands.MAIL(self, arg)
         local max_size = self.extensions:has("SIZE")
         if max_size then
             if tonumber(size) > tonumber(max_size) then
-                self:send_ESC_reply("552", "Message size exceeds "..max_size.." limit", "5.3.4")
+                local reply = {
+                    code = "552",
+                    message = "Message size exceeds "..max_size.." limit",
+                    enhanced_status_code = "5.3.4"
+                }
+                self:send_ESC_reply(reply)
                 self.io:flush_send()
                 return
             end
