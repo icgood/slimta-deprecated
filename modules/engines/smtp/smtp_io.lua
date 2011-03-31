@@ -74,10 +74,9 @@ function smtp_io:recv_reply()
     local code, message_lines = nil, {}
     local bad_line_pattern = "^(.-)%\r?%\n()"
     local incomplete = true
+    local input, done = self.recv_buffer
 
     while incomplete do
-        local input, done = self:buffered_recv()
-
         -- Build the full reply pattern once we know the code.
         if not pattern then
             code = input:match("^%d%d%d")
@@ -123,6 +122,11 @@ function smtp_io:recv_reply()
         if done then
             return nil, done
         end
+
+        -- Check if we need to receive more data.
+        if incomplete then
+            input, done = self:buffered_recv()
+        end
     end
 
     return code, table.concat(message_lines, "\r\n")
@@ -131,16 +135,16 @@ end
 
 -- {{{ smtp_io:recv_command()
 function smtp_io:recv_command()
-    while true do
-        local input, done = self:buffered_recv()
+    local input, done = self.recv_buffer
 
+    while true do
         local line, end_i = input:match("^(.-)%\r?%\n()")
         if line then
             self.recv_buffer = self.recv_buffer:sub(end_i+1)
 
-            local command, extra = line:match("^(%a+)%s+(.-)%s*$")
+            local command, extra = line:match("^(%a+)%s*(.-)%s*$")
             if command then
-                return command, extra
+                return command:upper(), extra
             else
                 return line
             end
@@ -150,13 +154,16 @@ function smtp_io:recv_command()
         if done then
             return nil, done
         end
+
+        input, done = self:buffered_recv()
     end
 end
 -- }}}
 
 -- {{{ smtp_io:send_reply()
-function smtp_io:send_reply(code, message, more_coming)
+function smtp_io:send_reply(code, message)
     local lines = {}
+    message = message .. "\r\n"
     for line in message:gmatch("(.-)%\r?%\n") do
         table.insert(lines, line)
     end
@@ -164,14 +171,14 @@ function smtp_io:send_reply(code, message, more_coming)
 
     if num_lines == 0 then
         local to_send = code .. " " .. message .. "\r\n"
-        return self:buffered_send(to_send, more_coming)
+        return self:buffered_send(to_send)
     else
         local to_send = ""
         for i=1,(num_lines-1) do
             to_send = to_send .. code .. "-" .. lines[i] .. "\r\n"
         end
         to_send = to_send .. code .. " " .. lines[num_lines] .. "\r\n"
-        return self:buffered_send(to_send, more_coming)
+        return self:buffered_send(to_send)
     end
 end
 -- }}}

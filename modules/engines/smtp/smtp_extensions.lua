@@ -35,6 +35,12 @@ function smtp_extensions:add(ext, param)
 end
 -- }}}
 
+-- {{{ smtp_extensions:drop()
+function smtp_extensions:drop(ext)
+    self.extensions[ext:upper()] = nil
+end
+-- }}}
+
 -- {{{ smtp_extensions:parse_string()
 function smtp_extensions:parse_string(str)
     local pattern = "^%s*(%w[%w%-]*)%s*(.-)%s*$"
@@ -51,8 +57,8 @@ end
 -- }}}
 
 -- {{{ smtp_extensions:build_string()
-function smtp_extensions:build_string()
-    local lines = {}
+function smtp_extensions:build_string(header)
+    local lines = {header}
     for k, v in pairs(self.extensions) do
         if v == true then
             table.insert(lines, k)
