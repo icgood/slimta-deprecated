@@ -140,7 +140,7 @@ function smtp_io:recv_command()
     while true do
         local line, end_i = input:match("^(.-)%\r?%\n()")
         if line then
-            self.recv_buffer = self.recv_buffer:sub(end_i+1)
+            self.recv_buffer = self.recv_buffer:sub(end_i)
 
             local command, extra = line:match("^(%a+)%s*(.-)%s*$")
             if command then
