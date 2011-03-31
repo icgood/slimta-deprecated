@@ -29,13 +29,13 @@ function smtp_io:buffered_recv()
     local done
 
     if not received then
-        io.stderr:write("S: timed out\n")
+        io.stderr:write("R: timed out\n")
         done = "timed out"
     elseif received == "" then
-        io.stderr:write("S: connection closed\n")
+        io.stderr:write("R: connection closed\n")
         done = "connection closed"
     else
-        io.stderr:write("S: ["..received.."]\n")
+        io.stderr:write("R: ["..received.."]\n")
         self.recv_buffer = self.recv_buffer .. received
     end
 
@@ -57,13 +57,13 @@ function smtp_io:flush_send()
     while #send_buffer > self.send_size do
         local to_send = send_buffer:sub(1, self.send_size)
         self.socket:send(to_send)
-        io.stderr:write("C: ["..to_send.."]\n")
+        io.stderr:write("S: ["..to_send.."]\n")
         send_buffer = send_buffer:sub(self.send_size+1)
     end
 
     if #send_buffer > 0 then
         self.socket:send(send_buffer)
-        io.stderr:write("C: ["..send_buffer.."]\n")
+        io.stderr:write("S: ["..send_buffer.."]\n")
     end
 end
 -- }}}

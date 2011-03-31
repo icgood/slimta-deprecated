@@ -22,6 +22,7 @@ local function find_outside_quotes(haystack, needle, i)
 end
 -- }}}
 
+local data_reader = require "modules.engines.smtp.server.data_reader"
 local smtp_io = require "modules.engines.smtp.smtp_io"
 local smtp_extensions = require "modules.engines.smtp.smtp_extensions"
 
@@ -70,6 +71,23 @@ function smtp_server:send_ESC_reply(code, message, esc)
     end
 
     self.io:send_reply(code, message)
+end
+-- }}}
+
+-- {{{ smtp_server:get_message_data()
+function smtp_server:get_message_data()
+    local max_size = tonumber(self.extensions:has("SIZE"))
+    local reader = data_reader.new(self.io, max_size)
+
+    local data, err = reader:recv()
+
+    code, message, esc = "250", "Message Accepted for Delivery", "2.6.0"
+    if self.handlers.HAVE_DATA then
+        code, message, esc = self.handlers:HAVE_DATA(data, err)
+    end
+
+    self:send_ESC_reply(code, message, esc)
+    self.io:flush_send()
 end
 -- }}}
 
@@ -126,7 +144,13 @@ function smtp_server.commands.EHLO(self, ehlo_as)
         code, greeting = self.handlers:EHLO(ehlo_as)
     end
 
-    local message = greeting
+    -- Add extensions, if success code.
+    if code == "250" then
+        message = self.extensions:build_string(greeting)
+    else
+        message = greeting
+    end
+
     self.io:send_reply(code, message)
     self.io:flush_send()
 
@@ -134,7 +158,6 @@ function smtp_server.commands.EHLO(self, ehlo_as)
         self.have_mailfrom = nil
         self.have_rcptto = nil
 
-        message = self.extensions:build_string(greeting)
         self.ehlo_as = ehlo_as
     end
 end
@@ -295,7 +318,7 @@ function smtp_server.commands.DATA(self, arg)
     self.io:flush_send()
 
     if code == "354" then
-        -- Read message data.
+        self:get_message_data()
     end
 end
 -- }}}
