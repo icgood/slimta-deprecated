@@ -36,7 +36,7 @@ end
 
 -- {{{ smtp_client:get_banner()
 function smtp_client:get_banner()
-    local banner = smtp_reply.new()
+    local banner = smtp_reply.new("[BANNER]")
     table.insert(self.recv_queue, banner)
 
     self:recv_batch()
@@ -47,7 +47,7 @@ end
 
 -- {{{ smtp_client:ehlo()
 function smtp_client:ehlo(ehlo_as)
-    local ehlo = smtp_reply.new()
+    local ehlo = smtp_reply.new("EHLO")
     table.insert(self.recv_queue, ehlo)
 
     local command = "EHLO " .. ehlo_as
@@ -65,7 +65,7 @@ end
 
 -- {{{ smtp_client:helo()
 function smtp_client:helo(helo_as)
-    local ehlo = smtp_reply.new()
+    local ehlo = smtp_reply.new("HELO")
     table.insert(self.recv_queue, ehlo)
 
     local command = "HELO " .. helo_as
@@ -79,7 +79,7 @@ end
 
 -- {{{ smtp_client:starttls()
 function smtp_client:starttls()
-    local starttls = smtp_reply.new()
+    local starttls = smtp_reply.new("STARTTLS")
     table.insert(self.recv_queue, starttls)
 
     local command = "STARTTLS"
@@ -93,7 +93,7 @@ end
 
 -- {{{ smtp_client:mailfrom()
 function smtp_client:mailfrom(address, data_size)
-    local mailfrom = smtp_reply.new()
+    local mailfrom = smtp_reply.new("MAIL FROM")
     table.insert(self.recv_queue, mailfrom)
 
     local command = "MAIL FROM:<"..address..">"
@@ -112,7 +112,7 @@ end
 
 -- {{{ smtp_client:rcptto()
 function smtp_client:rcptto(address)
-    local rcptto = smtp_reply.new()
+    local rcptto = smtp_reply.new("RCPT TO")
     table.insert(self.recv_queue, rcptto)
 
     local command = "RCPT TO:<"..address..">"
@@ -128,7 +128,7 @@ end
 
 -- {{{ smtp_client:data()
 function smtp_client:data()
-    local data = smtp_reply.new()
+    local data = smtp_reply.new("DATA")
     table.insert(self.recv_queue, data)
 
     local command = "DATA"
@@ -142,7 +142,7 @@ end
 
 -- {{{ smtp_client:send_data()
 function smtp_client:send_data(data)
-    local send_data = smtp_reply.new()
+    local send_data = smtp_reply.new("[MESSAGE CONTENTS]")
     table.insert(self.recv_queue, send_data)
 
     local data_sender = data_sender.new(data)
@@ -156,7 +156,7 @@ end
 
 -- {{{ smtp_client:send_empty_data()
 function smtp_client:send_empty_data()
-    local send_data = smtp_reply.new()
+    local send_data = smtp_reply.new("[MESSAGE CONTENTS]")
     table.insert(self.recv_queue, send_data)
 
     self.io:send_command(".")
@@ -169,7 +169,7 @@ end
 
 -- {{{ smtp_client:rset()
 function smtp_client:rset()
-    local rset = smtp_reply.new()
+    local rset = smtp_reply.new("RSET")
     table.insert(self.recv_queue, rset)
 
     local command = "RSET"
@@ -183,7 +183,7 @@ end
 
 -- {{{ smtp_client:quit()
 function smtp_client:quit()
-    local quit = smtp_reply.new()
+    local quit = smtp_reply.new("QUIT")
     table.insert(self.recv_queue, quit)
 
     local command = "QUIT"

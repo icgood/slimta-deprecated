@@ -30,7 +30,19 @@ end
 -- }}}
 
 -- {{{ smtp_relay:on_error()
-function smtp_relay:on_error(err)
+function smtp_relay:on_error(err_info)
+    if type(err_info) == "string" then
+        while self.results:push_result("softfail", "", "", err_info) do end
+    else
+        local type_ = "softfail"
+        if err_info.code and err_info.code:sub(1, 1) == "5" then
+            type_ = "hardfail"
+        end
+
+        while self.results:push_result(type_, err_info.command, err_info.code, err_info.message) do end
+    end
+
+    self.results:send()
 end
 -- }}}
 
@@ -39,7 +51,7 @@ function smtp_relay:handshake(client)
     -- Get the SMTP banner.
     local banner = client:get_banner()
     if banner.code ~= "220" then
-        error("expected 220 from banner: " .. tostring(banner.code))
+        error(banner:error("expected 220 from banner"))
     end
 
     -- Send the EHLO/HELO.
@@ -48,7 +60,7 @@ function smtp_relay:handshake(client)
         ehlo = client:helo(self.ehlo_as)
     end
     if ehlo.code ~= "250" then
-        error("expected 250 from EHLO/HELO: " .. tostring(ehlo.code))
+        error(ehlo:error("expected 250 from EHLO/HELO"))
     end
 end
 -- }}}
@@ -103,10 +115,10 @@ function smtp_relay:negotiate_tls(client, socket)
         -- Redo the EHLO.
         ehlo = client:ehlo(self.ehlo_as)
         if ehlo.code ~= "250" then
-            error("expected 250 from EHLO after STARTTLS: " .. tostring(ehlo.code))
+            error(ehlo:error("expected 250 from EHLO after STARTTLS"))
         end
     elseif force then
-        error("expected 220 from STARTTLS: " .. tostring(starttls.code))
+        error(starttls:error("expected 220 from STARTTLS"))
     end
 end
 -- }}}
@@ -252,11 +264,18 @@ end
 
 -- {{{ smtp_relay:__call()
 function smtp_relay:__call()
+    kernel:set_error_handler(self.on_error, self)
+
     local rec = ratchet.socket.prepare_tcp(self.host, self.port, config.dns.a_queries())
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     if not socket:connect(rec.addr) then
-        error("connection failed")
         -- See RFC 5321 Section 3.8. for reasoning behind code 451.
+        error({
+            command = "[[Connection]]",
+            code = "451",
+            message = "4.4.1 Connection failed",
+            description = "Connection failed",
+        })
     end
 
     local client = modules.engines.smtp.client.new(socket)
