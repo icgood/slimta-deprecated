@@ -35,8 +35,12 @@ function smtp_edge:__call()
         local handler = command_handler.new(from_ip, self.queue_request_channel)
         local smtp_handler = modules.engines.smtp.server.new(client, handler)
 
+        local max_size = config.modules.protocols.edge.smtp.maximum_size()
+
         smtp_handler.extensions:add("STARTTLS")
-        smtp_handler.extensions:add("SIZE", "100000")
+        if max_size then
+            smtp_handler.extensions:add("SIZE", max_size)
+        end
 
         kernel:attach(smtp_handler)
     end
@@ -49,7 +53,6 @@ function command_handler.new(from_ip, queue_request_channel)
     setmetatable(self, command_handler)
 
     self.from_ip = from_ip
-    self.banner_message = config.modules.protocols.edge.smtp.banner_message()
     self.queue_up = queue_request_channel:new_request()
 
     return self
@@ -58,8 +61,10 @@ end
 
 -- {{{ command_handler:BANNER()
 function command_handler:BANNER(reply)
+    local banner_message = config.modules.protocols.edge.smtp.banner_message()
+
     if self.banner_message then
-        reply.message = self.banner_message
+        reply.message = banner_message
     end
 end
 -- }}}
@@ -117,6 +122,7 @@ end
 -- }}}
 
 slimta.config.new("config.modules.protocols.edge.smtp.banner_message")
+slimta.config.new("config.modules.protocols.edge.smtp.maximum_size", "10485760")
 
 modules.protocols.edge.smtp = smtp_edge
 
