@@ -252,7 +252,7 @@ function smtp_server.commands.STARTTLS(self, arg)
     self.io:flush_send()
 
     if reply.code == "220" then
-        local enc = self.io.socket:encrypt(ssl.TLSv1)
+        local enc = self.io.socket:encrypt(ssl_server.SSLv3)
         enc:server_handshake()
 
         self.extensions:drop("STARTTLS")

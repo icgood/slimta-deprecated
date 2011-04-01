@@ -59,7 +59,7 @@ function smtp_relay:negotiate_ssl(client, socket)
         return
     end
 
-    local ssl_obj = ssl[self.security.method]
+    local ssl_obj = ssl_client[self.security.method]
     if not ssl_obj then
         error("unknown SSL security method: " .. self.security.method)
     end
@@ -82,7 +82,7 @@ function smtp_relay:negotiate_tls(client, socket)
         return
     end
 
-    local tls_obj = ssl[self.security.method]
+    local tls_obj = ssl_client[self.security.method]
     if not tls_obj then
         error("unknown TLS security method: " .. self.security.method)
     end
