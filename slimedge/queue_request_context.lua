@@ -1,5 +1,5 @@
 
-local xml_wrapper = require "modules.engines.xml_wrapper"
+local xml_wrapper = require "lib.xml_wrapper"
 
 -- {{{ tags table
 local tags = {

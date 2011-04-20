@@ -65,6 +65,7 @@ AC_FUNC_STRERROR_R
 AC_CONFIG_FILES([Makefile
 		 etc/Makefile
 		 main/Makefile
+		 lib/Makefile
 
 		 slimedge/Makefile
 		 slimqueue/Makefile

@@ -1,5 +1,5 @@
 
-local xml_wrapper = require "modules.engines.xml_wrapper"
+local xml_wrapper = require "lib.xml_wrapper"
 local relay_request_context = require "slimqueue.relay_request_context"
 local generate_bounce = require "slimqueue.generate_bounce"
 local message_wrapper = require "slimqueue.message_wrapper"

@@ -1,5 +1,5 @@
 
-require "modules.engines.json"
+require "lib.json"
 
 require "modules.engines.http.client"
 
@@ -51,7 +51,7 @@ function couchdb_new:create_message_root()
     local root_info = {
         envelope = self.data.envelope,
         timestamp = self.data.timestamp,
-        attempts = self.data.attempts,
+        attempts = 0,
         size = self.data.size,
     }
 
