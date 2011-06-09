@@ -8,12 +8,13 @@ local class = getfenv()
 __index = class
 
 -- {{{ new()
-function new(where, database)
+function new(where, database, dns_query_types)
     local self = {}
     setmetatable(self, class)
 
     self.where = where
     self.database = database
+    self.dns_query_types = dns_query_types
 
     return self
 end
@@ -32,7 +33,7 @@ end
 
 -- {{{ new_connection()
 function new_connection(self)
-    local rec = ratchet.socket.prepare_uri(self.where)
+    local rec = ratchet.socket.prepare_uri(self.where, self.dns_query_types)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
 
@@ -110,9 +111,9 @@ end
 -- }}}
 
 -- {{{ update_document()
-function update_document(self, update_func, new_id)
+function update_document(self, update_func, new_id, ...)
     local document = self:load_document(new_id)
-    update_func(document)
+    update_func(document, ...)
     self:create_document(document, self.id)
 end
 -- }}}
