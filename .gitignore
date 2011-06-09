@@ -22,7 +22,3 @@ Makefile
 *.la
 *.lo
 *.o
-main/slimedge
-main/slimrelay
-main/slimqueue
-main/slimaster
