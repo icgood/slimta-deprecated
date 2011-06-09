@@ -1,9 +1,9 @@
 
 require "slimta.uuid"
-local json = require "slimta.json"
+require "slimta.json"
 require "ratchet.http.client"
 
-module("slimta.storage.engines.couchdb", package.seeall)
+module("slimta.storage.couchdb", package.seeall)
 local class = getfenv()
 __index = class
 
@@ -30,6 +30,16 @@ local function strip_quotes(str)
 end
 -- }}}
 
+-- {{{ new_connection()
+function new_connection(self)
+    local rec = ratchet.socket.prepare_uri(self.where)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:connect(rec.addr)
+
+    return ratchet.http.client.new(socket)
+end
+-- }}}
+
 -- {{{ create_document()
 function create_document(self, document, force_id)
     local doc_str = json.encode(document)
@@ -38,11 +48,11 @@ function create_document(self, document, force_id)
     -- Keep attempting PUT on new UUIDs until we don't get a collision.
     repeat
         local id = force_id or slimta.uuid.generate()
-        local couchttp = ratchet.http.client.new(self.where)
+        local couchttp = self:new_connection()
         code, reason, headers, data = couchttp:query(
             "PUT",
-            "/"..self.database.."/"..self.id,
-            {["Content-Type"] = "application/json", ["Content-Length"] = #doc_str},
+            "/"..self.database.."/"..id,
+            {["Content-Type"] = {"application/json"}, ["Content-Length"] = {#doc_str}},
             doc_str
         )
         if force_id then
@@ -65,7 +75,7 @@ end
 function refresh_rev(self, new_id)
     self.id = new_id or self.id
 
-    local couchttp = ratchet.http.client.new(self.where)
+    local couchttp = self:new_connection()
     local code, reason, headers, data = couchttp:query(
         "HEAD",
         "/"..self.database.."/"..self.id
@@ -80,7 +90,9 @@ end
 
 -- {{{ load_document()
 function load_document(self, new_id)
-    local couchttp = ratchet.http.client.new(self.where)
+    self.id = new_id or self.id
+
+    local couchttp = self:new_connection()
     local code, reason, headers, data = couchttp:query(
         "GET",
         "/"..self.database.."/"..self.id
@@ -91,7 +103,6 @@ function load_document(self, new_id)
     end
     local info = json.decode(data)
 
-    self.id = info._id
     self.rev = info._rev
 
     return info
@@ -102,7 +113,7 @@ end
 function update_document(self, update_func, new_id)
     local document = self:load_document(new_id)
     update_func(document)
-    self:create_document(document, new_id)
+    self:create_document(document, self.id)
 end
 -- }}}
 
@@ -110,13 +121,13 @@ end
 function create_attachment(self, name, ctype, contents, new_id)
     self:refresh_rev(new_id)
 
-    local couchttp = ratchet.http.client.new(self.where)
+    local couchttp = self:new_connection()
     local code, reason, headers, data = couchttp:query(
         "PUT",
         "/"..self.database.."/"..self.id.."/"..name.."?rev="..self.rev,
         {
-            ["Content-Type"] = ctype,
-            ["Content-Length"] = #contents,
+            ["Content-Type"] = {ctype},
+            ["Content-Length"] = {#contents},
         },
         contents
     )
@@ -128,13 +139,13 @@ end
 -- }}}
 
 -- {{{ load_attachment()
-function load_document(self, name, new_id)
+function load_attachment(self, name, new_id)
     self:refresh_rev(new_id)
 
-    local couchttp = ratchet.http.client.new(self.where)
+    local couchttp = self:new_connection()
     local code, reason, headers, data = couchttp:query(
         "GET",
-        "/"..self.database.."/"..self.id.."/"..name.."?rev="..self.rev,
+        "/"..self.database.."/"..self.id.."/"..name.."?rev="..self.rev
     )
 
     if code ~= 200 then
@@ -149,7 +160,7 @@ end
 function delete_document(self, new_id)
     self:refresh_rev(new_id)
 
-    local couchttp = ratchet.http.client.new(self.where)
+    local couchttp = self:new_connection()
     local code, reason, headers, data = couchttp:query(
         "DELETE",
         "/"..self.database.."/"..self.id.."?rev="..self.rev
