@@ -1,27 +1,45 @@
 
-require "lib.json"
+require "slimta.json"
 require "ratchet.http.server"
+
+require "slimta.message"
 
 module("slimta.edge.http", package.seeall)
 local class = getfenv()
 __index = class
 
+-- {{{ setup_listening_socket()
+local function setup_listening_socket(uri, dns_query_types)
+    local rec = ratchet.socket.prepare_uri(uri, dns_query_types)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket.SO_REUSEADDR = true
+    socket:bind(rec.addr)
+    socket:listen()
+
+    return socket
+end
+-- }}}
+
 -- {{{ new()
-function new(uri, queue_request_channel)
+function new(uri, dns_query_types)
     local self = {}
     setmetatable(self, class)
 
-    self.uri = uri
-    self.queue_request_channel = queue_request_channel
-
-    kernel:attach(self)
+    self.socket = setup_listening_socket(uri, dns_query_types)
 
     return self
 end
 -- }}}
 
+-- {{{ set_manager()
+function set_manager(self, manager)
+    self.manager = manager
+end
+-- }}}
+
 -- {{{ POST()
 function POST(self, uri, headers, data, from)
+    -- Check the URI to make sure we accept it.
     if uri ~= "/email" and uri ~= "/email/" then
         return {
             code = 404,
@@ -29,6 +47,7 @@ function POST(self, uri, headers, data, from)
         }
     end
 
+    -- Check the Content-Type for an email message.
     local expected_type = 'message/rfc822'
     if headers['content-type'][1]:lower():sub(1, #expected_type) ~= expected_type then
         return {
@@ -38,50 +57,51 @@ function POST(self, uri, headers, data, from)
         }
     end
 
-    local message = {
-        sender = headers['x-sender'][1],
-        recipients = headers['x-recipient'],
-        contents = data,
-    }
-
-    local checks = {
-        sender = function (d) if not d then return "Missing X-Sender header" end end,
-        recipients = function (d) if not d then return "Missing X-Recipient headers" end end,
-    }
-    for k, v in pairs(checks) do
-        local err = v(message[k])
-        if err then
-            return {code = 400, message = err}
-        end
-    end
-
+    -- Set the EHLO, if given.
     local ehlo = "none"
     if headers['x-ehlo'] then
         ehlo = headers['x-ehlo'][1]
     end
 
-    local queue_up = self.queue_request_channel:new_request()
-    local i = queue_up:add_client("HTTP", ehlo, from)
-    local j = queue_up:add_contents(message.contents)
-    local timestamp = os.time()
-    queue_up:add_message(message, i, j, timestamp)
-    local results = queue_up()
+    -- Grab the sender and recipient from HTTP headers.
+    local sender = headers['x-sender'][1]
+    local recipients = headers['x-recipient']
 
-    local first_msg = results.messages[1]
-    if first_msg.queue_id then
+    -- Build a slimta.message object.
+    local client = slimta.message.client.new("HTTP", ehlo, from, "none")
+    local envelope = slimta.message.envelope.new(sender, recipients)
+    local contents = slimta.message.contents.new(data)
+    local timestamp = os.time()
+
+    local message = slimta.message.new(client, envelope, contents, timestamp)
+
+    -- Run some checks on the message.
+    if not message.envelope.sender then
+        return {code = 400, message = "Missing X-Sender header"}
+    end
+    if not message.envelope.recipients then
+        return {code = 400, message = "Missing X-Recipient header"}
+    end
+
+    -- Send the message to the edge manager for processing, if
+    -- one has been set.
+    local queue_id, error_data = self.manager:queue_message(message)
+
+    -- Return success if we got a queue ID, error otherwise.
+    if queue_id then
         return {
             code = 200,
             message = "Queued Successfully",
-            headers = {["Content-Length"] = {#first_msg.queue_id}},
-            data = first_msg.queue_id,
+            headers = {["Content-Length"] = {#queue_id}},
+            data = queue_id,
         }
     else
-        local error_data = json.encode(first_msg.error)
+        local error_str = json.encode(error_data)
         return {
             code = 500,
             message = "Message Not Queued",
-            headers = {["Content-Length"] = {#error_data}},
-            data = error_data,
+            headers = {["Content-Length"] = {#error_str}},
+            data = error_str,
         }
     end
 end
@@ -93,19 +113,19 @@ function GET(self, uri, headers, data, from)
 end
 -- }}}
 
--- {{{ __call()
-function __call(self)
-    local rec = ratchet.socket.prepare_uri(self.uri, config.dns.a_queries())
-    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket.SO_REUSEADDR = true
-    socket:bind(rec.addr)
-    socket:listen()
-
+-- {{{ loop()
+function loop(self, kernel)
     while true do
-        local client, from_ip = socket:accept()
-        local client_handler = ratchet.http.server.new(client, from_ip, self)
-        kernel:attach(client_handler)
+        local client, from_ip = self.socket:accept()
+        local handler = ratchet.http.server.new(client, from_ip, self)
+        kernel:attach(handler.handle, handler)
     end
+end
+-- }}}
+
+-- {{{ run()
+function run(self, kernel)
+    kernel:attach(loop, self, kernel)
 end
 -- }}}
 
