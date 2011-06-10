@@ -18,7 +18,11 @@ end
 
 -- {{{ connect_to_queue()
 local function connect_to_queue(uri)
+    local rec = ratchet.zmqsocket.prepare_uri(where)
+    local socket = ratchet.zmqsocket.new(rec.type)
+    socket:connect(rec.endpoint)
 
+    return socket
 end
 -- }}}
 
