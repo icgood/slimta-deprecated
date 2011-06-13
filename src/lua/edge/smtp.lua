@@ -23,11 +23,12 @@ end
 -- }}}
 
 -- {{{ new()
-function new(uri, dns_query_types)
+function new(uri, dns_query_types, synchronous)
     local self = {}
     setmetatable(self, class)
 
     self.socket = setup_listening_socket(uri, dns_query_types)
+    self.synchronous = synchronous
 
     self.settings = {
         banner_code = 220,
@@ -75,15 +76,9 @@ local function apply_extension_settings(extensions, settings)
 end
 -- }}}
 
--- {{{ client_handler_thread()
-local function client_handler_thread(smtp_handler)
-    smtp_handler:handle()
-end
--- }}}
-
 -- {{{ loop()
 function loop(self, kernel)
-    while true do
+    while not self.done do
         local client, from_ip = self.socket:accept()
 
         local handler = command_handler.new(from_ip, self.manager, self.settings)
@@ -91,7 +86,11 @@ function loop(self, kernel)
 
         apply_extension_settings(smtp_handler.extensions, self.settings)
 
-        kernel:attach(client_handler_thread, smtp_handler)
+        if self.synchronous then
+            smtp_handler:handle()
+        else
+            kernel:attach(smtp_handler.handle, smtp_handler)
+        end
     end
 end
 -- }}}
@@ -99,6 +98,12 @@ end
 -- {{{ run()
 function run(self, kernel)
     kernel:attach(loop, self, kernel)
+end
+-- }}}
+
+-- {{{ halt()
+function halt(self, kernel)
+    self.done = true
 end
 -- }}}
 

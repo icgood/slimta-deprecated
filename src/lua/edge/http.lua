@@ -21,11 +21,12 @@ end
 -- }}}
 
 -- {{{ new()
-function new(uri, dns_query_types)
+function new(uri, dns_query_types, synchronous)
     local self = {}
     setmetatable(self, class)
 
     self.socket = setup_listening_socket(uri, dns_query_types)
+    self.synchronous = synchronous
 
     return self
 end
@@ -115,10 +116,14 @@ end
 
 -- {{{ loop()
 function loop(self, kernel)
-    while true do
+    while not self.done do
         local client, from_ip = self.socket:accept()
         local handler = ratchet.http.server.new(client, from_ip, self)
-        kernel:attach(handler.handle, handler)
+        if self.synchronous then
+            handler:handle()
+        else
+            kernel:attach(handler.handle, handler)
+        end
     end
 end
 -- }}}
@@ -126,6 +131,12 @@ end
 -- {{{ run()
 function run(self, kernel)
     kernel:attach(loop, self, kernel)
+end
+-- }}}
+
+-- {{{ halt()
+function halt(self)
+    self.done = true
 end
 -- }}}
 
