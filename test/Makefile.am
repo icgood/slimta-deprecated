@@ -12,7 +12,8 @@ message_tests = test_message_to_xml.lua \
 		test_message_header_folding.lua
 
 edge_tests = test_edge_http_listener.lua \
-	     test_edge_smtp_listener.lua
+	     test_edge_smtp_listener.lua \
+	     test_edge_queue_channel.lua
 
 TESTS = $(xml_tests) $(message_tests) $(edge_tests)
 

@@ -1,5 +1,6 @@
 
 require "slimta.xml.writer"
+require "slimta.xml.reader"
 
 module("slimta.edge.queue_channel", package.seeall)
 local class = getfenv()
@@ -18,7 +19,7 @@ end
 
 -- {{{ connect_to_queue()
 local function connect_to_queue(uri)
-    local rec = ratchet.zmqsocket.prepare_uri(where)
+    local rec = ratchet.zmqsocket.prepare_uri(uri)
     local socket = ratchet.zmqsocket.new(rec.type)
     socket:connect(rec.endpoint)
 
@@ -64,9 +65,9 @@ local function send_full_request(socket, request, attachments)
     socket:send(request, more_coming)
     while more_coming do
         local data = attachments[curr_attachment]
-        socket:send(data, more_coming)
         curr_attachment = curr_attachment + 1
         more_coming = curr_attachment <= num_attachments
+        socket:send(data, more_coming)
     end
 end
 -- }}}
@@ -75,7 +76,7 @@ end
 local function recv_responses(socket)
     local response = socket:recv()
 
-    local reader = slimta.xml.reader()
+    local reader = slimta.xml.reader.new()
     local root_node = reader:parse_xml(response)
 
     assert(#root_node == 1)
