@@ -5,13 +5,12 @@ require "ratchet.smtp.client"
 -- {{{ run_edge()
 function run_edge(kernel)
     require "slimta.edge"
-    require "slimta.edge.mock_queue_channel"
 
     local smtp = slimta.edge.smtp.new("tcp://localhost:2525", {"ipv4"}, true)
     smtp:set_banner_message(220, "ESMTP slimta test banner")
     smtp:set_max_message_size(10485760)
 
-    local mock_queue = slimta.edge.mock_queue_channel.new(function (messages)
+    local mock_queue = slimta.edge.queue_channel.mock(function (messages)
         assert(1 == #messages)
         local message = messages[1]
 
