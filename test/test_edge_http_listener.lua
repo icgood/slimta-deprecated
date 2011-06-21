@@ -5,11 +5,10 @@ require "ratchet.http.client"
 -- {{{ run_edge()
 function run_edge(kernel)
     require "slimta.edge"
-    require "slimta.edge.mock_queue_channel"
 
     local http = slimta.edge.http.new("tcp://localhost:2525", {"ipv4"}, true)
 
-    local mock_queue = slimta.edge.mock_queue_channel.new(function (messages)
+    local mock_queue = slimta.edge.queue_channel.mock(function (messages)
         assert(1 == #messages)
         local message = messages[1]
 
