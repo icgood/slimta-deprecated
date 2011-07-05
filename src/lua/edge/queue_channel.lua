@@ -17,21 +17,13 @@ function new(uri)
 end
 -- }}}
 
--- {{{ mock_request_enqueue()
-local function mock_request_enqueue(self, messages)
-    for i, msg in ipairs(messages) do
-        msg.error_data = "Handled by Mock-Queue"
-    end
-
-    return self.callback(messages)
-end
--- }}}
-
 -- {{{ mock()
 function mock(callback)
     local self = {}
     setmetatable(self, {__index = {
-        request_enqueue = mock_request_enqueue,
+        request_enqueue = function (self, messages)
+            return self.callback(messages)
+        end,
     }})
 
     self.callback = callback

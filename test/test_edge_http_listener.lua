@@ -9,6 +9,10 @@ function run_edge(kernel)
     local http = slimta.edge.http.new("tcp://localhost:2525", {"ipv4"}, true)
 
     local mock_queue = slimta.edge.queue_channel.mock(function (messages)
+        for i, msg in ipairs(messages) do
+            msg.error_data = "Handled by Mock-Queue"
+        end
+
         assert(1 == #messages)
         local message = messages[1]
 
