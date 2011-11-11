@@ -6,15 +6,17 @@ else
 noinst_LTLIBRARIES = libslimta.la
 endif
 
+libslimta_la_CFLAGS = -std=gnu99 -Wall -Wno-unused-function -Wno-unused-label
+libslimta_la_LDFLAGS = 
+
+libslimta_la_SOURCES = rlimit.c \
+		       uuid.c \
+		       xml.c \
+		       misc.c
+
 lualibdir = @WITH_LUA_LPATH@
 lualib_LTLIBRARIES = slimta.la
 slimta_la_LDFLAGS = -module -avoid-version -shared
 slimta_la_LIBADD = libslimta.la
-
-libslimta_la_SOURCES = config_.c \
-		       rlimit.c \
-		       uuid.c \
-		       slimta.c \
-		       xml.c \
-		       misc.c
+slimta_la_SOURCES = 
 
