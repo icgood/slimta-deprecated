@@ -39,23 +39,9 @@ local response_obj = {
 }
 -- }}}
 
-function ctx1(where)
-    local s_rec = ratchet.socket.prepare_uri(where)
-    local s_socket = ratchet.socket.new(s_rec.family, s_rec.socktype, s_rec.protocol)
-    s_socket.SO_REUSEADDR = true
-    s_socket:bind(s_rec.addr)
-    s_socket:listen()
-
-    local c_rec = ratchet.socket.prepare_uri(where)
-    local c_socket = ratchet.socket.new(c_rec.family, c_rec.socktype, c_rec.protocol)
-    c_socket:connect(c_rec.addr)
-
-    kernel:attach(server_bus, s_socket)
-    kernel:attach(client_bus_1, c_socket)
-end
-
-function server_bus(socket)
-    local bus = slimta.bus.new_server(socket, request_obj)
+function server_bus(where)
+    local bus = slimta.bus.new_server(where, request_obj)
+    kernel:attach(client_bus, where)
 
     local transaction, requests = bus:recv_request()
 
@@ -69,8 +55,8 @@ function server_bus(socket)
     transaction:send_response({response_obj})
 end
 
-function client_bus_1(socket)
-    local bus = slimta.bus.new_client(socket, response_obj)
+function client_bus(where)
+    local bus = slimta.bus.new_client(where, response_obj)
 
     request_obj.id = "operation falcon"
     request_obj.stuff = "important"
@@ -84,7 +70,7 @@ function client_bus_1(socket)
 end
 
 kernel = ratchet.new()
-kernel:attach(ctx1, "tcp://localhost:10025")
+kernel:attach(server_bus, "tcp://localhost:10025")
 kernel:loop()
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

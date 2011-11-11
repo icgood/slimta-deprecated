@@ -1,5 +1,6 @@
 
 require "ratchet.bus"
+require "ratchet.socket"
 require "slimta.xml.writer"
 require "slimta.xml.reader"
 
@@ -12,11 +13,15 @@ local function build_request_from_bus(self)
     return function (data, attachments, from)
         local reader = slimta.xml.reader.new()
         local root_node = reader:parse_xml(data)
-    
+
+        assert(1 == #root_node)
+        assert("requests" == root_node[1].name)
+
         local rets = {}
-        for i, child_node in ipairs(root_node) do
+        for i, child_node in ipairs(root_node[1]) do
+            local j = tonumber(child_node.attrs.i)
             local ret = self.request_type.from_xml(child_node, attachments, from)
-            table.insert(rets, ret)
+            rets[j] = ret
         end
     
         return rets
@@ -49,14 +54,20 @@ local function response_to_bus(data)
         writer:add_item(container)
     end
 
-    return writer:build()
+    return writer:build({"responses"})
 end
 -- }}}
 
 -- {{{ new()
-function new(socket, request_type)
+function new(uri, request_type)
     local self = {}
     setmetatable(self, class)
+
+    local rec = ratchet.socket.prepare_uri(uri)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket.SO_REUSEADDR = true
+    socket:bind(rec.addr)
+    socket:listen()
 
     self.bus = ratchet.bus.new_server(socket, build_request_from_bus(self), response_to_bus)
     self.request_type = request_type
