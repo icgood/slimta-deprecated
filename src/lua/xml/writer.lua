@@ -63,6 +63,7 @@ end
 -- {{{ build()
 function build(self, containers)
     local parts = {}
+    containers = containers or {}
 
     add_container_opens(parts, containers)
 
