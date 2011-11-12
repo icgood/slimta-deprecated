@@ -2,42 +2,56 @@
 require "ratchet"
 require "ratchet.http.client"
 
--- {{{ run_edge()
-function run_edge(kernel)
-    require "slimta.edge"
+require "slimta.edge"
+require "slimta.bus"
+require "slimta.message"
 
+-- {{{ check_messages()
+local function check_messages(messages)
+    assert(1 == #messages)
+    local message = messages[1]
+
+    assert("HTTP" == message.client.protocol)
+    assert("test" == message.client.ehlo)
+    assert("127.0.0.1" == message.client.ip)
+    assert("none" == message.client.security)
+
+    assert("sender@slimta.org" == message.envelope.sender)
+    assert(1 == #message.envelope.recipients)
+    assert("rcpt@slimta.org" == message.envelope.recipients[1])
+
+    assert("arbitrary test message data" == tostring(message.contents))
+
+    server_checks_ok = true
+
+    local responses = {}
+    for i, msg in ipairs(messages) do
+        local response = slimta.message.response.new("451", "Testing")
+        table.insert(responses, response)
+    end
+
+    return responses
+end
+-- }}}
+
+-- {{{ run_edge()
+function run_edge()
     local http = slimta.edge.http.new("tcp://localhost:2525", {"ipv4"}, true)
 
-    local mock_queue = slimta.edge.queue_channel.mock(function (messages)
-        for i, msg in ipairs(messages) do
-            msg.error_data = "Handled by Mock-Queue"
-        end
+    local bus_server, bus_client = slimta.bus.new_local()
 
-        assert(1 == #messages)
-        local message = messages[1]
-
-        assert("HTTP" == message.client.protocol)
-        assert("test" == message.client.ehlo)
-        assert("127.0.0.1" == message.client.ip)
-        assert("none" == message.client.security)
-
-        assert("sender@slimta.org" == message.envelope.sender)
-        assert(1 == #message.envelope.recipients)
-        assert("rcpt@slimta.org" == message.envelope.recipients[1])
-
-        assert("arbitrary test message data" == tostring(message.contents))
-
-        server_received_message = true
-        http:halt()
-    end)
-
-    local edge = slimta.edge.new()
-    edge:set_queue_channel(mock_queue)
+    local edge = slimta.edge.new(bus_client)
     edge:add_listener(http)
 
     edge:run(kernel)
     
     kernel:attach(send_http, "tcp://localhost:2525")
+
+    local transaction, messages = bus_server:recv_request()
+    local responses = check_messages(messages)
+    transaction:send_response(responses)
+
+    http:halt()
 end
 -- }}}
 
@@ -65,15 +79,17 @@ function send_http(where)
         "arbitrary test message data"
     )
 
-    client_sent_message = true
+    assert("451" == tostring(code))
+    assert("Testing" == reason)
+    client_checks_ok = true
 end
 -- }}}
 
-local kernel = ratchet.new()
+kernel = ratchet.new()
 kernel:attach(run_edge, kernel)
 kernel:loop()
 
-assert(client_sent_message)
-assert(server_received_message)
+assert(client_checks_ok)
+assert(server_checks_ok)
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

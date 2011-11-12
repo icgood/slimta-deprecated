@@ -179,17 +179,11 @@ function command_handler:HAVE_DATA(reply, data, err)
 
         local message = slimta.message.new(client, envelope, contents, timestamp)
 
-        -- Send the message to the edge manager for processing, if one has been set.
-        local queue_id, error_data = self.manager:queue_message(message)
+        -- Send the message to the edge manager for processing.
+        local response = self.manager:process_message(message)
+        reply.code, reply.message = response:as_smtp()
 
-        -- Return success if we got a queue ID, error otherwise.
-        if queue_id then
-            reply.message = "Message Queued as " .. queue_id
-        else
-            reply.code = "451"
-            reply.message = error_data
-        end
-
+        -- Reset the session for more messages.
         self.message = nil
     end
 end

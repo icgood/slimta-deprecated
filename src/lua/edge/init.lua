@@ -1,18 +1,21 @@
 
 require "slimta.edge.http"
 require "slimta.edge.smtp"
-require "slimta.edge.queue_channel"
+
+require "slimta.bus"
+require "slimta.message"
 
 module("slimta.edge", package.seeall)
 local class = getfenv()
 __index = class
 
 -- {{{ new()
-function new()
+function new(bus)
     local self = {}
     setmetatable(self, class)
 
     self.listeners = {}
+    self.bus = bus
 
     return self
 end
@@ -25,25 +28,11 @@ function add_listener(self, listener)
 end
 -- }}}
 
--- {{{ set_queue_channel()
-function set_queue_channel(self, channel)
-    self.queue = channel
-end
--- }}}
-
--- {{{ queue_message()
-function queue_message(self, message)
-    if self.queue then
-        self.queue:request_enqueue({message})
-    else
-        message.error_data = "Please configure a queue channel."
-    end
-
-    if message.id then
-        return message.id
-    else
-        return nil, message.error_data
-    end
+-- {{{ process_message()
+function process_message(self, message)
+    local transaction = self.bus:send_request({message})
+    local responses = transaction:recv_response()
+    return responses[1]
 end
 -- }}}
 

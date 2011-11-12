@@ -84,27 +84,9 @@ function POST(self, uri, headers, data, from)
         return {code = 400, message = "Missing X-Recipient header"}
     end
 
-    -- Send the message to the edge manager for processing, if
-    -- one has been set.
-    local queue_id, error_data = self.manager:queue_message(message)
-
-    -- Return success if we got a queue ID, error otherwise.
-    if queue_id then
-        return {
-            code = 200,
-            message = "Queued Successfully",
-            headers = {["Content-Length"] = {#queue_id}},
-            data = queue_id,
-        }
-    else
-        local error_str = json.encode(error_data)
-        return {
-            code = 500,
-            message = "Message Not Queued",
-            headers = {["Content-Length"] = {#error_str}},
-            data = error_str,
-        }
-    end
+    -- Send the message to the edge manager for processing.
+    local response = self.manager:process_message(message)
+    return response:as_http()
 end
 -- }}}
 

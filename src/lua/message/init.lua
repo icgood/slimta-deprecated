@@ -2,6 +2,7 @@
 require "slimta.message.client"
 require "slimta.message.envelope"
 require "slimta.message.contents"
+require "slimta.message.response"
 
 module("slimta.message", package.seeall)
 local class = getfenv()
