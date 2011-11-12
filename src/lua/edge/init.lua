@@ -44,4 +44,12 @@ function run(self, kernel)
 end
 -- }}}
 
+-- {{{ halt()
+function halt(self)
+    for i, listener in ipairs(self.listeners) do
+        listener:halt()
+    end
+end
+-- }}}
+
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

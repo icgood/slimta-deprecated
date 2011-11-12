@@ -51,7 +51,7 @@ function run_edge()
     local responses = check_messages(messages)
     transaction:send_response(responses)
 
-    http:halt()
+    edge:halt()
 end
 -- }}}
 
