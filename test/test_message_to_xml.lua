@@ -3,7 +3,7 @@ require "slimta.message"
 require "slimta.xml.writer"
 
 local client = slimta.message.client.new("SMTP", "testing", "1.2.3.4", "TLS")
-local envelope = slimta.message.envelope.new("sender@domain.com", {"recipient@domain.com"})
+local envelope = slimta.message.envelope.new("sender@domain.com", {"recipient@domain.com"}, "4.3.2.1", "2500")
 local contents = slimta.message.contents.new("test contents 1", true)
 local msg1 = slimta.message.new(client, envelope, contents)
 
@@ -35,6 +35,7 @@ local expected_xml = [[
    <envelope>
     <sender>sender@domain.com</sender>
     <recipient>recipient@domain.com</recipient>
+    <destination port="2500">4.3.2.1</destination>
    </envelope>
    <contents part="1"/>
   </message>
