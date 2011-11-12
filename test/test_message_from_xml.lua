@@ -28,7 +28,7 @@ local xml = [[
    <envelope>
     <sender>sender@domain.com</sender>
     <recipient>recipient@domain.com</recipient>
-    <destination port="2500">4.3.2.1</destination>
+    <destination relayer="SMTP" port="2500">4.3.2.1</destination>
    </envelope>
    <contents part="2"/>
   </message>
@@ -68,6 +68,7 @@ assert("5.6.7.8" == msg2.client.ip)
 assert("SSL" == msg2.client.security)
 assert("sender@domain.com" == msg2.envelope.sender)
 assert(1 == #msg2.envelope.recipients and "recipient@domain.com" == msg2.envelope.recipients[1])
+assert("SMTP" == msg2.envelope.dest_relayer)
 assert(2500 == msg2.envelope.dest_port)
 assert("4.3.2.1" == msg2.envelope.dest_addr)
 assert("test message data 2" == tostring(msg2.contents))

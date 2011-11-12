@@ -4,12 +4,13 @@ local class = getfenv()
 __index = class
 
 -- {{{ new()
-function new(sender, recipients, dest_addr, dest_port)
+function new(sender, recipients, dest_relayer, dest_addr, dest_port)
     local self = {}
     setmetatable(self, class)
 
     self.sender = sender
     self.recipients = recipients
+    self.dest_relayer = dest_relayer
     self.dest_addr = dest_addr
     self.dest_port = dest_port
 
@@ -35,11 +36,15 @@ function to_xml(self)
         table.insert(lines, " <recipient>" .. recip .. "</recipient>")
     end
     if self.dest_addr then
-        if self.dest_port then
-            table.insert(lines, " <destination port=\"" .. self.dest_port .. "\">" .. self.dest_addr .. "</destination>")
-        else
-            table.insert(lines, " <destination>" .. self.dest_addr .. "</destination>")
+        local attrs = ""
+        if self.dest_relayer then
+            attrs = attrs .. " relayer=\"" .. self.dest_relayer .. "\""
         end
+        if self.dest_port then
+            attrs = attrs .. " port=\"" .. self.dest_port .. "\""
+        end
+
+        table.insert(lines, " <destination" .. attrs .. ">" .. self.dest_addr .. "</destination>")
     end
     table.insert(lines, "</envelope>")
 
@@ -51,7 +56,7 @@ end
 function from_xml(tree_node)
     local protocol, ehlo, ip, security
     local sender, recipients = nil, {}
-    local dest_addr, dest_port
+    local dest_addr, dest_port, dest_relayer
 
     for i, child_node in ipairs(tree_node) do
         if child_node.name == "sender" then
@@ -62,10 +67,13 @@ function from_xml(tree_node)
         elseif child_node.name == "destination" then
             dest_addr = child_node.data:gsub("^%s*", ""):gsub("%s*$", "")
             dest_port = tonumber(child_node.attrs.port or 25)
+            if child_node.attrs.relayer then
+                dest_relayer = child_node.attrs.relayer:gsub("^%s*", ""):gsub("%s*$", "")
+            end
         end
     end
 
-    return new(sender, recipients, dest_addr, dest_port)
+    return new(sender, recipients, dest_relayer, dest_addr, dest_port)
 end
 -- }}}
 
