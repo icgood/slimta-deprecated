@@ -70,7 +70,7 @@ assert("sender@domain.com" == msg2.envelope.sender)
 assert(1 == #msg2.envelope.recipients and "recipient@domain.com" == msg2.envelope.recipients[1])
 assert("SMTP" == msg2.envelope.dest_relayer)
 assert(2500 == msg2.envelope.dest_port)
-assert("4.3.2.1" == msg2.envelope.dest_addr)
+assert("4.3.2.1" == msg2.envelope.dest_host)
 assert("test message data 2" == tostring(msg2.contents))
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
