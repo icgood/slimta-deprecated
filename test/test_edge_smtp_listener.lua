@@ -36,7 +36,7 @@ end
 
 -- {{{ run_edge()
 function run_edge()
-    local smtp = slimta.edge.smtp.new("tcp://localhost:2525", {"ipv4"}, true)
+    local smtp = slimta.edge.smtp.new("tcp://localhost:2525", {"ipv4"})
     smtp:set_banner_message(220, "ESMTP slimta test banner")
     smtp:set_max_message_size(10485760)
 

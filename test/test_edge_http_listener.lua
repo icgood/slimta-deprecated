@@ -36,7 +36,7 @@ end
 
 -- {{{ run_edge()
 function run_edge()
-    local http = slimta.edge.http.new("tcp://localhost:2525", {"ipv4"}, true)
+    local http = slimta.edge.http.new("tcp://localhost:2525", {"ipv4"})
 
     local bus_server, bus_client = slimta.bus.new_local()
 

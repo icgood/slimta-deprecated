@@ -23,12 +23,11 @@ end
 -- }}}
 
 -- {{{ new()
-function new(uri, dns_query_types, synchronous)
+function new(uri, dns_query_types)
     local self = {}
     setmetatable(self, class)
 
     self.socket = setup_listening_socket(uri, dns_query_types)
-    self.synchronous = synchronous
 
     self.settings = {
         banner_code = 220,
@@ -79,16 +78,16 @@ end
 -- {{{ loop()
 function loop(self, kernel)
     while not self.done do
+        self.paused_thread = ratchet.running_thread()
         local client, from_ip = self.socket:accept()
+        self.paused_thread = nil
+        
+        if client then
+            local handler = command_handler.new(from_ip, self.manager, self.settings)
+            local smtp_handler = ratchet.smtp.server.new(client, handler)
 
-        local handler = command_handler.new(from_ip, self.manager, self.settings)
-        local smtp_handler = ratchet.smtp.server.new(client, handler)
+            apply_extension_settings(smtp_handler.extensions, self.settings)
 
-        apply_extension_settings(smtp_handler.extensions, self.settings)
-
-        if self.synchronous then
-            smtp_handler:handle()
-        else
             kernel:attach(smtp_handler.handle, smtp_handler)
         end
     end
@@ -104,6 +103,10 @@ end
 -- {{{ halt()
 function halt(self, kernel)
     self.done = true
+    self.socket:close()
+    if self.paused_thread then
+        ratchet.unpause(self.paused_thread)
+    end
 end
 -- }}}
 
