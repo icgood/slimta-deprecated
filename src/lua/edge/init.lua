@@ -32,7 +32,7 @@ end
 function process_message(self, message)
     local transaction = self.bus:send_request({message})
     local responses = transaction:recv_response()
-    return responses[1]
+    return responses and responses[1]
 end
 -- }}}
 

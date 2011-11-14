@@ -7,29 +7,12 @@ module("slimta.bus.client", package.seeall)
 local class = getfenv()
 __index = class
 
--- {{{ request_container_to_xml()
-local function request_container_to_xml(self, attachments)
-    local lines = {
-        "<request i=\"" .. self.i .. "\">",
-        self.contents:to_xml(attachments),
-        "</request>",
-    }
-
-    return lines
-end
--- }}}
-
 -- {{{ request_to_bus()
 local function request_to_bus(data)
     local writer = slimta.xml.writer.new()
 
     for i, contents in ipairs(data) do
-        local container = {
-            i = i,
-            contents = contents,
-            to_xml = request_container_to_xml,
-        }
-        writer:add_item(container)
+        writer:add_item(contents)
     end
 
     return writer:build({"requests"})
@@ -47,9 +30,7 @@ local function build_response_from_bus(self)
     
         local rets = {}
         for i, child_node in ipairs(root_node[1]) do
-            local j = tonumber(child_node.attrs.i)
-            local ret = self.response_type.from_xml(child_node, attachments)
-            rets[j] = ret
+            rets[i] = self.response_type.from_xml(child_node, attachments)
         end
     
         return rets

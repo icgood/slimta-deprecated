@@ -19,25 +19,11 @@ local function build_request_from_bus(self)
 
         local rets = {}
         for i, child_node in ipairs(root_node[1]) do
-            local j = tonumber(child_node.attrs.i)
-            local ret = self.request_type.from_xml(child_node, attachments, from)
-            rets[j] = ret
+            rets[i] = self.request_type.from_xml(child_node, attachments, from)
         end
     
         return rets
     end
-end
--- }}}
-
--- {{{ response_container_to_xml()
-local function response_container_to_xml(self, attachments)
-    local lines = {
-        "<response i=\"" .. self.i .. "\">",
-        self.contents:to_xml(attachments),
-        "</response>",
-    }
-
-    return lines
 end
 -- }}}
 
@@ -46,12 +32,7 @@ local function response_to_bus(data)
     local writer = slimta.xml.writer.new()
 
     for i, contents in ipairs(data) do
-        local container = {
-            i = i,
-            contents = contents,
-            to_xml = response_container_to_xml,
-        }
-        writer:add_item(container)
+        writer:add_item(contents)
     end
 
     return writer:build({"responses"})
@@ -63,21 +44,31 @@ function new(uri, request_type)
     local self = {}
     setmetatable(self, class)
 
-    local rec = ratchet.socket.prepare_uri(uri)
-    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket.SO_REUSEADDR = true
-    socket:bind(rec.addr)
-    socket:listen()
-
-    self.bus = ratchet.bus.new_server(socket, build_request_from_bus(self), response_to_bus)
+    self.uri = uri
     self.request_type = request_type
 
     return self
 end
 -- }}}
 
+-- {{{ create_ratchet_bus()
+local function create_ratchet_bus(self)
+    local rec = ratchet.socket.prepare_uri(self.uri)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket.SO_REUSEADDR = true
+    socket:bind(rec.addr)
+    socket:listen()
+
+    self.bus = ratchet.bus.new_server(socket, build_request_from_bus(self), response_to_bus)
+end
+-- }}}
+
 -- {{{ recv_request()
 function recv_request(self)
+    if not self.bus then
+        create_ratchet_bus(self)
+    end
+
     return self.bus:recv_request()
 end
 -- }}}

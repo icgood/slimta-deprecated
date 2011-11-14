@@ -56,10 +56,7 @@ function create_document(self, document, force_id)
             {["Content-Type"] = {"application/json"}, ["Content-Length"] = {#doc_str}},
             doc_str
         )
-        if force_id then
-            break -- If force_id was given we don't want to loop.
-        end
-    until code ~= 409
+    until code ~= 409 or force_id
 
     -- Not a collision, but not a success? Return reason.
     if code ~= 201 then

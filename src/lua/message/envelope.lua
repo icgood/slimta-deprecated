@@ -66,7 +66,7 @@ function from_xml(tree_node)
             table.insert(recipients, stripped)
         elseif child_node.name == "destination" then
             dest_host = child_node.data:gsub("^%s*", ""):gsub("%s*$", "")
-            dest_port = tonumber(child_node.attrs.port or 25)
+            dest_port = tonumber(child_node.attrs.port)
             if child_node.attrs.relayer then
                 dest_relayer = child_node.attrs.relayer:gsub("^%s*", ""):gsub("%s*$", "")
             end

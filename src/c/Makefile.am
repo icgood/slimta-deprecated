@@ -14,7 +14,7 @@ libslimta_la_SOURCES = rlimit.c \
 		       xml.c \
 		       misc.c
 
-lualibdir = @WITH_LUA_LPATH@
+lualibdir = @WITH_LUA_CPATH@
 lualib_LTLIBRARIES = slimta.la
 slimta_la_LDFLAGS = -module -avoid-version -shared
 slimta_la_LIBADD = libslimta.la

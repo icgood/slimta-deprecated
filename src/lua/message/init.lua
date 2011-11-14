@@ -86,6 +86,8 @@ function from_xml(tree_node, attachments)
     local timestamp = tree_node.attrs.timestamp
     local id = tree_node.attrs.id
 
+    assert("message" == tree_node.name)
+
     local client, envelope, contents
     for i, child_node in ipairs(tree_node) do
         if child_node.name == "client" then

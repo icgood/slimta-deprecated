@@ -7,12 +7,15 @@ local request_obj = {
     to_xml = function (self, attachments)
         table.insert(attachments, self.stuff)
         return {
-            "<id>" .. self.id .. "</id>",
-            "<stuff part=\"" .. #attachments .. "\"/>",
+            "<request>",
+            " <id>" .. self.id .. "</id>",
+            " <stuff part=\"" .. #attachments .. "\"/>",
+            "</request>",
         }
     end,
 
     from_xml = function (tree_node, attachments)
+        assert("request" == tree_node.name)
         local part = tonumber(tree_node[2].attrs.part)
         return {
             id = tree_node[1].data,
@@ -32,8 +35,8 @@ local response_obj = {
 
     from_xml = function (tree_node, attachments)
         return {
-            code = tree_node[1].attrs.code,
-            message = tree_node[1].data,
+            code = tree_node.attrs.code,
+            message = tree_node.data,
         }
     end,
 }
