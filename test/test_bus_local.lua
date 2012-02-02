@@ -7,8 +7,8 @@ local request_obj, response_obj = {}, {}
 function ctx1(where)
     local bus_server, bus_client = slimta.bus.new_local()
 
-    kernel:attach(server_bus, bus_server)
-    kernel:attach(client_bus_1, bus_client)
+    ratchet.thread.attach(server_bus, bus_server)
+    ratchet.thread.attach(client_bus_1, bus_client)
 end
 
 function server_bus(bus)
@@ -36,8 +36,9 @@ function client_bus_1(bus)
     assert("Ok" == responses[1].message)
 end
 
-kernel = ratchet.new()
-kernel:attach(ctx1)
+kernel = ratchet.new(function ()
+    ratchet.thread.attach(ctx1)
+end)
 kernel:loop()
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

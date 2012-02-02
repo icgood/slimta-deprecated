@@ -1,12 +1,11 @@
 
-module("slimta.message.envelope", package.seeall)
-local class = getfenv()
-__index = class
+slimta.message.envelope = {}
+slimta.message.envelope.__index = slimta.message.envelope
 
--- {{{ new()
-function new(sender, recipients, dest_relayer, dest_host, dest_port)
+-- {{{ slimta.message.envelope.new()
+function slimta.message.envelope.new(sender, recipients, dest_relayer, dest_host, dest_port)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.message.envelope)
 
     self.sender = sender
     self.recipients = recipients
@@ -18,33 +17,33 @@ function new(sender, recipients, dest_relayer, dest_host, dest_port)
 end
 -- }}}
 
--- {{{ new_from()
-function new_from(tbl)
+-- {{{ slimta.message.envelope.new_from()
+function slimta.message.envelope.new_from(tbl)
     setmetatable(tbl, class)
 end
 -- }}}
 
 ------------------------
 
--- {{{ to_xml()
-function to_xml(self)
+-- {{{ slimta.message.envelope.to_xml()
+function slimta.message.envelope.to_xml(envelope)
     local lines = {
         "<envelope>",
-        " <sender>" .. self.sender .. "</sender>",
+        " <sender>" .. envelope.sender .. "</sender>",
     }
-    for i, recip in ipairs(self.recipients) do
+    for i, recip in ipairs(envelope.recipients) do
         table.insert(lines, " <recipient>" .. recip .. "</recipient>")
     end
-    if self.dest_host then
+    if envelope.dest_host then
         local attrs = ""
-        if self.dest_relayer then
-            attrs = attrs .. " relayer=\"" .. self.dest_relayer .. "\""
+        if envelope.dest_relayer then
+            attrs = attrs .. " relayer=\"" .. envelope.dest_relayer .. "\""
         end
-        if self.dest_port then
-            attrs = attrs .. " port=\"" .. self.dest_port .. "\""
+        if envelope.dest_port then
+            attrs = attrs .. " port=\"" .. envelope.dest_port .. "\""
         end
 
-        table.insert(lines, " <destination" .. attrs .. ">" .. self.dest_host .. "</destination>")
+        table.insert(lines, " <destination" .. attrs .. ">" .. envelope.dest_host .. "</destination>")
     end
     table.insert(lines, "</envelope>")
 
@@ -52,8 +51,8 @@ function to_xml(self)
 end
 -- }}}
 
--- {{{ from_xml()
-function from_xml(tree_node)
+-- {{{ slimta.message.envelope.from_xml()
+function slimta.message.envelope.from_xml(tree_node)
     local protocol, ehlo, ip, security
     local sender, recipients = nil, {}
     local dest_host, dest_port, dest_relayer
@@ -73,8 +72,10 @@ function from_xml(tree_node)
         end
     end
 
-    return new(sender, recipients, dest_relayer, dest_host, dest_port)
+    return slimta.message.envelope.new(sender, recipients, dest_relayer, dest_host, dest_port)
 end
 -- }}}
+
+return slimta.message.envelope
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

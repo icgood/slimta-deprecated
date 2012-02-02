@@ -9,12 +9,13 @@ endif
 libslimta_la_CFLAGS = -std=gnu99 -Wall -Wno-unused-function -Wno-unused-label
 libslimta_la_LDFLAGS = 
 
-libslimta_la_SOURCES = rlimit.c \
+libslimta_la_SOURCES = slimta.c \
+		       rlimit.c \
 		       uuid.c \
 		       xml.c \
 		       misc.c
 
-lualibdir = @WITH_LUA_CPATH@
+lualibdir = @LUA_CPATH@
 lualib_LTLIBRARIES = slimta.la
 slimta_la_LDFLAGS = -module -avoid-version -shared
 slimta_la_LIBADD = libslimta.la

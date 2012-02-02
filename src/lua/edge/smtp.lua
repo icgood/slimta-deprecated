@@ -3,16 +3,15 @@ require "ratchet.smtp.server"
 
 require "slimta.message"
 
-module("slimta.edge.smtp", package.seeall)
-local class = getfenv()
-__index = class
+slimta.edge.smtp = {}
+slimta.edge.smtp.__index = slimta.edge.smtp
 
 local command_handler = {}
 command_handler.__index = command_handler
 
 -- {{{ setup_listening_socket()
-local function setup_listening_socket(uri, dns_query_types)
-    local rec = ratchet.socket.prepare_uri(uri, dns_query_types)
+local function setup_listening_socket(host, port, family)
+    local rec = ratchet.socket.prepare_tcp(host, port, family)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)
@@ -22,12 +21,12 @@ local function setup_listening_socket(uri, dns_query_types)
 end
 -- }}}
 
--- {{{ new()
-function new(uri, dns_query_types)
+-- {{{ slimta.edge.smtp.new()
+function slimta.edge.smtp.new(host, port, family)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.edge.smtp)
 
-    self.socket = setup_listening_socket(uri, dns_query_types)
+    self.socket = setup_listening_socket(host, port, family)
 
     self.settings = {
         banner_code = 220,
@@ -38,27 +37,27 @@ function new(uri, dns_query_types)
 end
 -- }}}
 
--- {{{ set_manager()
-function set_manager(self, manager)
+-- {{{ slimta.edge.smtp:set_manager()
+function slimta.edge.smtp:set_manager(manager)
     self.manager = manager
 end
 -- }}}
 
--- {{{ set_banner_message()
-function set_banner_message(self, code, message)
+-- {{{ slimta.edge.smtp:set_banner_message()
+function slimta.edge.smtp:set_banner_message(code, message)
     self.settings.banner_code = code
     self.settings.banner_message = message
 end
 -- }}}
 
--- {{{ set_max_message_size()
-function set_max_message_size(self, size)
+-- {{{ slimta.edge.smtp:set_max_message_size()
+function slimta.edge.smtp:set_max_message_size(size)
     self.settings.max_message_size = size
 end
 -- }}}
 
--- {{{ enable_tls()
-function enable_tls(self)
+-- {{{ slimta.edge.smtp:enable_tls()
+function slimta.edge.smtp:enable_tls()
     self.settings.enable_tls = true
 end
 -- }}}
@@ -75,10 +74,10 @@ local function apply_extension_settings(extensions, settings)
 end
 -- }}}
 
--- {{{ loop()
-function loop(self, kernel)
+-- {{{ slimta.edge.smtp:loop()
+function slimta.edge.smtp:loop()
     while not self.done do
-        self.paused_thread = ratchet.running_thread()
+        self.paused_thread = ratchet.thread.self()
         local client, from_ip = self.socket:accept()
         self.paused_thread = nil
         
@@ -88,24 +87,24 @@ function loop(self, kernel)
 
             apply_extension_settings(smtp_handler.extensions, self.settings)
 
-            kernel:attach(smtp_handler.handle, smtp_handler)
+            ratchet.thread.attach(smtp_handler.handle, smtp_handler)
         end
     end
 end
 -- }}}
 
--- {{{ run()
-function run(self, kernel)
-    kernel:attach(loop, self, kernel)
+-- {{{ slimta.edge.smtp:run()
+function slimta.edge.smtp:run()
+    ratchet.thread.attach(self.loop, self)
 end
 -- }}}
 
--- {{{ halt()
-function halt(self, kernel)
+-- {{{ slimta.edge.smtp.halt()
+function slimta.edge.smtp.halt(self)
     self.done = true
     self.socket:close()
     if self.paused_thread then
-        ratchet.unpause(self.paused_thread)
+        ratchet.thread.kill(self.paused_thread)
     end
 end
 -- }}}
@@ -191,5 +190,7 @@ function command_handler:HAVE_DATA(reply, data, err)
     end
 end
 -- }}}
+
+return slimta.edge.smtp
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

@@ -1,9 +1,8 @@
 
-require "slimta.message.header_folding"
+local header_folding = require "slimta.message.header_folding"
 
-module("slimta.message.contents", package.seeall)
-local class = getfenv()
-__index = class
+slimta.message.contents = {}
+slimta.message.contents.__index = slimta.message.contents
 
 -- {{{ load_headers()
 local function load_headers(self)
@@ -29,7 +28,7 @@ local function load_headers(self)
                 end
             until not new_i
 
-            self:add_header(name, slimta.message.header_folding.unfold(value), true)
+            self:add_header(name, header_folding.unfold(value), true)
         end
 
         if i then
@@ -39,10 +38,10 @@ local function load_headers(self)
 end
 -- }}}
 
--- {{{ new()
-function new(data)
+-- {{{ slimta.message.contents.new()
+function slimta.message.contents.new(data)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.message.contents)
 
     self.size = #data
     self.orig_data = data
@@ -59,8 +58,8 @@ function new(data)
 end
 -- }}}
 
--- {{{ add_header()
-function add_header(self, name, value, after_existing)
+-- {{{ slimta.message.contents:add_header()
+function slimta.message.contents:add_header(name, value, after_existing)
     local key = name:lower()
     if self.headers[key] then
         if after_existing then
@@ -80,8 +79,8 @@ function add_header(self, name, value, after_existing)
 end
 -- }}}
 
--- {{{ delete_header()
-function delete_header(self, name)
+-- {{{ slimta.message.contents:delete_header()
+function slimta.message.contents:delete_header(name)
     local key = name:lower()
     self.headers[key] = nil
 
@@ -112,8 +111,8 @@ local function get_contents(self)
 end
 -- }}}
 
--- {{{ __tostring()
-function __tostring(self)
+-- {{{ slimta.message.contents:__tostring()
+function slimta.message.contents:__tostring()
     local headers = ""
     local header_i = {}
 
@@ -131,7 +130,7 @@ function __tostring(self)
         end
         header_i[key] = header_i[key] + 1
 
-        headers = headers .. name .. ": " .. slimta.message.header_folding.fold(name, value) .. "\r\n"
+        headers = headers .. name .. ": " .. header_folding.fold(name, value) .. "\r\n"
     end
     if #headers > 0 then
         headers = headers .. "\r\n"
@@ -144,9 +143,9 @@ end
 
 ------------------------
 
--- {{{ to_xml()
-function to_xml(self, attachments)
-    table.insert(attachments, tostring(self))
+-- {{{ slimta.message.contents.to_xml()
+function slimta.message.contents.to_xml(contents, attachments)
+    table.insert(attachments, tostring(contents))
     local lines = {
         "<contents part=\"" .. #attachments .. "\"/>",
     }
@@ -155,14 +154,16 @@ function to_xml(self, attachments)
 end
 -- }}}
 
--- {{{ from_xml()
-function from_xml(tree_node, attachments)
+-- {{{ slimta.message.contents.from_xml()
+function slimta.message.contents.from_xml(tree_node, attachments)
     local part = tonumber(tree_node.attrs.part or 0)
     local data = attachments[part]
     if data then
-        return new(data)
+        return slimta.message.contents.new(data)
     end
 end
 -- }}}
+
+return slimta.message.contents
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

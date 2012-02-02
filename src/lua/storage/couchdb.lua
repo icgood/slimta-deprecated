@@ -1,6 +1,7 @@
 
+require "cjson"
+
 require "slimta.uuid"
-require "slimta.json"
 require "ratchet.http.client"
 
 module("slimta.storage.couchdb", package.seeall)
@@ -43,7 +44,7 @@ end
 
 -- {{{ create_document()
 function create_document(self, document, force_id)
-    local doc_str = json.encode(document)
+    local doc_str = cjson.encode(document)
     local code, reason, headers, data
 
     -- Keep attempting PUT on new UUIDs until we don't get a collision.
@@ -63,7 +64,7 @@ function create_document(self, document, force_id)
         error(reason)
     end
 
-    local info = json.decode(data)
+    local info = cjson.decode(data)
     self.id = info.id
     self.rev = info.rev
 end
@@ -99,7 +100,7 @@ function load_document(self, new_id)
     if code ~= 200 then
         error(reason)
     end
-    local info = json.decode(data)
+    local info = cjson.decode(data)
 
     self.rev = info._rev
 

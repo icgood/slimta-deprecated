@@ -1,6 +1,6 @@
 if HAVE_LUA_INTERPRETER
 
-TESTS_ENVIRONMENT = LUA_CPATH="../src/c/.libs/?.so;;" LUA_PATH="./?.lua;./?/init.lua;;" @LUA@
+TESTS_ENVIRONMENT = LUA_CPATH="../src/c/.libs/?.so;@LUA_CPATH@/?.so;;" LUA_PATH="./?.lua;./?/init.lua;@LUA_LPATH@/?.lua;@LUA_LPATH@/?/init.lua;;" @LUA@
 
 bus_tests = test_bus_client_server.lua \
 	    test_bus_local.lua

@@ -1,17 +1,17 @@
 
-require "slimta.relay.smtp"
-
+require "slimta"
 require "slimta.bus"
 require "slimta.message"
 
-module("slimta.relay", package.seeall)
-local class = getfenv()
-__index = class
+slimta.relay = {}
+slimta.relay.__index = slimta.relay
 
--- {{{ new()
-function new(bus)
+require "slimta.relay.smtp"
+
+-- {{{ slimta.relay.new()
+function slimta.relay.new(bus)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.relay)
 
     self.relayers = {}
     self.bus = bus
@@ -20,8 +20,8 @@ function new(bus)
 end
 -- }}}
 
--- {{{ add_relayer()
-function add_relayer(self, name, relayer)
+-- {{{ slimta.relay:add_relayer()
+function slimta.relay:add_relayer(name, relayer)
     relayer:set_manager(self)
     self.relayers[name] = relayer
 end
@@ -53,14 +53,14 @@ end
 -- }}}
 
 -- {{{ build_sessions()
-local function build_sessions(self, kernel, messages, responses)
+local function build_sessions(self, messages, responses)
     local sessions = {}
 
     for i, msg in ipairs(messages) do
         local which = get_relayer_for_message(self, msg)
         local hash = relayer_hash(msg.envelope.dest_relayer, msg.envelope.dest_host, msg.envelope.dest_port)
         if not sessions[hash] then
-            sessions[hash] = which:new_session(kernel, msg.envelope.dest_host, msg.envelope.dest_port)
+            sessions[hash] = which:new_session(msg.envelope.dest_host, msg.envelope.dest_port)
         end
         sessions[hash]:add_message(msg, responses, i)
     end
@@ -70,39 +70,41 @@ end
 -- }}}
 
 -- {{{ relay_messages()
-local function relay_messages(self, kernel, messages, transaction)
+local function relay_messages(self, messages, transaction)
     local threads = {}
     local responses = {}
-    local sessions = build_sessions(self, kernel, messages, responses)
+    local sessions = build_sessions(self, messages, responses)
     for hash, session in pairs(sessions) do
-        table.insert(threads, kernel:attach(session.relay_all, session))
+        table.insert(threads, ratchet.thread.attach(session.relay_all, session))
     end
-    kernel:wait_all(threads)
+    ratchet.thread.wait_all(threads)
     transaction:send_response(responses)
 end
 -- }}}
 
--- {{{ run()
-function run(self, kernel)
+-- {{{ slimta.relay:run()
+function slimta.relay:run()
     while not self.done do
-        self.paused_thread = ratchet.running_thread()
+        self.paused_thread = ratchet.thread.self()
         local transaction, messages = self.bus:recv_request()
         self.paused_thread = nil
 
         if transaction then
-            kernel:attach(relay_messages, self, kernel, messages, transaction)
+            ratchet.thread.attach(relay_messages, self, messages, transaction)
         end
     end
 end
 -- }}}
 
--- {{{ halt()
-function halt(self)
+-- {{{ slimta.relay:halt()
+function slimta.relay:halt()
     self.done = true
     if self.paused_thread then
-        ratchet.unpause(self.paused_thread)
+        ratchet.thread.kill(self.paused_thread)
     end
 end
 -- }}}
+
+return slimta.relay
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

@@ -38,7 +38,7 @@ static void XMLCALL generic_start_cb (void *user_data, const char *name, const c
 	lua_State *L = (lua_State *) user_data;
 	int i;
 
-	lua_getfenv (L, 1);
+	lua_getuservalue (L, 1);
 	lua_getfield (L, -1, "start_cb");
 	lua_getfield (L, -2, "state");
 	lua_pushstring (L, name);
@@ -59,7 +59,7 @@ static void XMLCALL generic_end_cb (void *user_data, const char *name)
 {
 	lua_State *L = (lua_State *) user_data;
 
-	lua_getfenv (L, 1);
+	lua_getuservalue (L, 1);
 	lua_getfield (L, -1, "end_cb");
 	lua_getfield (L, -2, "state");
 	lua_pushstring (L, name);
@@ -73,7 +73,7 @@ static void generic_data_cb (void *user_data, const char *s, int len)
 {
 	lua_State *L = (lua_State *) user_data;
 
-	lua_getfenv (L, 1);
+	lua_getuservalue (L, 1);
 	lua_getfield (L, -1, "data_cb");
 	lua_getfield (L, -2, "state");
 	lua_pushlstring (L, s, (size_t) len);
@@ -135,7 +135,7 @@ static int myxml_new (lua_State *L)
 	lua_setfield (L, -2, "end_cb");
 	lua_pushvalue (L, 4);
 	lua_setfield (L, -2, "data_cb");
-	lua_setfenv (L, -2);
+	lua_setuservalue (L, -2);
 
 	/* Make this userdata an object of the slimta.xml class. */
 	luaL_getmetatable (L, "slimta_xml_meta");
@@ -238,14 +238,13 @@ int luaopen_slimta_xml (lua_State *L)
 
 	/* Set up the slimta.xml class and metatables. */
 	luaL_newmetatable (L, "slimta_xml_meta");
-	lua_newtable (L);
-	luaI_openlib (L, NULL, meths, 0);
+	luaL_setfuncs (L, metameths, 0);
+	luaL_newlib (L, meths);
 	lua_setfield (L, -2, "__index");
-	luaI_openlib (L, NULL, metameths, 0);
 	lua_pop (L, 1);
 
 	/* Set up the slimta.xml namespace functions. */
-	luaI_openlib (L, "slimta.xml", funcs, 0);
+	luaL_newlib (L, funcs);
 
 	return 1;
 }

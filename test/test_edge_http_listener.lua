@@ -2,6 +2,7 @@
 require "ratchet"
 require "ratchet.http.client"
 
+require "slimta"
 require "slimta.edge"
 require "slimta.bus"
 require "slimta.message"
@@ -35,17 +36,17 @@ end
 -- }}}
 
 -- {{{ run_edge()
-function run_edge()
-    local http = slimta.edge.http.new("tcp://localhost:2525", {"ipv4"})
+function run_edge(host, port)
+    local http = slimta.edge.http.new(host, port)
 
     local bus_server, bus_client = slimta.bus.new_local()
 
     local edge = slimta.edge.new(bus_client)
     edge:add_listener(http)
 
-    edge:run(kernel)
+    edge:run()
     
-    kernel:attach(send_http, "tcp://localhost:2525")
+    ratchet.thread.attach(send_http, host, port)
 
     local transaction, messages = bus_server:recv_request()
     local responses = check_messages(messages)
@@ -56,8 +57,8 @@ end
 -- }}}
 
 -- {{{ send_http()
-function send_http(where)
-    local rec = ratchet.socket.prepare_uri(where, {"ipv4"})
+function send_http(host, port)
+    local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
 
@@ -85,8 +86,9 @@ function send_http(where)
 end
 -- }}}
 
-kernel = ratchet.new()
-kernel:attach(run_edge, kernel)
+kernel = ratchet.new(function ()
+    ratchet.thread.attach(run_edge, "localhost", 8025)
+end)
 kernel:loop()
 
 assert(client_checks_ok)

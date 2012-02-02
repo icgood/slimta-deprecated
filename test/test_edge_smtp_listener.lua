@@ -35,8 +35,8 @@ end
 -- }}}
 
 -- {{{ run_edge()
-function run_edge()
-    local smtp = slimta.edge.smtp.new("tcp://localhost:2525", {"ipv4"})
+function run_edge(host, port)
+    local smtp = slimta.edge.smtp.new(host, port)
     smtp:set_banner_message(220, "ESMTP slimta test banner")
     smtp:set_max_message_size(10485760)
 
@@ -45,9 +45,9 @@ function run_edge()
     local edge = slimta.edge.new(bus_client)
     edge:add_listener(smtp)
 
-    edge:run(kernel)
+    edge:run()
     
-    kernel:attach(send_smtp, "tcp://localhost:2525")
+    ratchet.thread.attach(send_smtp, "localhost", 2525)
 
     local transaction, messages = bus_server:recv_request()
     local responses = check_messages(messages)
@@ -58,8 +58,8 @@ end
 -- }}}
 
 -- {{{ send_smtp()
-function send_smtp(where)
-    local rec = ratchet.socket.prepare_uri(where, {"ipv4"})
+function send_smtp(host, port)
+    local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
 
@@ -84,7 +84,9 @@ end
 -- }}}
 
 kernel = ratchet.new()
-kernel:attach(run_edge, kernel)
+kernel = ratchet.new(function ()
+    ratchet.thread.attach(run_edge, "localhost", 2525)
+end)
 kernel:loop()
 
 assert(client_checks_ok)

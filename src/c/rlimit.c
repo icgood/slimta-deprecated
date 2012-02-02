@@ -55,7 +55,7 @@ static int myrlimit_resource (lua_State *L, int index)
 	}
 
 	else
-		return luaL_typerror (L, index, "string or integer");
+		return luaL_argerror (L, index, "string or integer required");
 }
 /* }}} */
 
@@ -66,7 +66,7 @@ static int myrlimit_get (lua_State *L)
 	struct rlimit l;
 
 	if (getrlimit (resource, &l) < 0)
-		return handle_perror (L);
+		return ratchet_error_errno (L, "slimta.rlimit.get()", "getrlimit");
 
 	lua_pushnumber (L, (lua_Number) l.rlim_cur);
 	lua_pushnumber (L, (lua_Number) l.rlim_max);
@@ -84,7 +84,7 @@ static int myrlimit_set (lua_State *L)
 	struct rlimit l = {(rlim_t) soft, (rlim_t) hard};
 
 	if (setrlimit (resource, &l) < 0)
-		return handle_perror (L);
+		return ratchet_error_errno (L, "slimta.rlimit.set()", "setrlimit");
 
 	return 0;
 }
@@ -96,17 +96,14 @@ static int myrlimit_set (lua_State *L)
 int luaopen_slimta_rlimit (lua_State *L)
 {
 	const luaL_Reg funcs[] = {
+		{"get", myrlimit_get},
+		{"set", myrlimit_set},
 		{NULL}
 	};
 
-	luaL_register (L, "slimta.rlimit", funcs);
-
+	lua_newtable (L);
 	lua_pushvalue (L, -1);
-	lua_pushcclosure (L, myrlimit_get, 1);
-	lua_setfield (L, -2, "get");
-	lua_pushvalue (L, -1);
-	lua_pushcclosure (L, myrlimit_set, 1);
-	lua_setfield (L, -2, "set");
+	luaL_setfuncs (L, funcs, 1);
 
 	set_rlimit_int (AS);
 	set_rlimit_int (CORE);
@@ -135,6 +132,8 @@ int luaopen_slimta_rlimit (lua_State *L)
 #ifdef RLIMIT_SIGPENDING
 	set_rlimit_int (SIGPENDING);
 #endif
+
+	return 1;
 }
 /* }}} */
 

@@ -1,16 +1,14 @@
 
-require "slimta.json"
 require "ratchet.http.server"
 
 require "slimta.message"
 
-module("slimta.edge.http", package.seeall)
-local class = getfenv()
-__index = class
+slimta.edge.http = {}
+slimta.edge.http.__index = slimta.edge.http
 
 -- {{{ setup_listening_socket()
-local function setup_listening_socket(uri, dns_query_types)
-    local rec = ratchet.socket.prepare_uri(uri, dns_query_types)
+local function setup_listening_socket(host, port, family)
+    local rec = ratchet.socket.prepare_tcp(host, port, family)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)
@@ -20,25 +18,25 @@ local function setup_listening_socket(uri, dns_query_types)
 end
 -- }}}
 
--- {{{ new()
-function new(uri, dns_query_types)
+-- {{{ slimta.edge.http.new()
+function slimta.edge.http.new(host, port, family)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.edge.http)
 
-    self.socket = setup_listening_socket(uri, dns_query_types)
+    self.socket = setup_listening_socket(host, port, family)
 
     return self
 end
 -- }}}
 
--- {{{ set_manager()
-function set_manager(self, manager)
+-- {{{ slimta.edge.http:set_manager()
+function slimta.edge.http:set_manager(manager)
     self.manager = manager
 end
 -- }}}
 
--- {{{ POST()
-function POST(self, uri, headers, data, from)
+-- {{{ slimta.edge.http:POST()
+function slimta.edge.http:POST(uri, headers, data, from)
     -- Check the URI to make sure we accept it.
     if uri ~= "/email" and uri ~= "/email/" then
         return {
@@ -89,41 +87,43 @@ function POST(self, uri, headers, data, from)
 end
 -- }}}
 
--- {{{ GET()
-function GET(self, uri, headers, data, from)
+-- {{{ slimta.edge.http:GET()
+function slimta.edge.http:GET(uri, headers, data, from)
     return {code = 503, message = "Service Unavailable"}
 end
 -- }}}
 
--- {{{ loop()
-function loop(self, kernel)
+-- {{{ slimta.edge.http:loop()
+function slimta.edge.http:loop()
     while not self.done do
-        self.paused_thread = ratchet.running_thread()
+        self.paused_thread = ratchet.thread.self()
         local client, from_ip = self.socket:accept()
         self.paused_thread = nil
 
         if client then
             local handler = ratchet.http.server.new(client, from_ip, self)
-            kernel:attach(handler.handle, handler)
+            ratchet.thread.attach(handler.handle, handler)
         end
     end
 end
 -- }}}
 
--- {{{ run()
-function run(self, kernel)
-    kernel:attach(loop, self, kernel)
+-- {{{ slimta.edge.http:run()
+function slimta.edge.http:run()
+    ratchet.thread.attach(self.loop, self)
 end
 -- }}}
 
--- {{{ halt()
-function halt(self)
+-- {{{ slimta.edge.http:halt()
+function slimta.edge.http:halt()
     self.done = true
     self.socket:close()
     if self.paused_thread then
-        ratchet.unpause(self.paused_thread)
+        ratchet.thread.kill(self.paused_thread)
     end
 end
 -- }}}
+
+return slimta.edge.http
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

@@ -8,9 +8,9 @@ require "slimta.relay"
 tracker = 0
 
 -- {{{ request()
-function request(bus_client, relay)
+function request(host, port, bus_client, relay)
     local client = slimta.message.client.new("SMTP", "testing", "1.2.3.4", "TLS")
-    local envelope = slimta.message.envelope.new("sender@slimta.org", {"rcpt1@slimta.org", "rcpt2@slimta.org"}, "SMTP", "localhost", "2525")
+    local envelope = slimta.message.envelope.new("sender@slimta.org", {"rcpt1@slimta.org", "rcpt2@slimta.org"}, "SMTP", host, port)
     local contents = slimta.message.contents.new([[
 From: Test Sender <sender@slimta.org>
 To: Test Recipient 1 <rcpt1@slimta.org>
@@ -34,8 +34,8 @@ end
 -- }}}
 
 -- {{{ run_relay()
-function run_relay(kernel)
-    local smtp = slimta.relay.smtp.new({"ipv4"})
+function run_relay(host, port)
+    local smtp = slimta.relay.smtp.new()
     smtp:ehlo_as("test_ehlo")
 
     local bus_server, bus_client = slimta.bus.new_local()
@@ -43,20 +43,20 @@ function run_relay(kernel)
     local relay = slimta.relay.new(bus_server)
     relay:add_relayer("SMTP", smtp)
 
-    kernel:attach(request, bus_client, relay)
+    ratchet.thread.attach(request, host, port, bus_client, relay)
     relay:run(kernel)
 end
 -- }}}
 
 -- {{{ receive_smtp()
-function receive_smtp(where, kernel)
-    local rec = ratchet.socket.prepare_uri(where, {"ipv4"})
+function receive_smtp(host, port, kernel)
+    local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     assert(socket:bind(rec.addr))
     assert(socket:listen())
 
-    kernel:attach(run_relay, kernel)
+    ratchet.thread.attach(run_relay, host, port)
 
     local handlers = {
         EHLO = function (self, reply, ehlo_as)
@@ -103,8 +103,9 @@ beep beep]]
 end
 -- }}}
 
-local kernel = ratchet.new()
-kernel:attach(receive_smtp, "tcp://localhost:2525", kernel)
+kernel = ratchet.new(function ()
+    ratchet.thread.attach(receive_smtp, "localhost", 2525)
+end)
 kernel:loop()
 
 assert(response_received)

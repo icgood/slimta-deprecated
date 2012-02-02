@@ -3,19 +3,17 @@ require "ratchet.smtp.client"
 
 require "slimta.message"
 
-module("slimta.relay.smtp_session", package.seeall)
-local class = getfenv()
-__index = class
+local smtp_session = {}
+smtp_session.__index = smtp_session
 
--- {{{ new()
-function new(kernel, host, port, dns_query_types)
+-- {{{ smtp_session.new()
+function smtp_session.new(host, port, family)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, smtp_session)
 
-    self.kernel = kernel
     self.host = host
     self.port = port or 25
-    self.dns_query_types = dns_query_types
+    self.family = family
     self.ehlo_as = os.getenv("HOSTNAME")
     self.messages = {}
 
@@ -23,22 +21,22 @@ function new(kernel, host, port, dns_query_types)
 end
 -- }}}
 
--- {{{ ehlo_as()
-function ehlo_as(self, ehlo_as)
+-- {{{ smtp_session:ehlo_as()
+function smtp_session:ehlo_as(ehlo_as)
     self.ehlo_as = ehlo_as
 end
 -- }}}
 
--- {{{ use_security()
-function use_security(self, mode, method, force_verify)
+-- {{{ smtp_session:use_security()
+function smtp_session:use_security(mode, method, force_verify)
     self.security_mode = mode
     self.security_method = method or ratchet.ssl.TLSv1
     self.force_verify = force_verify
 end
 -- }}}
 
--- {{{ add_message()
-function add_message(self, message, responses, key)
+-- {{{ smtp_session:add_message()
+function smtp_session:add_message(message, responses, key)
     responses[key] = slimta.message.response.new()
     self.messages[message] = responses[key]
 end
@@ -46,7 +44,7 @@ end
 
 -- {{{ set_response_to_all_messages()
 local function set_response_to_all_messages(self, info)
-    if type(info) == "table" then
+    if type(info) == "table" and info.type ~= "ratchet_error" then
         for msg, response in pairs(self.messages) do
             response.code = info[1] or info.code
             response.message = info[2] or info.message
@@ -64,11 +62,13 @@ end
 
 -- {{{ connect_socket()
 local function connect_socket(self)
-    local rec = ratchet.socket.prepare_tcp(self.host, self.port, self.dns_query_types)
+    local rec = ratchet.socket.prepare_tcp(self.host, self.port, self.family)
     if not rec then error({"451", "4.4.1 Host not found"}) end
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
 
-    if not socket:connect(rec.addr) then error({"451", "4.4.1 Connection failed"}) end
+    if not pcall(socket.connect, socket, rec.addr) then
+        error({"451", "4.4.1 Connection failed"})
+    end
 
     return socket
 end
@@ -131,11 +131,6 @@ local function handshake(self, client)
 end
 -- }}}
 
--- {{{ send_message_contents()
-local function send_message_contents(client, contents, response)
-end
--- }}}
-
 -- {{{ send_message()
 local function send_message(client, message, response)
     local mailfrom_ret = client:mailfrom(message.envelope.sender)
@@ -156,10 +151,8 @@ local function send_message(client, message, response)
 end
 -- }}}
 
--- {{{ relay_all()
-function relay_all(self)
-    self.kernel:set_error_handler(set_response_to_all_messages, self)
-
+-- {{{ relay_all_propagate_errors()
+local function relay_all_propagate_errors(self)
     local socket = connect_socket(self)
     local client = ratchet.smtp.client.new(socket)
 
@@ -171,5 +164,16 @@ function relay_all(self)
     client:quit()
 end
 -- }}}
+
+-- {{{ smtp_session:relay_all()
+function smtp_session:relay_all()
+    local success, err = pcall(relay_all_propagate_errors, self)
+    if not success then
+        set_response_to_all_messages(self, err)
+    end
+end
+-- }}}
+
+return smtp_session
 
 -- vim:et:fdm=marker:sts=4:sw=4:ts=4

@@ -25,6 +25,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -35,70 +36,6 @@
 #include <errno.h>
 
 #include "misc.h"
-
-/* {{{ raise_perror_ln() */
-int raise_perror_ln (lua_State *L, const char *file, int line)
-{
-	char errorbuf[512];
-
-	if (errno)
-	{
-		if (strerror_r (errno, errorbuf, sizeof (errorbuf)) == -1)
-			lua_pushfstring (L, "%s:%d: Unknown error occured. [errno=%d]", file, line, errno);
-		else
-			lua_pushfstring (L, "%s:%d: %s", file, line, errorbuf);
-	}
-	else
-		lua_pushfstring (L, "%s:%d: Unknown error occured.", file, line);
-	
-	return lua_error (L);
-}
-/* }}} */
-
-/* {{{ return_perror_ln() */
-int return_perror_ln (lua_State *L, const char *file, int line)
-{
-	char errorbuf[512];
-
-	lua_pushnil (L);
-
-	if (errno)
-	{
-		if (strerror_r (errno, errorbuf, sizeof (errorbuf)) == -1)
-			lua_pushfstring (L, "%s:%d: Unknown error occured. [errno=%d]", file, line, errno);
-		else
-			lua_pushfstring (L, "%s:%d: %s", file, line, errorbuf);
-	}
-	else
-		lua_pushfstring (L, "%s:%d: Unknown error occured.", file, line);
-	
-	return 2;
-}
-/* }}} */
-
-/* {{{ build_lua_function() */
-void build_lua_function (lua_State *L, const char *fstr)
-{
-	luaL_loadstring (L, fstr);
-	lua_call (L, 0, 1);
-}
-/* }}} */
-
-/* {{{ register_luafuncs() */
-void register_luafuncs (lua_State *L, int index, const struct luafunc *fs)
-{
-	const struct luafunc *it;
-
-	if (index < 0)
-		index = lua_gettop (L) + index + 1;
-
-	for (it = fs; it->fname != NULL; it++)
-	{
-		build_lua_function (L, it->fstr);
-		lua_setfield (L, index, it->fname);
-	}
-}
-/* }}} */
 
 /* {{{ strmatch() */
 int strmatch (lua_State *L, int index, const char *match)
@@ -131,6 +68,16 @@ int strequal (lua_State *L, int index, const char *s2)
 }
 /* }}} */
 
+/* {{{ fromtimeval() */
+double fromtimeval (struct timeval *tv)
+{
+	double ret = 0.0;
+	ret += (double) tv->tv_sec;
+	ret += ((double) tv->tv_usec) / 1000000.0;
+	return ret;
+}
+/* }}} */
+
 /* {{{ gettimeval() */
 int gettimeval (double secs, struct timeval *tv)
 {
@@ -157,6 +104,45 @@ int gettimeval_opt (lua_State *L, int index, struct timeval *tv)
 {
 	double secs = (double) luaL_optnumber (L, index, -1.0);
 	return gettimeval (secs, tv);
+}
+/* }}} */
+
+/* {{{ fromtimespec() */
+double fromtimespec (struct timespec *tv)
+{
+	double ret = 0.0;
+	ret += (double) tv->tv_sec;
+	ret += ((double) tv->tv_nsec) / 1000000000.0;
+	return ret;
+}
+/* }}} */
+
+/* {{{ gettimespec() */
+int gettimespec (double secs, struct timespec *tv)
+{
+	if (secs < 0.0)
+		return 0;
+	double intpart, fractpart;
+	fractpart = modf (secs, &intpart);
+	tv->tv_sec = (long int) intpart;
+	tv->tv_nsec = (long int) (fractpart * 1000000000.0);
+	return 1;
+}
+/* }}} */
+
+/* {{{ gettimespec_arg() */
+int gettimespec_arg (lua_State *L, int index, struct timespec *tv)
+{
+	double secs = (double) luaL_checknumber (L, index);
+	return gettimespec (secs, tv);
+}
+/* }}} */
+
+/* {{{ gettimespec_opt() */
+int gettimespec_opt (lua_State *L, int index, struct timespec *tv)
+{
+	double secs = (double) luaL_optnumber (L, index, -1.0);
+	return gettimespec (secs, tv);
 }
 /* }}} */
 
@@ -206,7 +192,7 @@ static void printf_index (lua_State *L, int i)
 				{
 					for (j=1; j<=top-2; j++)
 					{
-						if (lua_equal (L, j, top))
+						if (lua_compare (L, j, top, LUA_OPEQ))
 						{
 							printf ("<table:%p>", lua_topointer (L, top));
 							break;

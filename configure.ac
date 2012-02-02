@@ -26,7 +26,7 @@ AC_ARG_WITH([lua-cpath], [AS_HELP_STRING([--with-lua-cpath=CPATH],
 if test "x${with_lua_cpath}" == "x"; then
 	with_lua_cpath="`pkg-config lua --variable=INSTALL_CMOD`"
 fi
-AC_SUBST([WITH_LUA_CPATH], ["$with_lua_cpath"])
+AC_SUBST([LUA_CPATH], ["$with_lua_cpath"])
 
 #####################
 # Configure options: --with-lua-lpath=LPATH
@@ -35,7 +35,7 @@ AC_ARG_WITH([lua-lpath], [AS_HELP_STRING([--with-lua-lpath=LPATH],
 if test "x${with_lua_lpath}" == "x"; then
 	with_lua_lpath="`pkg-config lua --variable=INSTALL_LMOD`"
 fi
-AC_SUBST([WITH_LUA_LPATH], ["$with_lua_lpath"])
+AC_SUBST([LUA_LPATH], ["$with_lua_lpath"])
 
 #####################
 # Configure options: --enable-devel
@@ -47,29 +47,42 @@ AM_CONDITIONAL([ENABLE_DEVEL], [test "x${enable_devel}" != "xno"])
 #####################
 # Check for libraries.
 
+
 # Lua
 AX_WITH_LUA
 if test "x${LUA}" == "x"; then
 	AC_MSG_NOTICE([Lua interpreter not found, disabling build tests.])
 else
-	AX_LUA_VERSION([501])
+	AX_WITH_LUA([502])
 fi
 AX_LUA_HEADERS
-AX_LUA_HEADERS_VERSION([501])
+AX_LUA_HEADERS_VERSION([502])
 AX_LUA_LIBS
 if test "x${LUA_LIB}" == "x"; then
 	AC_MSG_ERROR([Lua development libraries required for building.])
 fi
+LIBS="${LIBS} ${LUA_LIB}"
 AC_SUBST([LUA], ["$LUA"])
 AM_CONDITIONAL([HAVE_LUA_INTERPRETER], [test "x${LUA}" != "x"])
 
 # Ratchet
 AC_CHECK_HEADERS([ratchet.h], [have_ratchet=yes], [have_ratchet=no])
-AC_CHECK_LIB([ratchet], [luaopen_ratchet], [:], [have_ratchet=no], $LUA_LIB)
+AC_CHECK_LIB([ratchet], [luaopen_ratchet], [], [have_ratchet=no])
 if test "x${have_ratchet}" != "xyes"; then
 	AC_MSG_ERROR([Lua Ratchet library is required for building.])
 fi
 AC_SUBST([RATCHET_LIB], [-lratchet])
+
+# Lua CJSON
+# http://www.kyne.com.au/~mark/software/lua-cjson.php
+AC_MSG_CHECKING([lua cjson module])
+AC_RUN_LOG([:$LUA -lcjson -e ''])
+$LUA -lcjson -e '' >> config.log 2>&1
+if test $? -eq 0; then
+	AC_MSG_RESULT([yes])
+else
+	AC_MSG_ERROR([Lua CJSON library is required.])
+fi
 
 # Expat
 AC_CHECK_HEADERS([expat.h], [have_expat=yes], [have_expat=no])

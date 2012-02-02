@@ -27,37 +27,28 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <uuid/uuid.h>
-#include <errno.h>
 
 #include "slimta.h"
 
-#ifndef UUID_STRING_BUFFER_SIZE
-#define UUID_STRING_BUFFER_SIZE 37
-#endif
-
-/* {{{ myuuid_generate() */
-static int myuuid_generate (lua_State *L)
-{
-	uuid_t uuid;
-	char uuid_s[UUID_STRING_BUFFER_SIZE];
-	uuid_generate (uuid);
-	uuid_unparse_lower (uuid, uuid_s);
-	lua_pushstring (L, uuid_s);
-	
-	return 1;
-}
-/* }}} */
-
-/* {{{ luaopen_slimta_uuid() */
-int luaopen_slimta_uuid (lua_State *L)
+/* {{{ luaopen_slimta() */
+int luaopen_slimta (lua_State *L)
 {
 	static const luaL_Reg funcs[] = {
-		{"generate", myuuid_generate},
 		{NULL}
 	};
 
 	luaL_newlib (L, funcs);
+	lua_pushvalue (L, -1);
+	lua_setglobal (L, "slimta");
+
+	luaL_requiref (L, "slimta.xml", luaopen_slimta_xml, 0);
+	lua_setfield (L, -2, "xml");
+
+	luaL_requiref (L, "slimta.uuid", luaopen_slimta_uuid, 0);
+	lua_setfield (L, -2, "uuid");
+
+	luaL_requiref (L, "slimta.rlimit", luaopen_slimta_rlimit, 0);
+	lua_setfield (L, -2, "rlimit");
 
 	return 1;
 }

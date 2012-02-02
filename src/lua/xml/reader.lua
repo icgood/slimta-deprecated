@@ -1,14 +1,13 @@
 
-require "slimta.xml"
+require "slimta"
 
-module("slimta.xml.reader", package.seeall)
-local class = getfenv()
-__index = class
+slimta.xml.reader = {}
+slimta.xml.reader.__index = slimta.xml.reader
 
--- {{{ new()
-function new()
+-- {{{ slimta.xml.reader.new()
+function slimta.xml.reader.new()
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.xml.reader)
 
     return self
 end
@@ -42,8 +41,8 @@ local function end_tag(self, tag)
 end
 -- }}}
 
--- {{{ parse_xml()
-function parse_xml(self, data)
+-- {{{ slimta.xml.reader:parse_xml()
+function slimta.xml.reader:parse_xml(data)
     self.tree = {}
     self.curr = self.tree
 
@@ -56,5 +55,7 @@ function parse_xml(self, data)
     return self.tree
 end
 -- }}}
+
+return slimta.xml.reader
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

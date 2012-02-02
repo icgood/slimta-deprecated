@@ -1,5 +1,5 @@
 
-luasrcdir = @WITH_LUA_LPATH@/slimta/
+luasrcdir = @LUA_LPATH@/slimta/
 nobase_dist_luasrc_DATA = queue/policies/nexthop/mx.lua \
 			  queue/policies/headers/received_header.lua \
 			  queue/policies/headers/date_header.lua \
@@ -7,7 +7,6 @@ nobase_dist_luasrc_DATA = queue/policies/nexthop/mx.lua \
 			  bus/client.lua \
 			  bus/init.lua \
 			  bus/server.lua \
-			  json.lua \
 			  message/client.lua \
 			  message/init.lua \
 			  message/header_folding.lua \

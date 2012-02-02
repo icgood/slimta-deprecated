@@ -42,9 +42,9 @@ local response_obj = {
 }
 -- }}}
 
-function server_bus(where)
-    local bus = slimta.bus.new_server(where, request_obj)
-    kernel:attach(client_bus, where)
+function server_bus(host, port)
+    local bus = slimta.bus.new_server(host, port, request_obj)
+    ratchet.thread.attach(client_bus, host, port)
 
     local transaction, requests = bus:recv_request()
 
@@ -58,8 +58,8 @@ function server_bus(where)
     transaction:send_response({response_obj})
 end
 
-function client_bus(where)
-    local bus = slimta.bus.new_client(where, response_obj)
+function client_bus(host, port)
+    local bus = slimta.bus.new_client(host, port, response_obj)
 
     request_obj.id = "operation falcon"
     request_obj.stuff = "important"
@@ -72,8 +72,9 @@ function client_bus(where)
     assert("Ok" == responses[1].message)
 end
 
-kernel = ratchet.new()
-kernel:attach(server_bus, "tcp://localhost:10025")
+kernel = ratchet.new(function ()
+    ratchet.thread.attach(server_bus, "localhost", 10025)
+end)
 kernel:loop()
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

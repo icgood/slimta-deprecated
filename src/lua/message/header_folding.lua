@@ -1,10 +1,10 @@
 
-module("slimta.message.header_folding", package.seeall)
+local header_folding = {}
 
 local default_max_line_len = 78
 
--- {{{ fold()
-function fold(name, value, max_line_len)
+-- {{{ header_folding.fold()
+function header_folding.fold(name, value, max_line_len)
     max_line_len = max_line_len or default_max_line_len
 
     local len = #name + 2 + #value  -- "name: value"
@@ -45,10 +45,12 @@ function fold(name, value, max_line_len)
 end
 -- }}}
 
--- {{{ unfold()
-function unfold(value)
+-- {{{ header_folding.unfold()
+function header_folding.unfold(value)
     return value:gsub("%\r?%\n(%s)", "%1")
 end
 -- }}}
+
+return header_folding
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

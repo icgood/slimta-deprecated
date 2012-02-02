@@ -4,9 +4,8 @@ require "ratchet.socket"
 require "slimta.xml.writer"
 require "slimta.xml.reader"
 
-module("slimta.bus.server", package.seeall)
-local class = getfenv()
-__index = class
+slimta.bus.server = {}
+slimta.bus.server.__index = slimta.bus.server
 
 -- {{{ build_request_from_bus()
 local function build_request_from_bus(self)
@@ -39,12 +38,13 @@ local function response_to_bus(data)
 end
 -- }}}
 
--- {{{ new()
-function new(uri, request_type)
+-- {{{ slimta.bus.server.new()
+function slimta.bus.server.new(host, port, request_type)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.bus.server)
 
-    self.uri = uri
+    self.host = host
+    self.port = port
     self.request_type = request_type
 
     return self
@@ -53,7 +53,7 @@ end
 
 -- {{{ create_ratchet_bus()
 local function create_ratchet_bus(self)
-    local rec = ratchet.socket.prepare_uri(self.uri)
+    local rec = ratchet.socket.prepare_tcp(self.host, self.port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)
@@ -63,8 +63,8 @@ local function create_ratchet_bus(self)
 end
 -- }}}
 
--- {{{ recv_request()
-function recv_request(self)
+-- {{{ slimta.bus.server:recv_request()
+function slimta.bus.server:recv_request()
     if not self.bus then
         create_ratchet_bus(self)
     end
@@ -72,5 +72,7 @@ function recv_request(self)
     return self.bus:recv_request()
 end
 -- }}}
+
+return slimta.bus.server
 
 -- vim:et:fdm=marker:sts=4:sw=4:ts=4

@@ -1,12 +1,13 @@
 
-module("slimta.xml.writer", package.seeall)
-local class = getfenv()
-__index = class
+require "slimta"
 
--- {{{ new()
-function new()
+slimta.xml.writer = {}
+slimta.xml.writer.__index = slimta.xml.writer
+
+-- {{{ slimta.xml.writer.new()
+function slimta.xml.writer.new()
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.xml.writer)
 
     self.lines = {}
     self.attachments = {}
@@ -25,8 +26,8 @@ local function concat_table(t1, t2)
 end
 -- }}}
 
--- {{{ add_item()
-function add_item(self, item)
+-- {{{ slimta.xml.writer:add_item()
+function slimta.xml.writer:add_item(item)
     concat_table(self.lines, item:to_xml(self.attachments))
 end
 -- }}}
@@ -60,8 +61,8 @@ local function build_recursive(parts, this, indent)
 end
 -- }}}
 
--- {{{ build()
-function build(self, containers)
+-- {{{ slimta.xml.writer:build()
+function slimta.xml.writer:build(containers)
     local parts = {}
     containers = containers or {}
 
@@ -77,5 +78,7 @@ function build(self, containers)
     return table.concat(parts), self.attachments
 end
 -- }}}
+
+return slimta.xml.writer
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

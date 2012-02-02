@@ -1,12 +1,11 @@
 
-module("slimta.message.client", package.seeall)
-local class = getfenv()
-__index = class
+slimta.message.client = {}
+slimta.message.client.__index = slimta.message.client
 
--- {{{ new()
-function new(protocol, ehlo, ip, security)
+-- {{{ slimta.message.client.new()
+function slimta.message.client.new(protocol, ehlo, ip, security)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.message.client)
 
     self.protocol = protocol
     self.ehlo = ehlo
@@ -17,22 +16,22 @@ function new(protocol, ehlo, ip, security)
 end
 -- }}}
 
--- {{{ new_from()
-function new_from(tbl)
-    setmetatable(tbl, class)
+-- {{{ slimta.message.client.new_from()
+function slimta.message.client.new_from(tbl)
+    setmetatable(tbl, slimta.message.client)
 end
 -- }}}
 
 ------------------------
 
--- {{{ to_xml()
-function to_xml(self)
+-- {{{ slimta.message.client.to_xml()
+function slimta.message.client.to_xml(client)
     local lines = {
         "<client>",
-        " <protocol>" .. self.protocol .. "</protocol>",
-        " <ehlo>" .. self.ehlo .. "</ehlo>",
-        " <ip>" .. self.ip .. "</ip>",
-        " <security>" .. self.security .. "</security>",
+        " <protocol>" .. client.protocol .. "</protocol>",
+        " <ehlo>" .. client.ehlo .. "</ehlo>",
+        " <ip>" .. client.ip .. "</ip>",
+        " <security>" .. client.security .. "</security>",
         "</client>",
     }
 
@@ -40,8 +39,8 @@ function to_xml(self)
 end
 -- }}}
 
--- {{{ from_xml()
-function from_xml(tree_node)
+-- {{{ slimta.message.client.from_xml()
+function slimta.message.client.from_xml(tree_node)
     local protocol, ehlo, ip, security
 
     for i, child_node in ipairs(tree_node) do
@@ -56,8 +55,10 @@ function from_xml(tree_node)
         end
     end
 
-    return new(protocol, ehlo, ip, security)
+    return slimta.message.client.new(protocol, ehlo, ip, security)
 end
 -- }}}
+
+return slimta.message.client
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

@@ -1,26 +1,30 @@
 
+require "slimta"
 require "ratchet.bus.samestate"
+
+slimta.bus = {}
+
 require "slimta.bus.server"
 require "slimta.bus.client"
 
-module("slimta.bus", package.seeall)
-
--- {{{ new_local()
-function new_local(...)
-    return ratchet.bus.samestate.new(...)
+-- {{{ slimta.bus.new_local()
+function slimta.bus.new_local(...)
+    return ratchet.bus.new_local(...)
 end
 -- }}}
 
--- {{{ new_server()
-function new_server(...)
+-- {{{ slimta.bus.new_server()
+function slimta.bus.new_server(...)
     return slimta.bus.server.new(...)
 end
 -- }}}
 
--- {{{ new_client()
-function new_client(...)
+-- {{{ slimta.bus.new_client()
+function slimta.bus.new_client(...)
     return slimta.bus.client.new(...)
 end
 -- }}}
+
+return slimta.bus
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

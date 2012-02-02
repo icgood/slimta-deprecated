@@ -1,5 +1,5 @@
 
-require "slimta.message.contents"
+require "slimta.message"
 
 local data = [[
 Subject: test test test test test test test test test test test test test test test test test test test

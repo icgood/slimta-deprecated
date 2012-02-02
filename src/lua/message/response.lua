@@ -1,12 +1,11 @@
 
-module("slimta.message.response", package.seeall)
-local class = getfenv()
-__index = class
+slimta.message.response = {}
+slimta.message.response.__index = slimta.message.response
 
--- {{{ new()
-function new(code, message, id)
+-- {{{ slimta.message.response.new()
+function slimta.message.response.new(code, message, id)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.message.response)
 
     self.code = code or ''
     self.message = message or ''
@@ -16,20 +15,20 @@ function new(code, message, id)
 end
 -- }}}
 
--- {{{ new_from()
-function new_from(tbl)
-    setmetatable(tbl, class)
+-- {{{ slimta.message.response.new_from()
+function slimta.message.response.new_from(tbl)
+    setmetatable(tbl, slimta.message.response)
 end
 -- }}}
 
--- {{{ as_smtp()
-function as_smtp(self)
+-- {{{ slimta.message.response:as_smtp()
+function slimta.message.response:as_smtp()
     return self.code, self.message
 end
 -- }}}
 
--- {{{ as_http()
-function as_http(self)
+-- {{{ slimta.message.response:as_http()
+function slimta.message.response:as_http()
     local ret = {
         code = self.code,
         message = self.message,
@@ -47,25 +46,27 @@ end
 
 ------------------------
 
--- {{{ to_xml()
-function to_xml(self)
+-- {{{ slimta.message.response.to_xml()
+function slimta.message.response.to_xml(response)
     local lines = {
-        "<reply code=\"" .. self.code .. "\">" .. self.message .. "</reply>",
+        "<reply code=\"" .. response.code .. "\">" .. response.message .. "</reply>",
     }
 
     return lines
 end
 -- }}}
 
--- {{{ from_xml()
-function from_xml(tree_node)
+-- {{{ slimta.message.response.from_xml()
+function slimta.message.response.from_xml(tree_node)
     assert("reply" == tree_node.name)
 
     local code = tonumber(tree_node.attrs.code)
     local message = tree_node.data:gsub("^%s*", ""):gsub("%s*$", "")
 
-    return new(code, message)
+    return slimta.message.response.new(code, message)
 end
 -- }}}
+
+return slimta.message.response
 
 -- vim:et:fdm=marker:sts=4:sw=4:ts=4

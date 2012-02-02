@@ -1,17 +1,18 @@
 
+require "slimta"
+
+slimta.message = {}
+slimta.message.__index = slimta.message
+
 require "slimta.message.client"
 require "slimta.message.envelope"
 require "slimta.message.contents"
 require "slimta.message.response"
 
-module("slimta.message", package.seeall)
-local class = getfenv()
-__index = class
-
--- {{{ new()
-function new(client, envelope, contents, timestamp, id)
+-- {{{ slimta.message.new()
+function slimta.message.new(client, envelope, contents, timestamp, id)
     local self = {}
-    setmetatable(self, class)
+    setmetatable(self, slimta.message)
 
     self.client = client
     self.envelope = envelope
@@ -26,8 +27,8 @@ function new(client, envelope, contents, timestamp, id)
 end
 -- }}}
 
--- {{{ store()
-function store(self, storage_engine, next_attempt)
+-- {{{ slimta.message:store()
+function slimta.message:store(storage_engine, next_attempt)
     -- We cannot simply use self as the document because the message contents
     -- must be written separately as an attachment.
     local document = {
@@ -50,8 +51,8 @@ function store(self, storage_engine, next_attempt)
 end
 -- }}}
 
--- {{{ load()
-function load(self, storage_engine, id, do_not_parse)
+-- {{{ slimta.message:load()
+function slimta.message:load(storage_engine, id, do_not_parse)
     local document = storage_engine:load_document(id)
 
     self.client = slimta.message.client.new_from(document.client)
@@ -67,13 +68,13 @@ end
 
 ------------------------
 
--- {{{ to_xml()
-function to_xml(self, attachments)
+-- {{{ slimta.message.to_xml()
+function slimta.message.to_xml(msg, attachments)
     local lines = {
         "<message>",
-        self.client:to_xml(attachments),
-        self.envelope:to_xml(attachments),
-        self.contents:to_xml(attachments),
+        msg.client:to_xml(attachments),
+        msg.envelope:to_xml(attachments),
+        msg.contents:to_xml(attachments),
         "</message>",
     }
 
@@ -81,8 +82,8 @@ function to_xml(self, attachments)
 end
 -- }}}
 
--- {{{ from_xml()
-function from_xml(tree_node, attachments)
+-- {{{ slimta.message.from_xml()
+function slimta.message.from_xml(tree_node, attachments)
     local timestamp = tree_node.attrs.timestamp
     local id = tree_node.attrs.id
 
@@ -99,8 +100,10 @@ function from_xml(tree_node, attachments)
         end
     end
 
-    return new(client, envelope, contents, timestamp, id)
+    return slimta.message.new(client, envelope, contents, timestamp, id)
 end
 -- }}}
+
+return slimta.message
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
