@@ -4,6 +4,22 @@ local header_folding = require "slimta.message.header_folding"
 slimta.message.contents = {}
 slimta.message.contents.__index = slimta.message.contents
 
+-- {{{ headers_metatable
+local headers_metatable = {
+
+    -- For any non-existent header, return an empty table.
+    __index = function (headers, key)
+        local check_lower = rawget(headers, key:lower())
+        if check_lower then
+            return check_lower
+        else
+            return {}
+        end
+    end
+
+}
+-- }}}
+
 -- {{{ load_headers()
 local function load_headers(self)
     local header_data = self.orig_data:sub(1, self.headers_end)
@@ -47,6 +63,7 @@ function slimta.message.contents.new(data)
     self.orig_data = data
 
     self.headers = {}
+    setmetatable(self.headers, headers_metatable)
     self.header_stack = {}
 
     self.headers_end, self.contents_start = data:match("%\r?%\n()%s-%\r?%\n()")
@@ -61,7 +78,7 @@ end
 -- {{{ slimta.message.contents:add_header()
 function slimta.message.contents:add_header(name, value, after_existing)
     local key = name:lower()
-    if self.headers[key] then
+    if self.headers[key][1] then
         if after_existing then
             table.insert(self.headers[key], value)
         else

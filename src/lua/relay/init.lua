@@ -3,7 +3,7 @@ require "slimta"
 require "slimta.bus"
 require "slimta.message"
 
-slimta.relay = {}
+slimta.relay = slimta.relay or {}
 slimta.relay.__index = slimta.relay
 
 local relay_session_meta = {}
@@ -57,29 +57,39 @@ end
 -- {{{ build_sessions()
 local function build_sessions(self, messages, responses)
     local sessions = {}
+    local n = 0
 
     for i, msg in ipairs(messages) do
         local which = get_relayer_for_message(self, msg)
         local hash = relayer_hash(msg.envelope.dest_relayer, msg.envelope.dest_host, msg.envelope.dest_port)
         if not sessions[hash] then
             sessions[hash] = which:new_session(msg.envelope.dest_host, msg.envelope.dest_port)
+            n = n + 1
         end
         sessions[hash]:add_message(msg, responses, i)
     end
 
-    return sessions
+    return sessions, n
 end
 -- }}}
 
 -- {{{ relay_session_meta.__call()
-function relay_session_meta.__call(self)
+function relay_session_meta.__call(self, synchronous)
     local threads = {}
     local responses = {}
-    local sessions = build_sessions(self.relay, self.messages, responses)
-    for hash, session in pairs(sessions) do
-        table.insert(threads, ratchet.thread.attach(session.relay_all, session))
+    local sessions, n = build_sessions(self.relay, self.messages, responses)
+
+    if n > 1 and not synchronous then
+        for hash, session in pairs(sessions) do
+            table.insert(threads, ratchet.thread.attach(session.relay_all, session))
+        end
+        ratchet.thread.wait_all(threads)
+    else
+        for hash, session in pairs(sessions) do
+            session:relay_all()
+        end
     end
-    ratchet.thread.wait_all(threads)
+
     self.transaction:send_response(responses)
 end
 -- }}}

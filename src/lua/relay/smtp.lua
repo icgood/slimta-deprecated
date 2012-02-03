@@ -1,6 +1,7 @@
 
 local smtp_session = require "slimta.relay.smtp_session"
 
+slimta.relay = slimta.relay or {}
 slimta.relay.smtp = {}
 slimta.relay.smtp.__index = slimta.relay.smtp
 
@@ -30,7 +31,7 @@ end
 -- }}}
 
 -- {{{ slimta.relay.smtp:use_security()
-function slimta.relay.smtp:use_security( mode, method, force_verify)
+function slimta.relay.smtp:use_security(mode, method, force_verify)
     self.security.mode = mode
     self.security.method = method
     self.security.force_verify = force_verify

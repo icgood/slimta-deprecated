@@ -31,15 +31,6 @@ beep beep
 end
 -- }}}
 
--- {{{ handle_requests()
-function handle_requests(relay)
-    while true do
-        local thread = relay:accept()
-        ratchet.thread.attach(thread)
-    end
-end
--- }}}
-
 -- {{{ run_relay()
 function run_relay(host, port)
     local smtp = slimta.relay.smtp.new()
@@ -50,16 +41,15 @@ function run_relay(host, port)
     local relay = slimta.relay.new(bus_server)
     relay:add_relayer("SMTP", smtp)
 
-    local relay_thread = ratchet.thread.attach(handle_requests, relay)
-    local request_thread = ratchet.thread.attach(request, host, port, bus_client, relay)
+    ratchet.thread.attach(request, host, port, bus_client)
 
-    ratchet.thread.wait_all({request_thread})
-    ratchet.thread.kill(relay_thread)
+    local thread = relay:accept()
+    thread()
 end
 -- }}}
 
 -- {{{ receive_smtp()
-function receive_smtp(host, port, kernel)
+function receive_smtp(host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true

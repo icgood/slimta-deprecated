@@ -63,6 +63,11 @@ function slimta.edge.http:POST(uri, headers, data, from)
     local contents = slimta.message.contents.new(data)
     local timestamp = os.time()
 
+    -- Add necessary headers to message contents.
+    if not contents.headers["from"][1] then
+        contents:add_header("From", sender)
+    end
+
     local message = slimta.message.new(client, envelope, contents, timestamp)
 
     -- Run some checks on the message.

@@ -20,7 +20,13 @@ local function check_messages(messages)
     assert(1 == #message.envelope.recipients)
     assert("rcpt@slimta.org" == message.envelope.recipients[1])
 
-    assert("arbitrary test message data" == tostring(message.contents))
+    local expected = [[
+From: sender@slimta.org
+
+arbitrary test message data]]
+    expected = expected:gsub("%\r?%\n", "\r\n")
+
+    assert(expected == tostring(message.contents))
 
     server_checks_ok = true
 

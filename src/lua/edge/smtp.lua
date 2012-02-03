@@ -154,6 +154,11 @@ function command_handler:HAVE_DATA(reply, data, err)
         local contents = slimta.message.contents.new(data)
         local timestamp = os.time()
 
+        -- Add necessary headers to message contents.
+        if not contents.headers["from"][1] then
+            contents:add_header("From", self.message.sender)
+        end
+
         local message = slimta.message.new(client, envelope, contents, timestamp)
 
         -- Send the message to the edge manager for processing.

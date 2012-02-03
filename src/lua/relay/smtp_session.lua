@@ -154,14 +154,12 @@ end
 -- {{{ relay_all_propagate_errors()
 local function relay_all_propagate_errors(self)
     local socket = connect_socket(self)
-    local client = ratchet.smtp.client.new(socket)
+    self.client = ratchet.smtp.client.new(socket)
 
-    handshake(self, client)
+    handshake(self, self.client)
     for msg, response in pairs(self.messages) do
-        send_message(client, msg, response)
+        send_message(self.client, msg, response)
     end
-
-    client:quit()
 end
 -- }}}
 
@@ -171,6 +169,8 @@ function smtp_session:relay_all()
     if not success then
         set_response_to_all_messages(self, err)
     end
+
+    self.client:quit()
 end
 -- }}}
 
