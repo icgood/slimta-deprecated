@@ -6,6 +6,8 @@ require "slimta.message"
 slimta.relay = {}
 slimta.relay.__index = slimta.relay
 
+local relay_session_meta = {}
+
 require "slimta.relay.smtp"
 
 -- {{{ slimta.relay.new()
@@ -69,39 +71,31 @@ local function build_sessions(self, messages, responses)
 end
 -- }}}
 
--- {{{ relay_messages()
-local function relay_messages(self, messages, transaction)
+-- {{{ relay_session_meta.__call()
+function relay_session_meta.__call(self)
     local threads = {}
     local responses = {}
-    local sessions = build_sessions(self, messages, responses)
+    local sessions = build_sessions(self.relay, self.messages, responses)
     for hash, session in pairs(sessions) do
         table.insert(threads, ratchet.thread.attach(session.relay_all, session))
     end
     ratchet.thread.wait_all(threads)
-    transaction:send_response(responses)
+    self.transaction:send_response(responses)
 end
 -- }}}
 
--- {{{ slimta.relay:run()
-function slimta.relay:run()
-    while not self.done do
-        self.paused_thread = ratchet.thread.self()
-        local transaction, messages = self.bus:recv_request()
-        self.paused_thread = nil
+-- {{{ slimta.relay:accept()
+function slimta.relay:accept()
+    local transaction, messages = self.bus:recv_request()
 
-        if transaction then
-            ratchet.thread.attach(relay_messages, self, messages, transaction)
-        end
-    end
-end
--- }}}
+    local relay_session = {
+        messages = messages,
+        transaction = transaction,
+        relay = self,
+    }
+    setmetatable(relay_session, relay_session_meta)
 
--- {{{ slimta.relay:halt()
-function slimta.relay:halt()
-    self.done = true
-    if self.paused_thread then
-        ratchet.thread.kill(self.paused_thread)
-    end
+    return relay_session
 end
 -- }}}
 

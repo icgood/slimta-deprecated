@@ -8,7 +8,7 @@ require "slimta.relay"
 tracker = 0
 
 -- {{{ request()
-function request(host, port, bus_client, relay)
+function request(host, port, bus_client)
     local client = slimta.message.client.new("SMTP", "testing", "1.2.3.4", "TLS")
     local envelope = slimta.message.envelope.new("sender@slimta.org", {"rcpt1@slimta.org", "rcpt2@slimta.org"}, "SMTP", host, port)
     local contents = slimta.message.contents.new([[
@@ -27,9 +27,16 @@ beep beep
     assert(responses[1].code == "250")
     assert(responses[1].message == "2.6.0 Ok")
 
-    relay:halt()
-
     response_received = true
+end
+-- }}}
+
+-- {{{ handle_requests()
+function handle_requests(relay)
+    while true do
+        local thread = relay:accept()
+        ratchet.thread.attach(thread)
+    end
 end
 -- }}}
 
@@ -43,8 +50,11 @@ function run_relay(host, port)
     local relay = slimta.relay.new(bus_server)
     relay:add_relayer("SMTP", smtp)
 
-    ratchet.thread.attach(request, host, port, bus_client, relay)
-    relay:run(kernel)
+    local relay_thread = ratchet.thread.attach(handle_requests, relay)
+    local request_thread = ratchet.thread.attach(request, host, port, bus_client, relay)
+
+    ratchet.thread.wait_all({request_thread})
+    ratchet.thread.kill(relay_thread)
 end
 -- }}}
 
