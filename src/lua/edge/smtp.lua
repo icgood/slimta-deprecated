@@ -3,30 +3,20 @@ require "ratchet.smtp.server"
 
 require "slimta.message"
 
+slimta.edge = slimta.edge or {}
 slimta.edge.smtp = {}
 slimta.edge.smtp.__index = slimta.edge.smtp
 
 local command_handler = {}
 command_handler.__index = command_handler
 
--- {{{ setup_listening_socket()
-local function setup_listening_socket(host, port, family)
-    local rec = ratchet.socket.prepare_tcp(host, port, family)
-    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket.SO_REUSEADDR = true
-    socket:bind(rec.addr)
-    socket:listen()
-
-    return socket
-end
--- }}}
-
 -- {{{ slimta.edge.smtp.new()
-function slimta.edge.smtp.new(host, port, family)
+function slimta.edge.smtp.new(socket, bus)
     local self = {}
     setmetatable(self, slimta.edge.smtp)
 
-    self.socket = setup_listening_socket(host, port, family)
+    self.socket = socket
+    self.bus = bus
 
     self.settings = {
         banner_code = 220,
@@ -34,12 +24,6 @@ function slimta.edge.smtp.new(host, port, family)
     }
 
     return self
-end
--- }}}
-
--- {{{ slimta.edge.smtp:set_manager()
-function slimta.edge.smtp:set_manager(manager)
-    self.manager = manager
 end
 -- }}}
 
@@ -74,50 +58,41 @@ local function apply_extension_settings(extensions, settings)
 end
 -- }}}
 
--- {{{ slimta.edge.smtp:loop()
-function slimta.edge.smtp:loop()
-    while not self.done do
-        self.paused_thread = ratchet.thread.self()
-        local client, from_ip = self.socket:accept()
-        self.paused_thread = nil
-        
-        if client then
-            local handler = command_handler.new(from_ip, self.manager, self.settings)
-            local smtp_handler = ratchet.smtp.server.new(client, handler)
-
-            apply_extension_settings(smtp_handler.extensions, self.settings)
-
-            ratchet.thread.attach(smtp_handler.handle, smtp_handler)
-        end
-    end
+-- {{{ process_message()
+local function process_message(self, message)
+    local transaction = self.bus:send_request({message})
+    local responses = transaction:recv_response()
+    return responses and responses[1]
 end
 -- }}}
 
--- {{{ slimta.edge.smtp:run()
-function slimta.edge.smtp:run()
-    ratchet.thread.attach(self.loop, self)
+-- {{{ slimta.edge.smtp:accept()
+function slimta.edge.smtp:accept()
+    local client, from_ip = self.socket:accept()
+    
+    local cmd_handler = command_handler.new(from_ip, self)
+    local smtp_handler = ratchet.smtp.server.new(client, cmd_handler)
+
+    apply_extension_settings(smtp_handler.extensions, self.settings)
+
+    return smtp_handler
 end
 -- }}}
 
--- {{{ slimta.edge.smtp.halt()
-function slimta.edge.smtp.halt(self)
-    self.done = true
+-- {{{ slimta.edge.smtp:close()
+function slimta.edge.smtp:close()
     self.socket:close()
-    if self.paused_thread then
-        ratchet.thread.kill(self.paused_thread)
-    end
 end
 -- }}}
 
 -- {{{ command_handler.new()
-function command_handler.new(from_ip, manager, settings)
+function command_handler.new(from_ip, smtp_edge)
     local self = {}
     setmetatable(self, command_handler)
 
     self.security = "none"
     self.from_ip = from_ip
-    self.manager = manager
-    self.settings = settings
+    self.smtp_edge = smtp_edge
 
     return self
 end
@@ -125,12 +100,12 @@ end
 
 -- {{{ command_handler:BANNER()
 function command_handler:BANNER(reply)
-    if self.settings.banner_code then
-        reply.code = self.settings.banner_code
+    if self.smtp_edge.settings.banner_code then
+        reply.code = self.smtp_edge.settings.banner_code
     end
 
-    if self.settings.banner_message then
-        reply.message = self.settings.banner_message
+    if self.smtp_edge.settings.banner_message then
+        reply.message = self.smtp_edge.settings.banner_message
     end
 end
 -- }}}
@@ -182,7 +157,7 @@ function command_handler:HAVE_DATA(reply, data, err)
         local message = slimta.message.new(client, envelope, contents, timestamp)
 
         -- Send the message to the edge manager for processing.
-        local response = self.manager:process_message(message)
+        local response = process_message(self.smtp_edge, message)
         reply.code, reply.message = response:as_smtp()
 
         -- Reset the session for more messages.

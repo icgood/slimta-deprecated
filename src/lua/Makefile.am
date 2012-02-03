@@ -13,7 +13,6 @@ nobase_dist_luasrc_DATA = queue/policies/nexthop/mx.lua \
 			  message/envelope.lua \
 			  message/response.lua \
 			  message/contents.lua \
-			  edge/init.lua \
 			  edge/smtp.lua \
 			  edge/http.lua \
 			  storage/couchdb.lua \

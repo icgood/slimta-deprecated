@@ -2,8 +2,7 @@
 require "ratchet"
 require "ratchet.http.client"
 
-require "slimta"
-require "slimta.edge"
+require "slimta.edge.http"
 require "slimta.bus"
 require "slimta.message"
 
@@ -35,24 +34,36 @@ local function check_messages(messages)
 end
 -- }}}
 
+-- {{{ handle_connections()
+function handle_connections(edge)
+    while true do
+        local thread = edge:accept()
+        ratchet.thread.attach(thread)
+    end
+end
+-- }}}
+
 -- {{{ run_edge()
 function run_edge(host, port)
-    local http = slimta.edge.http.new(host, port)
+    local rec = ratchet.socket.prepare_tcp(host, port)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket.SO_REUSEADDR = true
+    socket:bind(rec.addr)
+    socket:listen()
 
     local bus_server, bus_client = slimta.bus.new_local()
 
-    local edge = slimta.edge.new(bus_client)
-    edge:add_listener(http)
+    local http = slimta.edge.http.new(socket, bus_client)
 
-    edge:run()
-    
+    local edge_thread = ratchet.thread.attach(handle_connections, http)
     ratchet.thread.attach(send_http, host, port)
 
     local transaction, messages = bus_server:recv_request()
     local responses = check_messages(messages)
     transaction:send_response(responses)
 
-    edge:halt()
+    ratchet.thread.kill(edge_thread)
+    http:close()
 end
 -- }}}
 

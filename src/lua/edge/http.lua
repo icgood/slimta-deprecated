@@ -3,35 +3,27 @@ require "ratchet.http.server"
 
 require "slimta.message"
 
+slimta.edge = slimta.edge or {}
 slimta.edge.http = {}
 slimta.edge.http.__index = slimta.edge.http
 
--- {{{ setup_listening_socket()
-local function setup_listening_socket(host, port, family)
-    local rec = ratchet.socket.prepare_tcp(host, port, family)
-    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket.SO_REUSEADDR = true
-    socket:bind(rec.addr)
-    socket:listen()
-
-    return socket
-end
--- }}}
-
 -- {{{ slimta.edge.http.new()
-function slimta.edge.http.new(host, port, family)
+function slimta.edge.http.new(socket, bus)
     local self = {}
     setmetatable(self, slimta.edge.http)
 
-    self.socket = setup_listening_socket(host, port, family)
+    self.socket = socket
+    self.bus = bus
 
     return self
 end
 -- }}}
 
--- {{{ slimta.edge.http:set_manager()
-function slimta.edge.http:set_manager(manager)
-    self.manager = manager
+-- {{{ process_message()
+local function process_message(self, message)
+    local transaction = self.bus:send_request({message})
+    local responses = transaction:recv_response()
+    return responses and responses[1]
 end
 -- }}}
 
@@ -82,7 +74,7 @@ function slimta.edge.http:POST(uri, headers, data, from)
     end
 
     -- Send the message to the edge manager for processing.
-    local response = self.manager:process_message(message)
+    local response = process_message(self, message)
     return response:as_http()
 end
 -- }}}
@@ -93,34 +85,17 @@ function slimta.edge.http:GET(uri, headers, data, from)
 end
 -- }}}
 
--- {{{ slimta.edge.http:loop()
-function slimta.edge.http:loop()
-    while not self.done do
-        self.paused_thread = ratchet.thread.self()
-        local client, from_ip = self.socket:accept()
-        self.paused_thread = nil
+-- {{{ slimta.edge.http:accept()
+function slimta.edge.http:accept()
+    local client, from_ip = self.socket:accept()
 
-        if client then
-            local handler = ratchet.http.server.new(client, from_ip, self)
-            ratchet.thread.attach(handler.handle, handler)
-        end
-    end
+    return ratchet.http.server.new(client, from_ip, self)
 end
 -- }}}
 
--- {{{ slimta.edge.http:run()
-function slimta.edge.http:run()
-    ratchet.thread.attach(self.loop, self)
-end
--- }}}
-
--- {{{ slimta.edge.http:halt()
-function slimta.edge.http:halt()
-    self.done = true
+-- {{{ slimta.edge.http:close()
+function slimta.edge.http:close()
     self.socket:close()
-    if self.paused_thread then
-        ratchet.thread.kill(self.paused_thread)
-    end
 end
 -- }}}
 

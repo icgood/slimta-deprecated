@@ -2,7 +2,7 @@
 require "ratchet"
 require "ratchet.smtp.client"
 
-require "slimta.edge"
+require "slimta.edge.smtp"
 require "slimta.bus"
 require "slimta.message"
 
@@ -34,26 +34,38 @@ local function check_messages(messages)
 end
 -- }}}
 
+-- {{{ handle_connections()
+function handle_connections(edge)
+    while true do
+        local thread = edge:accept()
+        ratchet.thread.attach(thread)
+    end
+end
+-- }}}
+
 -- {{{ run_edge()
 function run_edge(host, port)
-    local smtp = slimta.edge.smtp.new(host, port)
-    smtp:set_banner_message(220, "ESMTP slimta test banner")
-    smtp:set_max_message_size(10485760)
+    local rec = ratchet.socket.prepare_tcp(host, port)
+    local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket.SO_REUSEADDR = true
+    socket:bind(rec.addr)
+    socket:listen()
 
     local bus_server, bus_client = slimta.bus.new_local()
 
-    local edge = slimta.edge.new(bus_client)
-    edge:add_listener(smtp)
+    local smtp = slimta.edge.smtp.new(socket, bus_client)
+    smtp:set_banner_message(220, "ESMTP slimta test banner")
+    smtp:set_max_message_size(10485760)
 
-    edge:run()
-    
+    local edge_thread = ratchet.thread.attach(handle_connections, smtp)
     ratchet.thread.attach(send_smtp, "localhost", 2525)
 
     local transaction, messages = bus_server:recv_request()
     local responses = check_messages(messages)
     transaction:send_response(responses)
 
-    edge:halt()
+    ratchet.thread.kill(edge_thread)
+    smtp:close()
 end
 -- }}}
 
