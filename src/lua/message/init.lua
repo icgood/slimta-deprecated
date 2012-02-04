@@ -9,6 +9,23 @@ require "slimta.message.envelope"
 require "slimta.message.contents"
 require "slimta.message.response"
 
+-- {{{ slimta.message.copy()
+function slimta.message.copy(old)
+    local self = {}
+    setmetatable(self, slimta.message)
+
+    for k, v in pairs(old) do
+        self[k] = v
+    end
+
+    self.client = slimta.message.client.copy(old.client)
+    self.envelope = slimta.message.envelope.copy(old.envelope)
+    self.contents = slimta.message.contents.copy(old.contents)
+
+    return self
+end
+-- }}}
+
 -- {{{ slimta.message.new()
 function slimta.message.new(client, envelope, contents, timestamp, id)
     local self = {}
@@ -22,6 +39,23 @@ function slimta.message.new(client, envelope, contents, timestamp, id)
 
     self.attempts = 0
     self.next_attempt = 0
+
+    return self
+end
+-- }}}
+
+-- {{{ slimta.message.copy_per_recipient()
+function slimta.message.copy_per_recipient(old)
+    local self = {}
+    setmetatable(self, slimta.message)
+
+    for k, v in pairs(old) do
+        self[k] = v
+    end
+
+    self.client = slimta.message.client.copy(old.client)
+    self.envelope = slimta.message.envelope.copy(old.envelope)
+    self.contents = slimta.message.contents.copy(old.contents)
 
     return self
 end

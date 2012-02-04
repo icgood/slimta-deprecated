@@ -2,6 +2,24 @@
 slimta.message.envelope = {}
 slimta.message.envelope.__index = slimta.message.envelope
 
+-- {{{ slimta.message.envelope.copy()
+function slimta.message.envelope.copy(old)
+    local self = {}
+    setmetatable(self, slimta.message.envelope)
+
+    for k, v in pairs(old) do
+        self[k] = v
+    end
+
+    self.recipients = {}
+    for i, v in ipairs(old.recipients) do
+        self.recipients[i] = v
+    end
+
+    return self
+end
+-- }}}
+
 -- {{{ slimta.message.envelope.new()
 function slimta.message.envelope.new(sender, recipients, dest_relayer, dest_host, dest_port)
     local self = {}

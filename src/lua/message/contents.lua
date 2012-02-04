@@ -54,6 +54,33 @@ local function load_headers(self)
 end
 -- }}}
 
+-- {{{ slimta.message.contents.copy()
+function slimta.message.contents.copy(old)
+    local self = {}
+    setmetatable(self, slimta.message.contents)
+
+    for k, v in pairs(old) do
+        self[k] = v
+    end
+
+    self.headers = {}
+    setmetatable(self.headers, headers_metatable)
+    for k, t in pairs(old.headers) do
+        self.headers[k] = {}
+        for i, v in ipairs(t) do
+            self.headers[k][i] = v
+        end
+    end
+
+    self.header_stack = {}
+    for i, v in ipairs(old.header_stack) do
+        self.header_stack[i] = v
+    end
+
+    return self
+end
+-- }}}
+
 -- {{{ slimta.message.contents.new()
 function slimta.message.contents.new(data)
     local self = {}

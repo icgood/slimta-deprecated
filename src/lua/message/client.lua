@@ -2,6 +2,19 @@
 slimta.message.client = {}
 slimta.message.client.__index = slimta.message.client
 
+-- {{{ slimta.message.client.copy()
+function slimta.message.client.copy(old)
+    local self = {}
+    setmetatable(self, slimta.message.client)
+
+    for k, v in pairs(old) do
+        self[k] = v
+    end
+
+    return self
+end
+-- }}}
+
 -- {{{ slimta.message.client.new()
 function slimta.message.client.new(protocol, ehlo, ip, security)
     local self = {}
