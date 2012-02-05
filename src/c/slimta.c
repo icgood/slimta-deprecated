@@ -41,6 +41,9 @@ int luaopen_slimta (lua_State *L)
 	lua_pushvalue (L, -1);
 	lua_setglobal (L, "slimta");
 
+	lua_pushstring (L, VERSION);
+	lua_setfield (L, -2, "version");
+
 	luaL_requiref (L, "slimta.xml", luaopen_slimta_xml, 0);
 	lua_setfield (L, -2, "xml");
 

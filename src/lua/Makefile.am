@@ -1,10 +1,6 @@
 
 luasrcdir = @LUA_LPATH@/slimta/
-nobase_dist_luasrc_DATA = queue/policies/nexthop/mx.lua \
-			  queue/policies/headers/received_header.lua \
-			  queue/policies/headers/date_header.lua \
-			  queue/init.lua \
-			  bus/client.lua \
+nobase_dist_luasrc_DATA = bus/client.lua \
 			  bus/init.lua \
 			  bus/server.lua \
 			  message/client.lua \

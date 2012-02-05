@@ -20,9 +20,14 @@ edge_tests = test_edge_http_listener.lua \
 
 relay_tests = test_relay_smtp_relayer.lua
 
+policy_tests = test_add_date_header.lua \
+	       test_add_received_header.lua
+
 coordination_tests = test_edge_to_relay.lua
 
-TESTS = $(bus_tests) $(xml_tests) $(message_tests) $(edge_tests) $(relay_tests) $(coordination_tests)
+TESTS = $(bus_tests) $(xml_tests) $(message_tests) \
+	$(edge_tests) $(relay_tests) $(coordination_tests) \
+	$(policy_tests)
 
 XFAIL_TESTS = 
 EXTRA_DIST = $(TESTS)

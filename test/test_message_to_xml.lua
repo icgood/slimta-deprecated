@@ -2,12 +2,12 @@
 require "slimta.message"
 require "slimta.xml.writer"
 
-local client = slimta.message.client.new("SMTP", "testing", "1.2.3.4", "TLS")
+local client = slimta.message.client.new("SMTP", "testing", "1.2.3.4", "TLS", "myhost.tld")
 local envelope = slimta.message.envelope.new("sender@domain.com", {"recipient@domain.com"}, "SMTP", "4.3.2.1", "2500")
 local contents = slimta.message.contents.new("test contents 1", true)
 local msg1 = slimta.message.new(client, envelope, contents)
 
-local client = slimta.message.client.new("HTTP", "there", "5.6.7.8", "SSL")
+local client = slimta.message.client.new("HTTP", "there", "5.6.7.8", "SSL", "otherhost.tld")
 local envelope = slimta.message.envelope.new("sender@domain.com", {"recipient@domain.com"})
 local contents = slimta.message.contents.new("test contents 2", true)
 local msg2 = slimta.message.new(client, envelope, contents)
@@ -26,7 +26,7 @@ local expected_xml = [[
 <edge>
  <messages>
   <message>
-   <client>
+   <client to="myhost.tld">
     <protocol>SMTP</protocol>
     <ehlo>testing</ehlo>
     <ip>1.2.3.4</ip>
@@ -40,7 +40,7 @@ local expected_xml = [[
    <contents part="1"/>
   </message>
   <message>
-   <client>
+   <client to="otherhost.tld">
     <protocol>HTTP</protocol>
     <ehlo>there</ehlo>
     <ip>5.6.7.8</ip>
