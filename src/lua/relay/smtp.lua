@@ -24,8 +24,8 @@ function slimta.relay.smtp:set_manager()
 end
 -- }}}
 
--- {{{ slimta.relay.smtp:ehlo_as()
-function slimta.relay.smtp:ehlo_as(ehlo_as)
+-- {{{ slimta.relay.smtp:set_ehlo_as()
+function slimta.relay.smtp:set_ehlo_as(ehlo_as)
     self.ehlo_as = ehlo_as
 end
 -- }}}
@@ -44,7 +44,7 @@ function slimta.relay.smtp:new_session(host, port)
         host, port,
         self.family
     )
-    session:ehlo_as(self.ehlo_as)
+    session:set_ehlo_as(self.ehlo_as)
     session:use_security(self.security.mode, self.security.method, self.security.force_verify)
 
     return session

@@ -66,7 +66,7 @@ end
 -- {{{ run_relay()
 function run_relay(bus_server)
     local smtp = slimta.relay.smtp.new()
-    smtp:ehlo_as("test_ehlo")
+    smtp:set_ehlo_as("test_ehlo")
 
     local relay = slimta.relay.new(bus_server)
     relay:add_relayer("SMTP", smtp)

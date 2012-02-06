@@ -21,8 +21,8 @@ function smtp_session.new(host, port, family)
 end
 -- }}}
 
--- {{{ smtp_session:ehlo_as()
-function smtp_session:ehlo_as(ehlo_as)
+-- {{{ smtp_session:set_ehlo_as()
+function smtp_session:set_ehlo_as(ehlo_as)
     self.ehlo_as = ehlo_as
 end
 -- }}}
