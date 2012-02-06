@@ -25,7 +25,7 @@ end
 -- {{{ build_by_section()
 local function build_by_section(message, parts)
     local template = "by %s (slimta %s)"
-    table.insert(parts, template:format(message.client.connected_to, slimta.version))
+    table.insert(parts, template:format(message.client.receiver, slimta.version))
 end
 -- }}}
 

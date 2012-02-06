@@ -26,11 +26,12 @@ local expected_xml = [[
 <edge>
  <messages>
   <message>
-   <client to="myhost.tld">
+   <client>
     <protocol>SMTP</protocol>
     <ehlo>testing</ehlo>
     <ip>1.2.3.4</ip>
     <security>TLS</security>
+    <receiver>myhost.tld</receiver>
    </client>
    <envelope>
     <sender>sender@domain.com</sender>
@@ -40,11 +41,12 @@ local expected_xml = [[
    <contents part="1"/>
   </message>
   <message>
-   <client to="otherhost.tld">
+   <client>
     <protocol>HTTP</protocol>
     <ehlo>there</ehlo>
     <ip>5.6.7.8</ip>
     <security>SSL</security>
+    <receiver>otherhost.tld</receiver>
    </client>
    <envelope>
     <sender>sender@domain.com</sender>

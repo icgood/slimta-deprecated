@@ -11,6 +11,7 @@ local xml = [[
     <ehlo>testing</ehlo>
     <ip>1.2.3.4</ip>
     <security>TLS</security>
+    <receiver>myhost.tld</receiver>
    </client>
    <envelope>
     <sender>sender@domain.com</sender>
@@ -24,6 +25,7 @@ local xml = [[
     <ehlo>there</ehlo>
     <ip>5.6.7.8</ip>
     <security>SSL</security>
+    <receiver>otherhost.tld</receiver>
    </client>
    <envelope>
     <sender>sender@domain.com</sender>
@@ -58,6 +60,7 @@ assert("SMTP" == msg1.client.protocol)
 assert("testing" == msg1.client.ehlo)
 assert("1.2.3.4" == msg1.client.ip)
 assert("TLS" == msg1.client.security)
+assert("myhost.tld" == msg1.client.receiver)
 assert("sender@domain.com" == msg1.envelope.sender)
 assert(1 == #msg1.envelope.recipients and "recipient@domain.com" == msg1.envelope.recipients[1])
 assert("test message data 1" == tostring(msg1.contents))
@@ -66,6 +69,7 @@ assert("HTTP" == msg2.client.protocol)
 assert("there" == msg2.client.ehlo)
 assert("5.6.7.8" == msg2.client.ip)
 assert("SSL" == msg2.client.security)
+assert("otherhost.tld" == msg2.client.receiver)
 assert("sender@domain.com" == msg2.envelope.sender)
 assert(1 == #msg2.envelope.recipients and "recipient@domain.com" == msg2.envelope.recipients[1])
 assert("SMTP" == msg2.envelope.dest_relayer)
