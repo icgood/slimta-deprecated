@@ -98,27 +98,29 @@ end
 function slimta.storage.redis:lock_message(id, length)
     local lock_key = "message_lock."..id
     self.driver("WATCH", lock_key)
-    local reply, err = self.driver("GET", lock_key)
-    if reply[1] then
+    local reply, err = self.driver("TTL", lock_key)
+    if reply[1] and reply[1] >= 0 then
+        self.driver("UNWATCH")
         return false
     end
 
     self.driver("MULTI")
     self.driver("SETEX", lock_key, length, "locked")
-    local reply, err = self.driver("EXEC")
+    reply, err = self.driver("EXEC")
     return reply[1] == "OK", err
 end
 -- }}}
 
 -- {{{ slimta.storage.redis:unlock_message()
 function slimta.storage.redis:unlock_message(id)
-    local key = "message_lock."..id
-    self.driver("DEL", key)
+    local lock_key = "message_lock."..id
+    self.driver("DEL", lock_key)
 end
 -- }}}
 
 -- {{{ slimta.storage.redis:remove_message()
 function slimta.storage.redis:remove_message(id)
+    local lock_key = "message_lock."..id
     self.driver("MULTI")
     self.driver("HDEL", "message_meta", id)
     self.driver("HDEL", "message_contents", id)

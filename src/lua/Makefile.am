@@ -20,8 +20,6 @@ nobase_dist_luasrc_DATA = relay/smtp_session.lua \
 			  xml/reader.lua \
 			  xml/writer.lua \
 			  queue/init.lua \
-			  queue/policies/headers/date_header.lua \
-			  queue/policies/headers/received_header.lua \
 			  bus/server.lua \
 			  bus/init.lua \
 			  bus/client.lua

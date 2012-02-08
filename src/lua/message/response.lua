@@ -3,13 +3,13 @@ slimta.message.response = {}
 slimta.message.response.__index = slimta.message.response
 
 -- {{{ slimta.message.response.new()
-function slimta.message.response.new(code, message, id)
+function slimta.message.response.new(code, message, data)
     local self = {}
     setmetatable(self, slimta.message.response)
 
     self.code = code or ''
     self.message = message or ''
-    self.id = id
+    self.data = data
 
     return self
 end
@@ -35,9 +35,9 @@ function slimta.message.response:as_http()
         headers = {},
     }
 
-    if self.id then
-        ret.headers['Content-Length'] = {#self.id}
-        ret.data = self.id
+    if self.data then
+        ret.headers['Content-Length'] = {#self.data}
+        ret.data = self.data
     end
 
     return ret
