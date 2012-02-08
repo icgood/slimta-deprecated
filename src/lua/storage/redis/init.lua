@@ -58,14 +58,6 @@ function slimta.storage.redis:get_retry_queue(timestamp)
 end
 -- }}}
 
--- {{{ watch_message_lock()
-local function watch_message_lock(self, id)
-    local key = "message_lock."..id
-    self.driver("WATCH", key)
-    return key
-end
--- }}}
-
 -- {{{ slimta.storage.redis:store_message_meta()
 function slimta.storage.redis:store_message_meta(meta)
     local uuid
@@ -83,10 +75,7 @@ end
 
 -- {{{ slimta.storage.redis:store_message_contents()
 function slimta.storage.redis:store_message_contents(id, contents)
-    watch_message_lock(self, id)
-    self.driver("MULTI")
-    self.driver("HSET", "message_contents", id, tostring(contents))
-    local reply, err = self.driver("EXEC")
+    local reply, err = self.driver("HSET", "message_contents", id, tostring(contents))
     return reply[1], err[1]
 end
 -- }}}
@@ -107,11 +96,17 @@ end
 
 -- {{{ slimta.storage.redis:lock_message()
 function slimta.storage.redis:lock_message(id, length)
-    local lock_key = watch_message_lock(self, id)
+    local lock_key = "message_lock."..id
+    self.driver("WATCH", lock_key)
+    local reply, err = self.driver("GET", lock_key)
+    if reply[1] then
+        return false
+    end
+
     self.driver("MULTI")
     self.driver("SETEX", lock_key, length, "locked")
     local reply, err = self.driver("EXEC")
-    return reply[1] == "OK"
+    return reply[1] == "OK", err
 end
 -- }}}
 
@@ -124,7 +119,6 @@ end
 
 -- {{{ slimta.storage.redis:remove_message()
 function slimta.storage.redis:remove_message(id)
-    local lock_key = watch_message_lock(self, id)
     self.driver("MULTI")
     self.driver("HDEL", "message_meta", id)
     self.driver("HDEL", "message_contents", id)

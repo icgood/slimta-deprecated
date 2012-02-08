@@ -48,10 +48,6 @@ end
 
 -- {{{ slimta.message.load()
 function slimta.message.load(storage, id)
-    if not storage:lock_message(id, 120) then
-        return nil, "locked"
-    end
-
     local meta = storage:load_message_meta(id)
     local contents = storage:load_message_contents(id)
     if not meta or not contents then
@@ -60,11 +56,7 @@ function slimta.message.load(storage, id)
 
     local parser = slimta.xml.reader.new()
     local node = parser:parse_xml(meta)
-    local ret = slimta.message.from_xml(node[1], {contents})
-
-    storage:unlock_message(id)
-
-    return ret
+    return slimta.message.from_xml(node[1], {contents})
 end
 -- }}}
 
@@ -75,12 +67,7 @@ function slimta.message:store(storage)
     local meta, attachments = writer:build() 
 
     self.id = storage:store_message_meta(meta)
-
-    if not storage:lock_message(self.id, 120) then
-        error("Could not lock new message: "..self.id)
-    end
     storage:store_message_contents(self.id, attachments[1])
-    storage:unlock_message(self.id)
 
     return self.id
 end
