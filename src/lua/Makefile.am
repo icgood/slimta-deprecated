@@ -9,7 +9,8 @@ nobase_dist_luasrc_DATA = relay/smtp_session.lua \
 			  message/contents.lua \
 			  message/envelope.lua \
 			  message/client.lua \
-			  storage/couchdb.lua \
+			  storage/redis/init.lua \
+			  storage/redis/driver.lua \
 			  edge/http.lua \
 			  edge/smtp.lua \
 			  policies/add_date_header.lua \

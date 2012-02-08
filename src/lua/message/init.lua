@@ -1,5 +1,7 @@
 
 require "slimta"
+require "slimta.xml.reader"
+require "slimta.xml.writer"
 
 slimta.message = {}
 slimta.message.__index = slimta.message
@@ -44,59 +46,43 @@ function slimta.message.new(client, envelope, contents, timestamp, id)
 end
 -- }}}
 
--- {{{ slimta.message.copy_per_recipient()
-function slimta.message.copy_per_recipient(old)
-    local self = {}
-    setmetatable(self, slimta.message)
-
-    for k, v in pairs(old) do
-        self[k] = v
+-- {{{ slimta.message.load()
+function slimta.message.load(storage, id)
+    if not storage:lock_message(id, 120) then
+        return nil, "locked"
     end
 
-    self.client = slimta.message.client.copy(old.client)
-    self.envelope = slimta.message.envelope.copy(old.envelope)
-    self.contents = slimta.message.contents.copy(old.contents)
+    local meta = storage:load_message_meta(id)
+    local contents = storage:load_message_contents(id)
+    if not meta or not contents then
+        return nil, "invalid"
+    end
 
-    return self
+    local parser = slimta.xml.reader.new()
+    local node = parser:parse_xml(meta)
+    local ret = slimta.message.from_xml(node[1], {contents})
+
+    storage:unlock_message(id)
+
+    return ret
 end
 -- }}}
 
 -- {{{ slimta.message:store()
-function slimta.message:store(storage_engine, next_attempt)
-    -- We cannot simply use self as the document because the message contents
-    -- must be written separately as an attachment.
-    local document = {
-        client = self.client,
-        envelope = self.envelope,
-        size = self.contents.size,
-        timestamp = self.timestamp,
-        attempts = self.attempts,
-        next_attempt = self.next_attempt,
-    }
+function slimta.message:store(storage)
+    local writer = slimta.xml.writer.new()
+    writer:add_item(self)
+    local meta, attachments = writer:build() 
 
-    storage_engine:create_document(document)
-    storage_engine:create_attachment(
-        "message",
-        "message/rfc822",
-        tostring(self.contents)
-    )
+    self.id = storage:store_message_meta(meta)
 
-    self.id = storage_engine.id
-end
--- }}}
+    if not storage:lock_message(self.id, 120) then
+        error("Could not lock new message: "..self.id)
+    end
+    storage:store_message_contents(self.id, attachments[1])
+    storage:unlock_message(self.id)
 
--- {{{ slimta.message:load()
-function slimta.message:load(storage_engine, id, do_not_parse)
-    local document = storage_engine:load_document(id)
-
-    self.client = slimta.message.client.new_from(document.client)
-    self.envelope = slimta.message.envelope.new_from(document.envelope)
-    self.timestamp = document.timestamp
-
-    local attachment = storage_engine:load_attachment("message")
-    self.contents = slimta.message.contents.new(attachment, do_not_parse)
-
-    self.id = id
+    return self.id
 end
 -- }}}
 
@@ -104,8 +90,20 @@ end
 
 -- {{{ slimta.message.to_xml()
 function slimta.message.to_xml(msg, attachments)
+    local attrs = {}
+    if msg.id then
+        table.insert(attrs, " id=\"")
+        table.insert(attrs, msg.id)
+        table.insert(attrs, "\"")
+    end
+    if msg.timestamp then
+        table.insert(attrs, " timestamp=\"")
+        table.insert(attrs, msg.timestamp)
+        table.insert(attrs, "\"")
+    end
+
     local lines = {
-        "<message>",
+        ("<message%s>"):format(table.concat(attrs)),
         msg.client:to_xml(attachments),
         msg.envelope:to_xml(attachments),
         msg.contents:to_xml(attachments),

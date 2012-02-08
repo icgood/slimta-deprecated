@@ -5,7 +5,7 @@ require "slimta.xml.reader"
 local xml = [[
 <edge>
  <messages>
-  <message>
+  <message id="one" timestamp="12345">
    <client>
     <protocol>SMTP</protocol>
     <ehlo>testing</ehlo>
@@ -64,6 +64,8 @@ assert("myhost.tld" == msg1.client.receiver)
 assert("sender@domain.com" == msg1.envelope.sender)
 assert(1 == #msg1.envelope.recipients and "recipient@domain.com" == msg1.envelope.recipients[1])
 assert("test message data 1" == tostring(msg1.contents))
+assert("one" == msg1.id)
+assert("12345" == tostring(msg1.timestamp))
 
 assert("HTTP" == msg2.client.protocol)
 assert("there" == msg2.client.ehlo)
