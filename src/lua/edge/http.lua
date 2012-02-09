@@ -58,7 +58,7 @@ function slimta.edge.http:POST(uri, headers, data, from)
     local recipients = headers['x-recipient']
 
     -- Build a slimta.message object.
-    local hostname = os.getenv("HOSTNAME")
+    local hostname = os.getenv("HOSTNAME") or ratchet.socket.gethostname()
     local client = slimta.message.client.new("HTTP", ehlo, from, "none", hostname)
     local envelope = slimta.message.envelope.new(sender, recipients)
     local contents = slimta.message.contents.new(data)

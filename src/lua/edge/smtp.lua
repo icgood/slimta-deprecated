@@ -149,7 +149,7 @@ end
 function command_handler:HAVE_DATA(reply, data, err)
     if not err then
         -- Build a slimta.message object.
-        local hostname = os.getenv("HOSTNAME")
+        local hostname = os.getenv("HOSTNAME") or ratchet.socket.gethostname()
         local client = slimta.message.client.new("SMTP", self.ehlo_as, self.from_ip, self.security, hostname)
         local envelope = slimta.message.envelope.new(self.message.sender, self.message.recipients)
         local contents = slimta.message.contents.new(data)
