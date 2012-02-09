@@ -7,6 +7,9 @@ require "slimta.queue"
 require "slimta.bus"
 require "slimta.message"
 
+require "slimta.policies.add_date_header"
+require "slimta.policies.add_received_header"
+
 require "slimta.storage.memory"
 require "slimta.storage.redis"
 
@@ -49,7 +52,14 @@ end
 -- }}}
 
 kernel = ratchet.new(function ()
-    local queue_bus, edge_bus = slimta.bus.new_local()
+    local chain_bus, edge_bus = slimta.bus.new_local()
+
+    local policies = {
+        slimta.policies.add_date_header.new(),
+        slimta.policies.add_received_header.new(),
+    }
+
+    local queue_bus = slimta.bus.chain(policies, chain_bus)
 
     ratchet.thread.attach(run_edge, edge_bus, "*", 2525)
     ratchet.thread.attach(run_queue, queue_bus)
