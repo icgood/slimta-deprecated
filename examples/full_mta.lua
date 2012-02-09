@@ -8,11 +8,18 @@ require "slimta.relay.smtp"
 require "slimta.queue"
 require "slimta.bus"
 require "slimta.message"
+
 require "slimta.storage.redis"
+require "slimta.storage.memory"
 
 require "slimta.routing.mx"
 require "slimta.policies.add_date_header"
 require "slimta.policies.add_received_header"
+
+if not slimta.storage[arg[1]] then
+    print("usage: "..arg[0].." <memory|redis> [redis host] [redis port]")
+    os.exit(1)
+end
 
 -- {{{ run_edge()
 function run_edge(bus_client, host, port)
@@ -39,10 +46,10 @@ function run_queue(bus_server, bus_client)
     while true do
         local thread = queue:accept()
 
-        local redis = slimta.storage.redis.new()
-        redis:connect(arg[1], arg[2])
+        local storage = slimta.storage[arg[1]].new()
+        storage:connect(table.unpack(arg, 2))
 
-        ratchet.thread.attach(thread, redis)
+        ratchet.thread.attach(thread, storage)
     end
 end
 -- }}}

@@ -9,6 +9,7 @@ nobase_dist_luasrc_DATA = relay/smtp_session.lua \
 			  message/contents.lua \
 			  message/envelope.lua \
 			  message/client.lua \
+			  storage/memory.lua \
 			  storage/redis/init.lua \
 			  storage/redis/driver.lua \
 			  edge/http.lua \
