@@ -10,6 +10,7 @@ function slimta.storage.memory.new()
     local self = {}
     setmetatable(self, slimta.storage.memory)
 
+    self.id_hash = {}
     self.meta_hash = {}
     self.contents_hash = {}
     self.lock_hash = {}
@@ -58,25 +59,31 @@ function slimta.storage.memory:get_full_queue()
 end
 -- }}}
 
--- {{{ slimta.storage.memory:store_message_meta()
-function slimta.storage.memory:store_message_meta(meta)
+-- {{{ slimta.storage.memory:claim_message_id()
+function slimta.storage.memory:claim_message_id()
     local uuid
     repeat
         uuid = slimta.uuid.generate()
-    until not self.meta_hash[uuid]
-    self.meta_hash[uuid] = meta
+    until not self.id_hash[uuid]
+    self.id_hash[uuid] = true
     return uuid
 end
 -- }}}
 
--- {{{ slimta.storage.memory:store_message_contents()
-function slimta.storage.memory:store_message_contents(id, contents)
+-- {{{ slimta.storage.memory:set_message_meta()
+function slimta.storage.memory:set_message_meta(id, meta)
+    self.meta_hash[id] = tostring(meta)
+end
+-- }}}
+
+-- {{{ slimta.storage.memory:set_message_contents()
+function slimta.storage.memory:set_message_contents(id, contents)
     self.contents_hash[id] = tostring(contents)
 end
 -- }}}
 
--- {{{ slimta.storage.memory:load_message_meta()
-function slimta.storage.memory:load_message_meta(id)
+-- {{{ slimta.storage.memory:get_message_meta()
+function slimta.storage.memory:get_message_meta(id)
     if self.meta_hash[id] then
         return self.meta_hash[id]
     else
@@ -85,8 +92,8 @@ function slimta.storage.memory:load_message_meta(id)
 end
 -- }}}
 
--- {{{ slimta.storage.memory:load_message_contents()
-function slimta.storage.memory:load_message_contents(id)
+-- {{{ slimta.storage.memory:get_message_contents()
+function slimta.storage.memory:get_message_contents(id)
     if self.contents_hash[id] then
         return self.contents_hash[id]
     else
@@ -115,6 +122,7 @@ end
 
 -- {{{ slimta.storage.memory:remove_message()
 function slimta.storage.memory:remove_message(id)
+    self.id_hash[id] = nil
     self.meta_hash[id] = nil
     self.contents_hash[id] = nil
     self.lock_hash[id] = nil

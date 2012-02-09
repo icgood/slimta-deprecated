@@ -48,8 +48,8 @@ end
 
 -- {{{ slimta.message.load()
 function slimta.message.load(storage, id)
-    local meta = storage:load_message_meta(id)
-    local contents = storage:load_message_contents(id)
+    local meta = storage:get_message_meta(id)
+    local contents = storage:get_message_contents(id)
     if not meta or not contents then
         return nil, "invalid"
     end
@@ -66,8 +66,9 @@ function slimta.message:store(storage)
     writer:add_item(self)
     local meta, attachments = writer:build() 
 
-    self.id = storage:store_message_meta(meta)
-    storage:store_message_contents(self.id, attachments[1])
+    self.id = storage:claim_message_id()
+    storage:set_message_meta(self.id, meta)
+    storage:set_message_contents(self.id, attachments[1])
 
     return self.id
 end

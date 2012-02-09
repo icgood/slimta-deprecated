@@ -69,13 +69,12 @@ function slimta.storage.redis:get_full_queue()
 end
 -- }}}
 
--- {{{ slimta.storage.redis:store_message_meta()
-function slimta.storage.redis:store_message_meta(meta)
+-- {{{ slimta.storage.redis:claim_message_id()
+function slimta.storage.redis:claim_message_id()
     local uuid
-    local reply, err
     repeat
         uuid = slimta.uuid.generate()
-        local reply, err = self.driver("HSETNX", "message_meta", uuid, meta)
+        local reply, err = self.driver("HADD", "message_ids", uuid)
         if not reply[1] then
             return nil, err[1]
         end
@@ -84,22 +83,29 @@ function slimta.storage.redis:store_message_meta(meta)
 end
 -- }}}
 
--- {{{ slimta.storage.redis:store_message_contents()
-function slimta.storage.redis:store_message_contents(id, contents)
+-- {{{ slimta.storage.redis:set_message_meta()
+function slimta.storage.redis:set_message_meta(id, meta)
+    local reply, err = self.driver("HSET", "message_meta", id, tostring(meta))
+    return reply[1], err[1]
+end
+-- }}}
+
+-- {{{ slimta.storage.redis:set_message_contents()
+function slimta.storage.redis:set_message_contents(id, contents)
     local reply, err = self.driver("HSET", "message_contents", id, tostring(contents))
     return reply[1], err[1]
 end
 -- }}}
 
--- {{{ slimta.storage.redis:load_message_meta()
-function slimta.storage.redis:load_message_meta(id)
+-- {{{ slimta.storage.redis:get_message_meta()
+function slimta.storage.redis:get_message_meta(id)
     local reply, err = self.driver("HGET", "message_meta", id)
     return reply[1], err[1]
 end
 -- }}}
 
--- {{{ slimta.storage.redis:load_message_contents()
-function slimta.storage.redis:load_message_contents(id)
+-- {{{ slimta.storage.redis:get_message_contents()
+function slimta.storage.redis:get_message_contents(id)
     local reply, err = self.driver("HGET", "message_contents", id)
     return reply[1], err[1]
 end
@@ -133,6 +139,7 @@ end
 function slimta.storage.redis:remove_message(id)
     local lock_key = "message_lock."..id
     self.driver("MULTI")
+    self.driver("SREM", "message_ids", id)
     self.driver("HDEL", "message_meta", id)
     self.driver("HDEL", "message_contents", id)
     self.driver("ZREM", "retry_queue", id)
