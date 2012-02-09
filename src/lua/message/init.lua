@@ -56,7 +56,7 @@ function slimta.message.load(storage, id)
 
     local parser = slimta.xml.reader.new()
     local node = parser:parse_xml(meta)
-    return slimta.message.from_xml(node[1], {contents})
+    return slimta.message.from_xml(node[1], {contents}, id)
 end
 -- }}}
 
@@ -102,9 +102,9 @@ end
 -- }}}
 
 -- {{{ slimta.message.from_xml()
-function slimta.message.from_xml(tree_node, attachments)
+function slimta.message.from_xml(tree_node, attachments, force_id)
     local timestamp = tree_node.attrs.timestamp
-    local id = tree_node.attrs.id
+    local id = force_id or tree_node.attrs.id
 
     assert("message" == tree_node.name)
 

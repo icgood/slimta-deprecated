@@ -28,6 +28,27 @@ function slimta.queue.new(edge_bus, relay_bus, get_retry_timestamp, lock_duratio
 end
 -- }}}
 
+-- {{{ load_messages_from_ids()
+local function load_messages_from_ids(storage, ids)
+    local invalids = {}
+    local messages = {}
+    local n = ids.n or #ids
+    for i=1, n do
+        local id = ids[i]
+        if id then
+            local msg = slimta.message.load(storage, id)
+            if not msg then
+                table.insert(invalids, id)
+            else
+                table.insert(messages, msg)
+            end
+        end
+    end
+
+    return messages, invalids
+end
+-- }}}
+
 -- {{{ slimta.queue:get_retry_messages()
 function slimta.queue:get_retry_messages(storage, timestamp)
     local message_ids, err = storage:get_retry_queue(timestamp)
@@ -35,20 +56,23 @@ function slimta.queue:get_retry_messages(storage, timestamp)
         error(err)
     end
 
-    local messages = {}
-    for i=1, message_ids.n do
-        local id = message_id[i]
-        if id then
-            local msg = slimta.message.load(storage, id)
-            if not msg then
-                storage:remove_message(id)
-            else
-                table.insert(messages, msg)
-            end
-        end
+    local messages, invalids = load_messages_from_ids(storage, message_ids)
+    for i, id in ipairs(invalids) do
+        storage:remove_message(id)
     end
 
     return messages
+end
+-- }}}
+
+-- {{{ slimta.queue:get_all_queued_messages()
+function slimta.queue:get_all_queued_messages(storage)
+    local message_ids, err = storage:get_full_queue()
+    if err then
+        error(err)
+    end
+
+    return load_messages_from_ids(storage, message_ids)
 end
 -- }}}
 
