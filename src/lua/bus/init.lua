@@ -28,6 +28,7 @@ end
 
 -- {{{ slimta.bus.chain()
 function slimta.bus.chain(calls, from_bus)
+    local threads = {}
     local call_stacks = {}
     local call_from_bus, call_to_bus, prev_from_bus
 
@@ -43,11 +44,12 @@ function slimta.bus.chain(calls, from_bus)
 
     local final_to_bus
     for i, stack in ipairs(call_stacks) do
-        ratchet.thread.attach(table.unpack(stack))
+        local t = ratchet.thread.attach(table.unpack(stack))
+        table.insert(threads, t)
         final_to_bus = stack[3]
     end
 
-    return final_to_bus
+    return final_to_bus, threads
 end
 -- }}}
 
