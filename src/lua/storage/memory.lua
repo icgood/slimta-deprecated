@@ -40,9 +40,19 @@ function slimta.storage.memory:get_retry_queue(timestamp)
     timestamp = timestamp or os.time()
     local ret = {}
     for id, next_retry in pairs(self.retry_queue) do
-        if next_retry <= timestamp then
+        if timestamp == "all" or next_retry <= timestamp then
             table.insert(ret, id)
         end
+    end
+    return ret
+end
+-- }}}
+
+-- {{{ slimta.storage.memory:get_full_queue()
+function slimta.storage.memory:get_full_queue()
+    local ret = {}
+    for id, meta in pairs(self.meta_hash) do
+        table.insert(ret, id)
     end
     return ret
 end

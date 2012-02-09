@@ -58,6 +58,17 @@ function slimta.storage.redis:get_retry_queue(timestamp)
 end
 -- }}}
 
+-- {{{ slimta.storage.redis:get_full_queue()
+function slimta.storage.redis:get_full_queue()
+    local reply, err = self.driver("HKEYS", "message_meta")
+    if err[1] then
+        return nil, err[1]
+    end
+
+    return reply
+end
+-- }}}
+
 -- {{{ slimta.storage.redis:store_message_meta()
 function slimta.storage.redis:store_message_meta(meta)
     local uuid
