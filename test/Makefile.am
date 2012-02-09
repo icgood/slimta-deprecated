@@ -18,6 +18,8 @@ message_tests = test_message_to_xml.lua \
 edge_tests = test_edge_http_listener.lua \
 	     test_edge_smtp_listener.lua
 
+queue_tests = test_queue_store_only.lua
+
 relay_tests = test_relay_smtp_relayer.lua
 
 policy_tests = test_add_date_header.lua \
@@ -26,8 +28,8 @@ policy_tests = test_add_date_header.lua \
 coordination_tests = test_edge_to_relay.lua
 
 TESTS = $(bus_tests) $(xml_tests) $(message_tests) \
-	$(edge_tests) $(relay_tests) $(coordination_tests) \
-	$(policy_tests)
+	$(edge_tests) $(queue_tests) $(relay_tests) \
+	$(coordination_tests) $(policy_tests)
 
 XFAIL_TESTS = 
 EXTRA_DIST = $(TESTS)
