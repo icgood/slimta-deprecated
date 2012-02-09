@@ -6,6 +6,8 @@ require "slimta.edge.smtp"
 require "slimta.queue"
 require "slimta.bus"
 require "slimta.message"
+
+require "slimta.storage.memory"
 require "slimta.storage.redis"
 
 if not slimta.storage[arg[1]] then
