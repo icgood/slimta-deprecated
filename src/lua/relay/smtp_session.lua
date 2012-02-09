@@ -14,7 +14,7 @@ function smtp_session.new(host, port, family)
     self.host = host
     self.port = port or 25
     self.family = family
-    self.ehlo_as = os.getenv("HOSTNAME")
+    self.ehlo_as = "unknown"
     self.messages = {}
 
     return self
@@ -109,7 +109,8 @@ end
 
 -- {{{ ehlo()
 local function ehlo(self, client)
-    local ehlo_ret = client:ehlo(self.ehlo_as)
+    local ehlo_as_str, err = pcall(self.ehlo_as, self)
+    local ehlo_ret = client:ehlo(ehlo_as_str or self.ehlo_as)
     if ehlo_ret.code ~= "250" then error(ehlo_ret) end
 end
 -- }}}
