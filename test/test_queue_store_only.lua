@@ -30,7 +30,8 @@ function run_queue(bus_server, n)
     local store_threads = {}
     for i=1, n do
         local thread = queue:accept()
-        table.insert(store_threads, ratchet.thread.attach(thread, storage))
+        local r_thread = ratchet.thread.attach(thread.store, thread, storage)
+        table.insert(store_threads, r_thread)
     end
     ratchet.thread.wait_all(store_threads)
 
