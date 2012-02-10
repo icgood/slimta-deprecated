@@ -49,25 +49,25 @@ local function load_messages_from_ids(storage, ids)
 end
 -- }}}
 
--- {{{ slimta.queue:get_retry_messages()
-function slimta.queue:get_retry_messages(storage, timestamp)
-    local message_ids, err = storage:get_retry_queue(timestamp)
+-- {{{ slimta.queue:get_deferred_messages()
+function slimta.queue:get_deferred_messages(storage, timestamp)
+    local message_ids, err = storage:get_deferred_messages(timestamp)
     if err then
         error(err)
     end
 
     local messages, invalids = load_messages_from_ids(storage, message_ids)
     for i, id in ipairs(invalids) do
-        storage:remove_message(id)
+        storage:delete_message(id)
     end
 
     return messages
 end
 -- }}}
 
--- {{{ slimta.queue:get_all_queued_messages()
-function slimta.queue:get_all_queued_messages(storage)
-    local message_ids, err = storage:get_full_queue()
+-- {{{ slimta.queue:get_all_messages()
+function slimta.queue:get_all_messages(storage)
+    local message_ids, err = storage:get_all_messages()
     if err then
         error(err)
     end
@@ -129,7 +129,7 @@ function queue_thread_meta:relay(storage)
             local code_type = response and response.code:sub(1, 1)
 
             if code_type == '2' then
-                storage:remove_message(message.id)
+                storage:delete_message(message.id)
             else -- if code_type == '4' then
                 message.attempts = message.attempts + 1
                 local next_retry = self.queue.get_retry_timestamp(message)

@@ -34,7 +34,7 @@ function run_queue(bus_server, n)
     end
     ratchet.thread.wait_all(store_threads)
 
-    local messages = queue:get_all_queued_messages(storage)
+    local messages = queue:get_all_messages(storage)
 
     assert(#messages == n)
     for i=1, n do

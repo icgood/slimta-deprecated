@@ -41,12 +41,12 @@ function flush_queue(relay_bus)
     local storage = slimta.storage[arg[1]].new()
     storage:connect(table.unpack(arg, 2))
 
-    local messages = queue:get_all_queued_messages(storage)
+    local messages = queue:get_all_messages(storage)
     for i, message in ipairs(messages) do
         local response = queue:try_relay(message, storage)
         print(("%s: [%s] %s"):format(message.id, response.code, response.message))
         if tostring(response.code) == "250" then
-            storage:remove_message(message.id)
+            storage:delete_message(message.id)
         end
     end
 

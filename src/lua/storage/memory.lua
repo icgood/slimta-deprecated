@@ -14,7 +14,7 @@ function slimta.storage.memory.new()
     self.meta_hash = {}
     self.contents_hash = {}
     self.lock_hash = {}
-    self.retry_queue = {}
+    self.defer_queue = {}
 
     return self
 end
@@ -30,18 +30,21 @@ function slimta.storage.memory:close()
 end
 -- }}}
 
--- {{{ slimta.storage.memory:set_message_retry()
-function slimta.storage.memory:set_message_retry(id, timestamp)
-    self.retry_queue[id] = timestamp
+-- {{{ slimta.storage.memory:get_active_messages()
+function slimta.storage.memory:get_active_messages()
+    local ret = {}
+    for id, _ in pairs(self.lock_hash) do
+        table.insert(ret, id)
+    end
+    return ret
 end
 -- }}}
 
--- {{{ slimta.storage.memory:get_retry_queue()
-function slimta.storage.memory:get_retry_queue(timestamp)
-    timestamp = timestamp or os.time()
+-- {{{ slimta.storage.memory:get_deferred_messages()
+function slimta.storage.memory:get_deferred_messages(timestamp)
     local ret = {}
-    for id, next_retry in pairs(self.retry_queue) do
-        if timestamp == "all" or next_retry <= timestamp then
+    for id, next_retry in pairs(self.defer_queue) do
+        if not timestamp or next_retry <= timestamp then
             table.insert(ret, id)
         end
     end
@@ -49,10 +52,10 @@ function slimta.storage.memory:get_retry_queue(timestamp)
 end
 -- }}}
 
--- {{{ slimta.storage.memory:get_full_queue()
-function slimta.storage.memory:get_full_queue()
+-- {{{ slimta.storage.memory:get_all_messages()
+function slimta.storage.memory:get_all_messages()
     local ret = {}
-    for id, meta in pairs(self.meta_hash) do
+    for id, _ in pairs(self.id_hash) do
         table.insert(ret, id)
     end
     return ret
@@ -102,6 +105,12 @@ function slimta.storage.memory:get_message_contents(id)
 end
 -- }}}
 
+-- {{{ slimta.storage.memory:set_message_retry()
+function slimta.storage.memory:set_message_retry(id, timestamp)
+    self.defer_queue[id] = timestamp
+end
+-- }}}
+
 -- {{{ slimta.storage.memory:lock_message()
 function slimta.storage.memory:lock_message(id, length)
     local now = os.time()
@@ -120,13 +129,13 @@ function slimta.storage.memory:unlock_message(id)
 end
 -- }}}
 
--- {{{ slimta.storage.memory:remove_message()
-function slimta.storage.memory:remove_message(id)
+-- {{{ slimta.storage.memory:delete_message()
+function slimta.storage.memory:delete_message(id)
     self.id_hash[id] = nil
     self.meta_hash[id] = nil
     self.contents_hash[id] = nil
     self.lock_hash[id] = nil
-    self.retry_queue[id] = nil
+    self.defer_queue[id] = nil
 end
 -- }}}
 
