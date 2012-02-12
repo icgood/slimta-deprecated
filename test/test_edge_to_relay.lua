@@ -17,6 +17,7 @@ tracker = 0
 function run_edge(bus_client, host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:set_timeout(2.0)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)
     socket:listen()
@@ -35,6 +36,7 @@ end
 function send_http(host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:set_timeout(2.0)
     socket:connect(rec.addr)
 
     local client = ratchet.http.client.new(socket)
@@ -80,6 +82,7 @@ end
 function receive_smtp(bus_server, host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:set_timeout(2.0)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)
     socket:listen()
@@ -124,6 +127,7 @@ arbitrary test message data]]
     }
 
     local conn = socket:accept()
+    conn:set_timeout(2.0)
     local server = ratchet.smtp.server.new(conn, handlers)
     server:handle()
 end

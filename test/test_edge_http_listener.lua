@@ -53,6 +53,7 @@ end
 function run_edge(host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:set_timeout(2.0)
     socket.SO_REUSEADDR = true
     socket:bind(rec.addr)
     socket:listen()
@@ -77,6 +78,7 @@ end
 function send_http(host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:set_timeout(2.0)
     socket:connect(rec.addr)
 
     local client = ratchet.http.client.new(socket)

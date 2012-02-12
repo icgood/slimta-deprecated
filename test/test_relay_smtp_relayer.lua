@@ -52,6 +52,7 @@ end
 function receive_smtp(host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
+    socket:set_timeout(2.0)
     socket.SO_REUSEADDR = true
     assert(socket:bind(rec.addr))
     assert(socket:listen())
@@ -98,6 +99,7 @@ beep beep]]
     }
 
     local conn = socket:accept()
+    conn:set_timeout(2.0)
     local server = ratchet.smtp.server.new(conn, handlers)
     server:handle()
 end
