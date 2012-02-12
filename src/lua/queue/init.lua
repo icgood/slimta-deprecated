@@ -143,7 +143,9 @@ end
 
 -- {{{ queue_thread_meta:__call()
 function queue_thread_meta:__call(storage)
-    self:store(storage)
+    if not self.retry_attempt then
+        self:store(storage)
+    end
     if self.queue.relay_bus then
         self:relay(storage)
     end
@@ -159,6 +161,23 @@ function slimta.queue:accept()
     local queue_thread = {
         messages = messages,
         transaction = transaction,
+        queue = self,
+    }
+    setmetatable(queue_thread, queue_thread_meta)
+
+    return queue_thread
+end
+-- }}}
+
+-- {{{ slimta.queue:retry()
+function slimta.queue:retry(storage)
+    local now = os.time()
+    local message_ids = storage:get_deferred_messages(now)
+    local messages = load_messages_from_ids(storage, message_ids)
+
+    local queue_thread = {
+        messages = messages,
+        retry_attempt = true,
         queue = self,
     }
     setmetatable(queue_thread, queue_thread_meta)

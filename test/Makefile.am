@@ -20,7 +20,9 @@ edge_tests = test_edge_http_listener.lua \
 
 queue_tests = test_queue_store_only.lua \
 	      test_queue_store_relay.lua \
-	      test_queue_relay_defer.lua
+	      test_queue_relay_defer.lua \
+	      test_queue_defer_retry_now.lua \
+	      test_queue_defer_retry_later.lua
 
 relay_tests = test_relay_smtp_relayer.lua
 
