@@ -19,7 +19,8 @@ edge_tests = test_edge_http_listener.lua \
 	     test_edge_smtp_listener.lua
 
 queue_tests = test_queue_store_only.lua \
-	      test_queue_store_relay.lua
+	      test_queue_store_relay.lua \
+	      test_queue_relay_defer.lua
 
 relay_tests = test_relay_smtp_relayer.lua
 
