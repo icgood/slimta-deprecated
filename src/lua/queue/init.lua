@@ -173,6 +173,10 @@ end
 function slimta.queue:retry(storage)
     local now = os.time()
     local message_ids = storage:get_deferred_messages(now)
+    if not message_ids[1] then
+        return nil
+    end
+
     local messages = load_messages_from_ids(storage, message_ids)
 
     local queue_thread = {
