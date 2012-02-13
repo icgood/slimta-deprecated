@@ -83,9 +83,6 @@ function send_http(host, port)
 
     local client = ratchet.http.client.new(socket)
 
-    local headers = {
-    }
-
     local code, reason, headers, data = client:query(
         "POST",
         "/email",
