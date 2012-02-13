@@ -9,6 +9,7 @@ slimta.message.__index = slimta.message
 require "slimta.message.client"
 require "slimta.message.envelope"
 require "slimta.message.contents"
+require "slimta.message.bounce"
 require "slimta.message.response"
 
 -- {{{ slimta.message.copy()
@@ -29,7 +30,7 @@ end
 -- }}}
 
 -- {{{ slimta.message.new()
-function slimta.message.new(client, envelope, contents, timestamp, id)
+function slimta.message.new(client, envelope, contents, timestamp, id, attempts)
     local self = {}
     setmetatable(self, slimta.message)
 
@@ -39,8 +40,7 @@ function slimta.message.new(client, envelope, contents, timestamp, id)
     self.timestamp = timestamp
     self.id = id
 
-    self.attempts = 0
-    self.next_attempt = 0
+    self.attempts = attempts or 0
 
     return self
 end
@@ -60,15 +60,24 @@ function slimta.message.load(storage, id)
 end
 -- }}}
 
--- {{{ slimta.message:store()
-function slimta.message:store(storage)
+-- {{{ slimta.message:flush()
+function slimta.message:flush(storage)
+    assert(self.id, "Must msg:store() before msg:flush().")
     local writer = slimta.xml.writer.new()
     writer:add_item(self)
     local meta, attachments = writer:build() 
 
-    self.id = storage:claim_message_id()
     storage:set_message_meta(self.id, meta)
-    storage:set_message_contents(self.id, attachments[1])
+
+    return attachments[1]
+end
+-- }}}
+
+-- {{{ slimta.message:store()
+function slimta.message:store(storage)
+    self.id = storage:claim_message_id()
+    local contents = self:flush(storage)
+    storage:set_message_contents(self.id, contents)
 
     return self.id
 end
@@ -76,18 +85,27 @@ end
 
 ------------------------
 
+-- {{{ add_attr()
+local function add_attr(attrs, name, value)
+    table.insert(attrs, " ")
+    table.insert(attrs, name)
+    table.insert(attrs, "=\"")
+    table.insert(attrs, value)
+    table.insert(attrs, "\"")
+end
+-- }}}
+
 -- {{{ slimta.message.to_xml()
 function slimta.message.to_xml(msg, attachments)
     local attrs = {}
     if msg.id then
-        table.insert(attrs, " id=\"")
-        table.insert(attrs, msg.id)
-        table.insert(attrs, "\"")
+        add_attr(attrs, "id", msg.id)
     end
     if msg.timestamp then
-        table.insert(attrs, " timestamp=\"")
-        table.insert(attrs, msg.timestamp)
-        table.insert(attrs, "\"")
+        add_attr(attrs, "timestamp", msg.timestamp)
+    end
+    if msg.attempts > 0 then
+        add_attr(attrs, "attempts", msg.attempts)
     end
 
     local lines = {
@@ -106,6 +124,7 @@ end
 function slimta.message.from_xml(tree_node, attachments, force_id)
     local timestamp = tree_node.attrs.timestamp
     local id = force_id or tree_node.attrs.id
+    local attempts = tonumber(tree_node.attrs.attempts)
 
     assert("message" == tree_node.name)
 
@@ -120,7 +139,7 @@ function slimta.message.from_xml(tree_node, attachments, force_id)
         end
     end
 
-    return slimta.message.new(client, envelope, contents, timestamp, id)
+    return slimta.message.new(client, envelope, contents, timestamp, id, attempts)
 end
 -- }}}
 

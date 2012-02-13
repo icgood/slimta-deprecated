@@ -5,7 +5,7 @@ require "slimta.xml.writer"
 local client = slimta.message.client.new("SMTP", "testing", "1.2.3.4", "TLS", "myhost.tld")
 local envelope = slimta.message.envelope.new("sender@domain.com", {"recipient@domain.com"}, "SMTP", "4.3.2.1", "2500")
 local contents = slimta.message.contents.new("test contents 1")
-local msg1 = slimta.message.new(client, envelope, contents, 12345, "one")
+local msg1 = slimta.message.new(client, envelope, contents, 12345, "one", 5)
 
 local client = slimta.message.client.new("HTTP", "there", "5.6.7.8", "SSL", "otherhost.tld")
 local envelope = slimta.message.envelope.new("sender@domain.com", {"recipient@domain.com"})
@@ -25,7 +25,7 @@ assert("test contents 2" == attachments[2])
 local expected_xml = [[
 <edge>
  <messages>
-  <message id="one" timestamp="12345">
+  <message id="one" timestamp="12345" attempts="5">
    <client>
     <protocol>SMTP</protocol>
     <ehlo>testing</ehlo>
