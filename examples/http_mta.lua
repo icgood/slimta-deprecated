@@ -2,7 +2,7 @@
 
 require "ratchet"
 
-require "slimta.edge.smtp"
+require "slimta.edge.http"
 require "slimta.relay"
 require "slimta.relay.smtp"
 require "slimta.queue"
@@ -29,13 +29,13 @@ function run_edge(bus_client, host, port)
     socket:bind(rec.addr)
     socket:listen()
 
-    local smtp = slimta.edge.smtp.new(socket, bus_client)
+    local http = slimta.edge.http.new(socket, bus_client)
 
     while true do
-        local thread = smtp:accept()
+        local thread = http:accept()
         ratchet.thread.attach(thread)
     end
-    smtp:close()
+    http:close()
 end
 -- }}}
 
@@ -98,7 +98,7 @@ kernel = ratchet.new(function ()
     local queue_bus = slimta.bus.chain(policies, chain_bus)
     local relay_server, relay_client = slimta.bus.new_local()
 
-    ratchet.thread.attach(run_edge, edge_bus, "*", 2525)
+    ratchet.thread.attach(run_edge, edge_bus, "*", 8025)
     ratchet.thread.attach(run_queue, queue_bus, relay_client)
     ratchet.thread.attach(run_relay, relay_server)
 end)
