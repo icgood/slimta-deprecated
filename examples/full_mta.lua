@@ -41,7 +41,16 @@ end
 
 -- {{{ run_queue()
 function run_queue(bus_server, bus_client)
-    local queue = slimta.queue.new(bus_server, bus_client, function () return os.time() + 30 end)
+    local retry_backoff = function (message)
+        if message.attempts <= 2 then
+            return os.time() + 10
+        else
+            return nil
+        end
+    end
+
+    local bounce_builder = slimta.message.bounce.new("postmaster@"..ratchet.socket.gethostname())
+    local queue = slimta.queue.new(bus_server, bus_client, retry_backoff, bounce_builder)
 
     ratchet.thread.attach(function ()
         while true do
@@ -87,20 +96,23 @@ end
 -- }}}
 
 kernel = ratchet.new(function ()
-    local chain_bus, edge_bus = slimta.bus.new_local()
-
-    local policies = {
-        slimta.routing.mx.new(),
+    local pre_policies = {
         slimta.policies.add_date_header.new(),
         slimta.policies.add_received_header.new(),
     }
+    local post_policies = {
+        slimta.routing.mx.new(),
+    }
 
-    local queue_bus = slimta.bus.chain(policies, chain_bus)
-    local relay_server, relay_client = slimta.bus.new_local()
+    local pre_chain_bus, edge_bus = slimta.bus.new_local()
+    local post_chain_bus, queue_relay = slimta.bus.new_local()
+
+    local queue_edge = slimta.bus.chain(pre_policies, pre_chain_bus)
+    local relay_bus = slimta.bus.chain(post_policies, post_chain_bus)
 
     ratchet.thread.attach(run_edge, edge_bus, "*", 2525)
-    ratchet.thread.attach(run_queue, queue_bus, relay_client)
-    ratchet.thread.attach(run_relay, relay_server)
+    ratchet.thread.attach(run_queue, queue_edge, queue_relay)
+    ratchet.thread.attach(run_relay, relay_bus)
 end)
 kernel:loop()
 
