@@ -15,13 +15,14 @@ end
 -- }}}
 
 -- {{{ slimta.queue.new()
-function slimta.queue.new(edge_bus, relay_bus, get_retry_timestamp, lock_duration)
+function slimta.queue.new(edge_bus, relay_bus, get_retry_timestamp, bounce_builder, lock_duration)
     local self = {}
     setmetatable(self, slimta.queue)
 
     self.edge_bus = edge_bus
     self.relay_bus = relay_bus
     self.get_retry_timestamp = get_retry_timestamp or default_get_retry_timestamp
+    self.bounce_builder = bounce_builder or slimta.message.bounce.new()
     self.lock_duration = lock_duration or 120
 
     return self
@@ -117,7 +118,33 @@ function queue_thread_meta:store(storage)
         end
     end
 
-    self.transaction:send_response(responses)
+    if self.transaction then
+        self.transaction:send_response(responses)
+    end
+end
+-- }}}
+
+-- {{{ fail_message()
+local function fail_message(self, storage, message, response)
+    local bounce = self.queue.bounce_builder:build(message, response)
+    local id = bounce:store(storage)
+    storage:set_message_retry(id, os.time())
+    storage:delete_message(message.id)
+end
+-- }}}
+
+-- {{{ retry_message()
+local function retry_message(self, storage, message, response)
+    message.attempts = message.attempts + 1
+    local next_retry = self.queue.get_retry_timestamp(message)
+    if next_retry then
+        message:flush(storage)
+        storage:set_message_retry(message.id, next_retry)
+        storage:unlock_message(message.id)
+    else
+        response.message = response.message .. " (Too many retries)"
+        fail_message(self, storage, message, response) 
+    end
 end
 -- }}}
 
@@ -130,11 +157,10 @@ function queue_thread_meta:relay(storage)
 
             if code_type == '2' then
                 storage:delete_message(message.id)
-            else -- if code_type == '4' then
-                message.attempts = message.attempts + 1
-                local next_retry = self.queue.get_retry_timestamp(message)
-                storage:set_message_retry(message.id, next_retry)
-                storage:unlock_message(message.id)
+            elseif code_type == '4' then
+                retry_message(self, storage, message, response) 
+            else
+                fail_message(self, storage, message, response) 
             end
         end
     end
@@ -146,6 +172,7 @@ function queue_thread_meta:__call(storage)
     if not self.retry_attempt then
         self:store(storage)
     end
+
     if self.queue.relay_bus then
         self:relay(storage)
     end
