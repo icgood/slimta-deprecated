@@ -1,4 +1,5 @@
 
+require "ratchet"
 require "ratchet.smtp.client"
 
 require "slimta.message"
@@ -10,6 +11,8 @@ smtp_session.__index = smtp_session
 function smtp_session.new(host, port, family)
     local self = {}
     setmetatable(self, smtp_session)
+
+    assert(host, "No destination for SMTP delivery of message.")
 
     self.host = host
     self.port = port or 25
@@ -171,7 +174,9 @@ function smtp_session:relay_all()
         set_response_to_all_messages(self, err)
     end
 
-    self.client:quit()
+    if self.client then
+        self.client:quit()
+    end
 end
 -- }}}
 

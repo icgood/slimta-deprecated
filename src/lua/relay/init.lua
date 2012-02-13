@@ -34,23 +34,26 @@ local function get_relayer_for_message(self, message)
     local relayer
 
     if message.envelope.dest_relayer then
-        relayer = self.relayers[message.envelope.dest_relayer]
+        return self.relayers[message.envelope.dest_relayer]
     end
 
-    if not relayer then
-        -- Pick an arbitrary relayer.
-        for k, v in pairs(self.relayers) do
-            return v
-        end
-    else
-        return relayer
+    -- Pick an arbitrary relayer.
+    for k, v in pairs(self.relayers) do
+        return v
     end
 end
 -- }}}
 
 -- {{{ relayer_hash()
 local function relayer_hash(relayer, host, port)
-    return (relayer or 'default')..':['..host..']:'..(port or 'default')
+    local ret = {
+        relayer or "default",
+        ":[",
+        host or "default",
+        "]:",
+        port or "default",
+    }
+    return table.concat(ret)
 end
 -- }}}
 
