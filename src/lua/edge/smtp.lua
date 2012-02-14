@@ -21,6 +21,7 @@ function slimta.edge.smtp.new(socket, bus)
     self.settings = {
         banner_code = 220,
         banner_message = "ESMTP Welcome",
+        validators = {},
     }
 
     return self
@@ -43,6 +44,12 @@ end
 -- {{{ slimta.edge.smtp:enable_tls()
 function slimta.edge.smtp:enable_tls()
     self.settings.enable_tls = true
+end
+-- }}}
+
+-- {{{ slimta.edge.smtp:set_validator()
+function slimta.edge.smtp:set_validator(which, func)
+    self.settings.validators[which:upper()] = func
 end
 -- }}}
 
@@ -107,20 +114,36 @@ function command_handler:BANNER(reply)
     if self.smtp_edge.settings.banner_message then
         reply.message = self.smtp_edge.settings.banner_message
     end
+
+    local validator = self.smtp_edge.settings.validators.BANNER
+    if validator then
+        validator(self, reply)
+    end
 end
 -- }}}
 
 -- {{{ command_handler:STARTTLS()
 function command_handler:STARTTLS()
+    local validator = self.smtp_edge.settings.validators.STARTTLS
+    if validator then
+        validator(self, reply)
+    end
+
     self.security = "TLS"
 end
 -- }}}
 
 -- {{{ command_handler:EHLO()
 function command_handler:EHLO(reply, ehlo_as)
-    self.ehlo_as = ehlo_as
+    local validator = self.smtp_edge.settings.validators.EHLO
+    if validator then
+        validator(self, reply, ehlo_as)
+    end
 
-    self.message = nil
+    if reply.code == "250" then
+        self.ehlo_as = ehlo_as
+        self.message = nil
+    end
 end
 -- }}}
 
@@ -132,16 +155,39 @@ end
 
 -- {{{ command_handler:MAIL()
 function command_handler:MAIL(reply, address)
-    self.message = {
-        sender = address,
-        recipients = {},
-    }
+    local validator = self.smtp_edge.settings.validators.MAIL
+    if validator then
+        validator(self, reply, address)
+    end
+
+    if reply.code == "250" then
+        self.message = {
+            sender = address,
+            recipients = {},
+        }
+    end
 end
 -- }}}
 
 -- {{{ command_handler:RCPT()
 function command_handler:RCPT(reply, address)
-    table.insert(self.message.recipients, address)
+    local validator = self.smtp_edge.settings.validators.RCPT
+    if validator then
+        validator(self, reply, address)
+    end
+
+    if reply.code == "250" then
+        table.insert(self.message.recipients, address)
+    end
+end
+-- }}}
+
+-- {{{ command_handler:DATA()
+function command_handler:DATA(reply)
+    local validator = self.smtp_edge.settings.validators.DATA
+    if validator then
+        validator(self, reply)
+    end
 end
 -- }}}
 
