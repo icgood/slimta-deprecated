@@ -163,6 +163,12 @@ static int myxml_escape(lua_State *L)
 	lua_pushliteral (L, "&gt;");
 	lua_call (L, 3, 1);
 
+	lua_getfield (L, -1, "gsub");
+	lua_pushvalue (L, -2);
+	lua_pushliteral (L, "%&");
+	lua_pushliteral (L, "&amp;");
+	lua_call (L, 3, 1);
+
 	return 1;
 }
 /* }}} */
