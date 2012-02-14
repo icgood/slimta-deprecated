@@ -21,6 +21,44 @@ if not slimta.storage[arg[1]] then
     os.exit(1)
 end
 
+-- {{{ reception_logger()
+function reception_logger(from_bus, to_bus)
+    while true do
+        local from_transaction, messages = from_bus:recv_request()
+        for i, message in ipairs(messages) do
+            print(("R client=([%s]) sender=(%s) recipients=(%s)"):format(
+                message.client.ip,
+                message.envelope.sender,
+                table.concat(message.envelope.recipients, ",")
+            ))
+        end
+        local to_transaction = to_bus:send_request(messages)
+        local responses = to_transaction:recv_response()
+        from_transaction:send_response(responses)
+    end
+end
+-- }}}
+
+-- {{{ delivery_logger()
+function delivery_logger(from_bus, to_bus)
+    while true do
+        local from_transaction, messages = from_bus:recv_request()
+        for i, message in ipairs(messages) do
+            print(("D id=(%s) dest=([%s]:%s) sender=(%s) recipients=(%s)"):format(
+                message.id,
+                message.envelope.dest_host,
+                message.envelope.dest_port,
+                message.envelope.sender,
+                table.concat(message.envelope.recipients, ",")
+            ))
+        end
+        local to_transaction = to_bus:send_request(messages)
+        local responses = to_transaction:recv_response()
+        from_transaction:send_response(responses)
+    end
+end
+-- }}}
+
 -- {{{ run_edge()
 function run_edge(bus_client, host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
@@ -99,9 +137,11 @@ kernel = ratchet.new(function ()
     local pre_policies = {
         slimta.policies.add_date_header.new(),
         slimta.policies.add_received_header.new(),
+        reception_logger,
     }
     local post_policies = {
         slimta.routing.mx.new(),
+        delivery_logger,
     }
 
     local pre_chain_bus, edge_bus = slimta.bus.new_local()
