@@ -144,12 +144,18 @@ local function send_message(client, message, response)
     end
     local data_ret = client:data()
 
-    if mailfrom_ret.code ~= "250" then error(mailfrom_ret) end
-    if data_ret.code ~= "354" then error(data_ret) end
+    if mailfrom_ret.code ~= "250" then
+        response.code = mailfrom_ret.code
+        response.message = mailfrom_ret.message
+        return
+    end
+    if data_ret.code ~= "354" then
+        response.code = data_ret.code
+        response.message = data_ret.message
+        return
+    end
 
     local send_data_ret = client:send_data(tostring(message.contents))
-    if send_data_ret.code ~= "250" then error(send_data_ret) end
-
     response.code = send_data_ret.code
     response.message = send_data_ret.message
 end
