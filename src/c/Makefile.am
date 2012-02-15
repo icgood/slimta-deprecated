@@ -13,6 +13,7 @@ libslimta_la_SOURCES = slimta.c \
 		       rlimit.c \
 		       uuid.c \
 		       xml.c \
+		       signalfd.c \
 		       misc.c
 
 lualibdir = @LUA_CPATH@
