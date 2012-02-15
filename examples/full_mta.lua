@@ -77,6 +77,26 @@ function run_edge(bus_client, host, port)
 end
 -- }}}
 
+-- {{{ run_queue_retry()
+function run_queue_retry(queue)
+    local tfd = ratchet.timerfd.new()
+    tfd:settime(5.0, 5.0)
+
+    while true do
+        local storage = slimta.storage[arg[1]].new()
+        storage:connect(table.unpack(arg, 2))
+
+        local retry = queue:retry(storage)
+        if retry then
+            ratchet.thread.attach(retry, storage)
+        else
+            storage:close()
+        end
+        tfd:read()
+    end
+end
+-- }}}
+
 -- {{{ run_queue()
 function run_queue(bus_server, bus_client)
     local retry_backoff = function (message)
@@ -90,21 +110,7 @@ function run_queue(bus_server, bus_client)
     local bounce_builder = slimta.message.bounce.new("postmaster@"..ratchet.socket.gethostname())
     local queue = slimta.queue.new(bus_server, bus_client, retry_backoff, bounce_builder)
 
-    ratchet.thread.attach(function ()
-        while true do
-            local storage = slimta.storage[arg[1]].new()
-            storage:connect(table.unpack(arg, 2))
-
-            local retry = queue:retry(storage)
-            if retry then
-                ratchet.thread.attach(retry, storage)
-                ratchet.thread.timer(1.0)
-            else
-                ratchet.thread.timer(5.0)
-                storage:close()
-            end
-        end
-    end)
+    ratchet.thread.attach(run_queue_retry, queue)
 
     while true do
         local thread = queue:accept()
