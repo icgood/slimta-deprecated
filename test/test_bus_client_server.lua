@@ -44,6 +44,7 @@ local response_obj = {
 
 function server_bus(host, port)
     local bus = slimta.bus.new_server(host, port, request_obj)
+    bus:listen()
     ratchet.thread.attach(client_bus, host, port)
 
     local transaction, requests = bus:recv_request()

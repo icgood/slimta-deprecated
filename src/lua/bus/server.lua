@@ -51,8 +51,8 @@ function slimta.bus.server.new(host, port, request_type)
 end
 -- }}}
 
--- {{{ create_ratchet_bus()
-local function create_ratchet_bus(self)
+-- {{{ slimta.bus.server:listen()
+function slimta.bus.server:listen()
     local rec = ratchet.socket.prepare_tcp(self.host, self.port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket.SO_REUSEADDR = true
@@ -66,7 +66,7 @@ end
 -- {{{ slimta.bus.server:recv_request()
 function slimta.bus.server:recv_request()
     if not self.bus then
-        create_ratchet_bus(self)
+        self:listen()
     end
 
     return self.bus:recv_request()
