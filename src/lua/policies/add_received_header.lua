@@ -55,9 +55,14 @@ end
 -- }}}
 
 -- {{{ slimta.policies.add_received_header.new()
-function slimta.policies.add_received_header.new()
+function slimta.policies.add_received_header.new(date_format, use_utc)
     local self = {}
     setmetatable(self, slimta.policies.add_received_header)
+
+    self.date_format = date_format or "%a, %d %b %Y %T %z"
+    if use_utc then
+        self.date_format = "!" .. self.date_format
+    end
 
     return self
 end
@@ -73,7 +78,7 @@ function slimta.policies.add_received_header:add(message)
     build_id_section(message, parts)
     build_for_section(message, parts)
 
-    local date = os.date("%a, %d %b %Y %T %z (%Z)", message.timestamp)
+    local date = os.date(self.date_format, message.timestamp)
 
     local data = table.concat(parts, " ") .. "; " .. date
     message.contents:add_header("Received", data)
