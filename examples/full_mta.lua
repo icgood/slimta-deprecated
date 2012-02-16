@@ -43,17 +43,19 @@ end
 function delivery_logger(from_bus, to_bus)
     while true do
         local from_transaction, messages = from_bus:recv_request()
+        local to_transaction = to_bus:send_request(messages)
+        local responses = to_transaction:recv_response()
         for i, message in ipairs(messages) do
-            print(("D id=(%s) dest=([%s]:%s) sender=(%s) recipients=(%s)"):format(
+            print(("D id=(%s) dest=([%s]:%s) sender=(%s) recipients=(%s) code=(%s) message=(%s)"):format(
                 message.id,
                 message.envelope.dest_host,
                 message.envelope.dest_port,
                 message.envelope.sender,
-                table.concat(message.envelope.recipients, ",")
+                table.concat(message.envelope.recipients, ","),
+                responses[i] and responses[i].code,
+                responses[i] and responses[i].message
             ))
         end
-        local to_transaction = to_bus:send_request(messages)
-        local responses = to_transaction:recv_response()
         from_transaction:send_response(responses)
     end
 end
