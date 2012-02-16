@@ -99,7 +99,7 @@ end
 
 -- {{{ slimta.storage.redis:set_message_contents()
 function slimta.storage.redis:set_message_contents(id, contents)
-    local reply, err = self.driver("HSET", "message_contents", id, tostring(contents))
+    local reply, err = self.driver("HSET", "message_contents", id, contents)
     return reply[1], err[1]
 end
 -- }}}

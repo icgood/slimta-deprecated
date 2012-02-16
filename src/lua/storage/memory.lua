@@ -81,7 +81,7 @@ end
 
 -- {{{ slimta.storage.memory:set_message_contents()
 function slimta.storage.memory:set_message_contents(id, contents)
-    self.contents_hash[id] = tostring(contents)
+    self.contents_hash[id] = contents
 end
 -- }}}
 
