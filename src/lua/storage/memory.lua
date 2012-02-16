@@ -44,7 +44,7 @@ end
 function slimta.storage.memory:get_deferred_messages(timestamp)
     local ret = {}
     for id, next_retry in pairs(self.defer_queue) do
-        if not timestamp or next_retry <= timestamp then
+        if not timestamp or os.difftime(next_retry, timestamp) <= 0 then
             table.insert(ret, id)
         end
     end
