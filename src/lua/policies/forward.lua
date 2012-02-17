@@ -26,9 +26,12 @@ end
 function slimta.policies.forward:map(message)
     local n_rcpt = #message.envelope.recipients
     for i=1, n_rcpt do
-        for pattern, dest in pairs(self.mapping) do
-            if message.envelope.recipients[i]:match(pattern) then
-                message.envelope.recipients[i] = dest
+        local old_rcpt = message.envelope.recipients[i]
+        for j, mapping in ipairs(self.mapping) do
+            local new_rcpt, num = old_rcpt:gsub(mapping.pattern, mapping.repl, mapping.n)
+            if new_rcpt and num > 0 then
+                message.envelope.recipients[i] = new_rcpt
+                break
             end
         end
     end
