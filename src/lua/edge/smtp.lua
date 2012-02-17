@@ -53,6 +53,12 @@ function slimta.edge.smtp:set_validator(which, func)
 end
 -- }}}
 
+-- {{{ slimta.edge.smtp:set_timeout()
+function slimta.edge.smtp:set_timeout(timeout)
+    self.settings.timeout = timeout
+end
+-- }}}
+
 -- {{{ apply_extension_settings()
 local function apply_extension_settings(extensions, settings)
     if settings.enable_tls then
@@ -76,6 +82,9 @@ end
 -- {{{ slimta.edge.smtp:accept()
 function slimta.edge.smtp:accept()
     local client, from_ip = self.socket:accept()
+    if self.settings.timeout then
+        client:set_timeout(self.settings.timeout)
+    end
     
     local cmd_handler = command_handler.new(from_ip, self)
     local smtp_handler = ratchet.smtp.server.new(client, cmd_handler)
