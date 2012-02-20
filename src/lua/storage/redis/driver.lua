@@ -22,7 +22,7 @@ function driver:send_request(cmd, ...)
     local args = table.pack(...)
 
     table.insert(to_send, '*')
-    table.insert(to_send, tostring(#args+1))
+    table.insert(to_send, tostring(args.n+1))
     table.insert(to_send, '\r\n')
     table.insert(to_send, '$')
     table.insert(to_send, tostring(#cmd))
@@ -64,7 +64,7 @@ local function trim_error(err)
 end
 -- }}}
 
--- {{{ drive:recv_reply()
+-- {{{ driver:recv_reply()
 function driver:recv_reply(no_multi_bulk)
     local line = read_line(self)
     local first_byte = line:sub(1, 1)
