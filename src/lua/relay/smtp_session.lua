@@ -84,6 +84,7 @@ local function encrypt_session(self, socket)
 
     local got_cert, verified = enc:verify_certificate()
     if self.force_verify and (not got_cert or not verified) then
+        self.client:quit()
         error({"530", "5.7.0 Unable to verify certificates"})
     end
 end
@@ -98,6 +99,7 @@ end
 -- {{{ negotiate_starttls()
 local function negotiate_starttls(self, client)
     if self.force_verify and not client.extensions:has("STARTTLS") then
+        self.client:quit()
         error({"530", "5.7.0 Required STARTTLS not available."})
     end
 
@@ -105,6 +107,7 @@ local function negotiate_starttls(self, client)
     if starttls_ret.code == "220" then
         encrypt_session(self, client.io.socket)
     elseif self.force_verify then
+        self.client:quit()
         error(starttls_ret)
     end
 end
@@ -112,9 +115,17 @@ end
 
 -- {{{ ehlo()
 local function ehlo(self, client)
-    local ehlo_as_str, err = pcall(self.ehlo_as, self)
-    local ehlo_ret = client:ehlo(ehlo_as_str or self.ehlo_as)
-    if ehlo_ret.code ~= "250" then error(ehlo_ret) end
+    local ehlo_as_str = self.ehlo_as
+    local callable, ret = pcall(self.ehlo_as, self)
+    if callable then
+        ehlo_as_str = ret
+    end
+    local ehlo_ret = client:ehlo(ehlo_as_str)
+
+    if ehlo_ret.code ~= "250" then
+        self.client:quit()
+        error(ehlo_ret)
+    end
 end
 -- }}}
 
@@ -125,7 +136,10 @@ local function handshake(self, client)
     end
 
     local banner_ret = client:get_banner()
-    if banner_ret.code ~= "220" then error(banner_ret) end
+    if banner_ret.code ~= "220" then
+        self.client:quit()
+        error(banner_ret)
+    end
     ehlo(self, client)
 
     if self.security_mode == "starttls" then
@@ -181,7 +195,7 @@ function smtp_session:relay_all()
     end
 
     if self.client then
-        self.client:quit()
+        self.client:close()
     end
 end
 -- }}}

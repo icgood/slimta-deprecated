@@ -202,28 +202,38 @@ end
 
 -- {{{ command_handler:HAVE_DATA()
 function command_handler:HAVE_DATA(reply, data, err)
-    if not err then
-        -- Build a slimta.message object.
-        local hostname = os.getenv("HOSTNAME") or ratchet.socket.gethostname()
-        local client = slimta.message.client.new("SMTP", self.ehlo_as, self.from_ip, self.security, hostname)
-        local envelope = slimta.message.envelope.new(self.message.sender, self.message.recipients)
-        local contents = slimta.message.contents.new(data)
-        local timestamp = os.time()
-
-        -- Add necessary headers to message contents.
-        if not contents.headers["from"][1] then
-            contents:add_header("From", self.message.sender)
+    -- Check for handleable errors.
+    if not data then
+        if ratchet.error.is(err, "MSGTOOBIG") then
+            reply.code = "552"
+            reply.message = "Message exceeded size limit."
+            reply.enhanced_status_code = "5.3.4"
+            return
+        else
+            error(err)
         end
-
-        local message = slimta.message.new(client, envelope, contents, timestamp)
-
-        -- Send the message to the edge manager for processing.
-        local response = process_message(self.smtp_edge, message)
-        reply.code, reply.message = response:as_smtp()
-
-        -- Reset the session for more messages.
-        self.message = nil
     end
+
+    -- Build a slimta.message object.
+    local hostname = os.getenv("HOSTNAME") or ratchet.socket.gethostname()
+    local client = slimta.message.client.new("SMTP", self.ehlo_as, self.from_ip, self.security, hostname)
+    local envelope = slimta.message.envelope.new(self.message.sender, self.message.recipients)
+    local contents = slimta.message.contents.new(data)
+    local timestamp = os.time()
+
+    -- Add necessary headers to message contents.
+    if not contents.headers["from"][1] then
+        contents:add_header("From", self.message.sender)
+    end
+
+    local message = slimta.message.new(client, envelope, contents, timestamp)
+
+    -- Send the message to the edge manager for processing.
+    local response = process_message(self.smtp_edge, message)
+    reply.code, reply.message = response:as_smtp()
+
+    -- Reset the session for more messages.
+    self.message = nil
 end
 -- }}}
 
