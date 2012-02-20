@@ -51,7 +51,8 @@ local function set_routing_from_domain(self, message, domain)
     local dest
 
     if self.force_mx[domain] then
-        local i = self.pick_mx(message)
+        local max_i = #self.force_mx[domain]
+        local i = self.pick_mx(message) % max_i
         dest = self.force_mx[domain][i]
     else
         local i = self.pick_mx(message)
