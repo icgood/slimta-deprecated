@@ -159,9 +159,12 @@ function slimta.message.from_meta(meta, raw_contents, force_id)
     local client = slimta.message.client.from_meta(meta, raw_contents, force_id)
     local envelope = slimta.message.envelope.from_meta(meta, raw_contents, force_id)
     local contents = slimta.message.contents.from_meta(meta, raw_contents, force_id)
-    local id = force_id or meta.id
 
-    return slimta.message.new(client, envelope, contents, meta.timestamp, id, meta.attempts)
+    local timestamp = tonumber(meta.timestamp)
+    local id = force_id or meta.id
+    local attempts = tonumber(meta.attempts)
+
+    return slimta.message.new(client, envelope, contents, timestamp, id, attempts)
 end
 -- }}}
 
