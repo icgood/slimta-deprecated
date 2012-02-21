@@ -25,19 +25,20 @@ end
 
 -- {{{ run_queue()
 function run_queue(queue_bus, relay_bus, storage)
-    local queue = slimta.queue.new(queue_bus, relay_bus,
-        function () return 0 end)
+    local storage = slimta.storage.memory.new()
+    local queue = slimta.queue.new(queue_bus, relay_bus, storage)
+    queue:set_retry_algorithm(function () return 0 end)
 
     local edge_thread = queue:accept()
-    edge_thread(storage)
+    edge_thread()
 
-    local deferred = queue:get_deferred_messages(storage)
+    local deferred = queue:get_deferred_messages(storage:connect())
     assert(1 == #deferred)
 
-    local retry_thread = queue:retry(storage)
-    retry_thread(storage)
+    local retry_thread = queue:retry()
+    retry_thread()
 
-    local messages = queue:get_all_messages(storage)
+    local messages = queue:get_all_messages(storage:connect())
     assert(0 == #messages)
 end
 -- }}}
@@ -121,11 +122,8 @@ kernel = ratchet.new(function ()
     local queue_server, queue_client = slimta.bus.new_local()
     local relay_server, relay_client = slimta.bus.new_local()
 
-    local storage = slimta.storage.memory.new()
-    storage:connect()
-
     local request_t = ratchet.thread.attach(request, queue_client, "localhost", 2525)
-    local queue_t = ratchet.thread.attach(run_queue, queue_server, relay_client, storage)
+    local queue_t = ratchet.thread.attach(run_queue, queue_server, relay_client)
     ratchet.thread.attach(receive_smtp, relay_server, "localhost", 2525)
 end)
 kernel:loop()

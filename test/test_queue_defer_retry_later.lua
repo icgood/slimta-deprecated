@@ -24,9 +24,10 @@ end
 -- }}}
 
 -- {{{ run_queue()
-function run_queue(queue_bus, relay_bus, storage)
-    local queue = slimta.queue.new(queue_bus, relay_bus,
-        function () return os.time()+100 end)
+function run_queue(queue_bus, relay_bus)
+    local storage = slimta.storage.memory.new()
+    local queue = slimta.queue.new(queue_bus, relay_bus, storage)
+    queue:set_retry_algorithm(function () return os.time()+100 end)
 
     local edge_thread = queue:accept()
     edge_thread(storage)
@@ -112,11 +113,8 @@ kernel = ratchet.new(function ()
     local queue_server, queue_client = slimta.bus.new_local()
     local relay_server, relay_client = slimta.bus.new_local()
 
-    local storage = slimta.storage.memory.new()
-    storage:connect()
-
     local request_t = ratchet.thread.attach(request, queue_client, "localhost", 2525)
-    local queue_t = ratchet.thread.attach(run_queue, queue_server, relay_client, storage)
+    local queue_t = ratchet.thread.attach(run_queue, queue_server, relay_client)
     ratchet.thread.attach(receive_smtp, relay_server, "localhost", 2525)
 end)
 kernel:loop()

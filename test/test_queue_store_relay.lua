@@ -25,10 +25,10 @@ end
 
 -- {{{ run_queue()
 function run_queue(queue_bus, relay_bus, storage)
-    local queue = slimta.queue.new(queue_bus, relay_bus)
+    local queue = slimta.queue.new(queue_bus, relay_bus, storage)
 
     local thread = queue:accept()
-    thread(storage)
+    thread()
 end
 -- }}}
 
@@ -100,14 +100,14 @@ kernel = ratchet.new(function ()
     local relay_server, relay_client = slimta.bus.new_local()
 
     local storage = slimta.storage.memory.new()
-    storage:connect()
+    local storage_session = storage:connect()
 
     local request_t = ratchet.thread.attach(request, queue_client, "localhost", 2525)
     local queue_t = ratchet.thread.attach(run_queue, queue_server, relay_client, storage)
     ratchet.thread.attach(receive_smtp, relay_server, "localhost", 2525)
     ratchet.thread.wait_all({request_t, queue_t})
 
-    local messages = storage:get_all_messages()
+    local messages = storage_session:get_all_messages()
     assert(#messages == 0)
 end)
 kernel:loop()

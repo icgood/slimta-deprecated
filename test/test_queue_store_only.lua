@@ -23,19 +23,18 @@ end
 
 -- {{{ run_queue()
 function run_queue(bus_server, n)
-    local queue = slimta.queue.new(bus_server)
     local storage = slimta.storage.memory.new()
-    storage:connect()
+    local queue = slimta.queue.new(bus_server, nil, storage)
 
     local store_threads = {}
     for i=1, n do
         local thread = queue:accept()
-        local r_thread = ratchet.thread.attach(thread.store, thread, storage)
+        local r_thread = ratchet.thread.attach(thread.store, thread)
         table.insert(store_threads, r_thread)
     end
     ratchet.thread.wait_all(store_threads)
 
-    local messages = queue:get_all_messages(storage)
+    local messages = queue:get_all_messages(storage:connect())
 
     assert(#messages == n)
     for i=1, n do
