@@ -19,9 +19,7 @@ end
 
 -- {{{ slimta.storage.redis:connect()
 function slimta.storage.redis:connect(host, port)
-    self.host = host
-    self.port = port or 6379
-    local rec = ratchet.socket.prepare_tcp(self.host, self.port)
+    local rec = ratchet.socket.prepare_tcp(host, port or 6379)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
     socket:connect(rec.addr)
 
