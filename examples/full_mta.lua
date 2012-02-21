@@ -26,7 +26,8 @@ function reception_logger(from_bus, to_bus)
     while true do
         local from_transaction, messages = from_bus:recv_request()
         for i, message in ipairs(messages) do
-            print(("R client=([%s]) sender=(%s) recipients=(%s)"):format(
+            print(("R timestamp=(%s) client=([%s]) sender=(%s) recipients=(%s)"):format(
+                os.date("%F %T", tonumber(message.timestamp)),
                 message.client.ip,
                 message.envelope.sender,
                 table.concat(message.envelope.recipients, ",")
@@ -70,6 +71,7 @@ function run_edge(bus_client, host, port)
     socket:listen()
 
     local smtp = slimta.edge.smtp.new(socket, bus_client)
+    smtp:set_timeout(10.0)
 
     while true do
         local thread = smtp:accept()
@@ -85,14 +87,9 @@ function run_queue_retry(queue)
     tfd:settime(5.0, 5.0)
 
     while true do
-        local storage = slimta.storage[arg[1]].new()
-        storage:connect(table.unpack(arg, 2))
-
-        local retry = queue:retry(storage)
+        local retry = queue:retry()
         if retry then
-            ratchet.thread.attach(retry, storage)
-        else
-            storage:close()
+            ratchet.thread.attach(retry)
         end
         tfd:read()
     end
@@ -102,25 +99,24 @@ end
 -- {{{ run_queue()
 function run_queue(bus_server, bus_client)
     local retry_backoff = function (message)
-        if message.attempts <= 2 then
-            return os.time() + 10
+        if message.attempts <= 5 then
+            return os.time() + 600
         else
             return nil
         end
     end
 
+    local storage = slimta.storage[arg[1]].new(table.unpack(arg, 2))
+    local queue = slimta.queue.new(bus_server, bus_client, storage)
+    queue:set_retry_algorithm(retry_backoff)
     local bounce_builder = slimta.message.bounce.new("postmaster@"..ratchet.socket.gethostname())
-    local queue = slimta.queue.new(bus_server, bus_client, retry_backoff, bounce_builder)
+    queue:set_bounce_builder(bounce_builder)
 
     ratchet.thread.attach(run_queue_retry, queue)
 
     while true do
         local thread = queue:accept()
-
-        local storage = slimta.storage[arg[1]].new()
-        storage:connect(table.unpack(arg, 2))
-
-        ratchet.thread.attach(thread, storage)
+        ratchet.thread.attach(thread)
     end
 end
 -- }}}
@@ -141,26 +137,32 @@ function run_relay(bus_server)
 end
 -- }}}
 
-kernel = ratchet.new(function ()
-    local pre_policies = {
+-- {{{ main()
+function main()
+    local prequeue_policies = {
         slimta.policies.add_date_header.new(),
         slimta.policies.add_received_header.new(),
         reception_logger,
     }
-    local post_policies = {
+    local postqueue_policies = {
         slimta.routing.mx.new(),
         delivery_logger,
     }
 
-    local pre_chain_bus, edge_bus = slimta.bus.new_local()
-    local post_chain_bus, queue_relay = slimta.bus.new_local()
+    local prequeue_chain_bus, edge_bus = slimta.bus.new_local()
+    local postqueue_chain_bus, queue_relay = slimta.bus.new_local()
 
-    local queue_edge = slimta.bus.chain(pre_policies, pre_chain_bus)
-    local relay_bus = slimta.bus.chain(post_policies, post_chain_bus)
+    local queue_edge = slimta.bus.chain(prequeue_policies, prequeue_chain_bus)
+    local relay_bus = slimta.bus.chain(postqueue_policies, postqueue_chain_bus)
 
     ratchet.thread.attach(run_edge, edge_bus, "*", 2525)
     ratchet.thread.attach(run_queue, queue_edge, queue_relay)
     ratchet.thread.attach(run_relay, relay_bus)
+end
+-- }}}
+
+kernel = ratchet.new(main, function (err)
+    print(("E error=(\"%s\")"):format(tostring(err)))
 end)
 kernel:loop()
 

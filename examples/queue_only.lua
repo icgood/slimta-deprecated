@@ -38,14 +38,11 @@ end
 
 -- {{{ run_queue()
 function run_queue(bus_server)
-    local queue = slimta.queue.new(bus_server)
+    local storage = slimta.storage[arg[1]].new(table.unpack(arg, 2))
+    local queue = slimta.queue.new(bus_server, nil, storage)
 
     while true do
         local thread = queue:accept()
-
-        local storage = slimta.storage[arg[1]].new()
-        storage:connect(table.unpack(arg, 2))
-
         ratchet.thread.attach(thread, storage)
     end
 end

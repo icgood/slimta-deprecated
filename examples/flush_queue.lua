@@ -36,21 +36,25 @@ end
 
 -- {{{ flush_queue()
 function flush_queue(relay_bus)
-    local queue = slimta.queue.new(nil, relay_bus)
+    local storage = slimta.storage[arg[1]].new(table.unpack(arg, 2))
+    local queue = slimta.queue.new(nil, relay_bus, storage)
 
-    local storage = slimta.storage[arg[1]].new()
-    storage:connect(table.unpack(arg, 2))
+    local storage_session = storage:connect()
 
-    local messages = queue:get_all_messages(storage)
+    local messages = queue:get_all_messages(storage_session)
     for i, message in ipairs(messages) do
-        local response = queue:try_relay(message, storage)
-        print(("%s: [%s] %s"):format(message.id, response.code, response.message))
-        if tostring(response.code) == "250" then
-            storage:delete_message(message.id)
+        local response, err = queue:try_relay(message, storage_session)
+        if response then
+            print(("%s: [%s] %s"):format(message.id, response.code, response.message))
+            if tostring(response.code) == "250" then
+                storage_session:delete_message(message.id)
+            end
+        else
+            print(("%s: %s"):format(message.id, err))
         end
     end
 
-    storage:close()
+    storage_session:close()
 end
 -- }}}
 
