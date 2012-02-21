@@ -157,10 +157,9 @@ end
 
 -- {{{ retry_message()
 local function retry_message(self, storage_session, message, response)
-    message.attempts = message.attempts + 1
     local next_retry = self.queue.retry_algorithm(message)
     if next_retry then
-        message:flush(storage_session)
+        message:increment_attempts(storage_session)
         storage_session:set_message_retry(message.id, next_retry)
         storage_session:unlock_message(message.id)
     else

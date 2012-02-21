@@ -30,12 +30,6 @@ function slimta.message.client.new(protocol, ehlo, ip, security, receiver)
 end
 -- }}}
 
--- {{{ slimta.message.client.new_from()
-function slimta.message.client.new_from(tbl)
-    setmetatable(tbl, slimta.message.client)
-end
--- }}}
-
 ------------------------
 
 -- {{{ slimta.message.client.to_xml()
@@ -73,6 +67,32 @@ function slimta.message.client.from_xml(tree_node)
     end
 
     return slimta.message.client.new(protocol, ehlo, ip, security, receiver)
+end
+-- }}}
+
+-- {{{ slimta.message.client.to_meta()
+function slimta.message.client.to_meta(msg, meta)
+    meta = meta or {}
+
+    meta.protocol = msg.protocol
+    meta.ehlo = msg.ehlo
+    meta.ip = msg.ip
+    meta.security = msg.security
+    meta.receiver = msg.receiver
+
+    return meta
+end
+-- }}}
+
+-- {{{ slimta.message.client.from_meta()
+function slimta.message.client.from_meta(meta)
+    return slimta.message.client.new(
+        meta.protocol,
+        meta.ehlo,
+        meta.ip,
+        meta.security,
+        meta.receiver
+    )
 end
 -- }}}
 

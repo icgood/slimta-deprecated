@@ -47,39 +47,35 @@ end
 -- }}}
 
 -- {{{ slimta.message.load()
-function slimta.message.load(storage, id)
-    local meta = storage:get_message_meta(id)
-    local contents = storage:get_message_contents(id)
+function slimta.message.load(storage_session, id)
+    local meta = storage_session:get_message_meta(id)
+    local contents = storage_session:get_message_contents(id)
     if not meta or not contents then
         return nil, "invalid"
     end
 
-    local parser = slimta.xml.reader.new()
-    local node = parser:parse_xml(meta)
-    return slimta.message.from_xml(node[1], {contents}, id)
-end
--- }}}
-
--- {{{ slimta.message:flush()
-function slimta.message:flush(storage)
-    assert(self.id, "Must msg:store() before msg:flush().")
-    local writer = slimta.xml.writer.new()
-    writer:add_item(self)
-    local meta, attachments = writer:build() 
-
-    storage:set_message_meta(self.id, meta)
-
-    return attachments[1]
+    return slimta.message.from_meta(meta, contents, id)
 end
 -- }}}
 
 -- {{{ slimta.message:store()
-function slimta.message:store(storage)
-    self.id = storage:claim_message_id()
-    local contents = self:flush(storage)
-    storage:set_message_contents(self.id, contents)
+function slimta.message:store(storage_session)
+    self.id = storage_session:claim_message_id()
+
+    local meta = self:to_meta()
+    local contents = tostring(self.contents)
+
+    storage_session:set_message_meta(self.id, meta)
+    storage_session:set_message_contents(self.id, contents)
 
     return self.id
+end
+-- }}}
+
+-- {{{ slimta.message:increment_attempts()
+function slimta.message:increment_attempts(storage_session)
+    self.attempts = self.attempts + 1
+    storage_session:set_message_meta_key(self.id, "attempts", self.attempts)
 end
 -- }}}
 
@@ -140,6 +136,32 @@ function slimta.message.from_xml(tree_node, attachments, force_id)
     end
 
     return slimta.message.new(client, envelope, contents, timestamp, id, attempts)
+end
+-- }}}
+
+-- {{{ slimta.message.to_meta()
+function slimta.message.to_meta(msg, meta)
+    meta = meta or {}
+
+    meta.timestamp = msg.timestamp
+    meta.attempts = msg.attempts
+
+    msg.client:to_meta(meta)
+    msg.envelope:to_meta(meta)
+    msg.contents:to_meta(meta)
+
+    return meta
+end
+-- }}}
+
+-- {{{ slimta.message.from_meta()
+function slimta.message.from_meta(meta, raw_contents, force_id)
+    local client = slimta.message.client.from_meta(meta, raw_contents, force_id)
+    local envelope = slimta.message.envelope.from_meta(meta, raw_contents, force_id)
+    local contents = slimta.message.contents.from_meta(meta, raw_contents, force_id)
+    local id = force_id or meta.id
+
+    return slimta.message.new(client, envelope, contents, meta.timestamp, id, meta.attempts)
 end
 -- }}}
 

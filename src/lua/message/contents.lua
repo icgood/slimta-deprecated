@@ -208,6 +208,19 @@ function slimta.message.contents.from_xml(tree_node, attachments)
 end
 -- }}}
 
+-- {{{ slimta.message.contents.to_meta()
+function slimta.message.contents.to_meta(msg, meta)
+    meta = meta or {}
+    return meta
+end
+-- }}}
+
+-- {{{ slimta.message.contents.from_meta()
+function slimta.message.contents.from_meta(meta, raw_contents)
+    return slimta.message.contents.new(raw_contents)
+end
+-- }}}
+
 return slimta.message.contents
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

@@ -35,12 +35,6 @@ function slimta.message.envelope.new(sender, recipients, dest_relayer, dest_host
 end
 -- }}}
 
--- {{{ slimta.message.envelope.new_from()
-function slimta.message.envelope.new_from(tbl)
-    setmetatable(tbl, class)
-end
--- }}}
-
 ------------------------
 
 -- {{{ slimta.message.envelope.to_xml()
@@ -91,6 +85,37 @@ function slimta.message.envelope.from_xml(tree_node)
     end
 
     return slimta.message.envelope.new(sender, recipients, dest_relayer, dest_host, dest_port)
+end
+-- }}}
+
+-- {{{ slimta.message.envelope.to_meta()
+function slimta.message.envelope.to_meta(msg, meta)
+    meta = meta or {}
+
+    meta.sender = msg.sender
+    meta.recipients = table.concat(msg.recipients, "\0").."\0"
+    meta.dest_relayer = msg.dest_relayer
+    meta.dest_host = msg.dest_host
+    meta.dest_port = msg.dest_port
+
+    return meta
+end
+-- }}}
+
+-- {{{ slimta.message.envelope.from_meta()
+function slimta.message.envelope.from_meta(meta)
+    local recipients = {}
+    for rcpt in meta.recipients:gmatch("([^%\0]*)%\0") do
+        table.insert(recipients, rcpt)
+    end
+
+    return slimta.message.envelope.new(
+        meta.sender,
+        recipients,
+        meta.dest_relayer,
+        meta.dest_host,
+        meta.dest_port
+    )
 end
 -- }}}
 

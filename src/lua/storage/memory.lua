@@ -76,7 +76,13 @@ end
 
 -- {{{ slimta.storage.memory:set_message_meta()
 function slimta.storage.memory:set_message_meta(id, meta)
-    self.meta_hash[id] = tostring(meta)
+    self.meta_hash[id] = meta
+end
+-- }}}
+
+-- {{{ slimta.storage.memory:set_message_meta_key()
+function slimta.storage.memory:set_message_meta_key(id, key, value)
+    self.meta_hash[id][key] = value
 end
 -- }}}
 
@@ -90,6 +96,16 @@ end
 function slimta.storage.memory:get_message_meta(id)
     if self.meta_hash[id] then
         return self.meta_hash[id]
+    else
+        return nil, "Message ID not found."
+    end
+end
+-- }}}
+
+-- {{{ slimta.storage.memory:get_message_meta_key()
+function slimta.storage.memory:get_message_meta_key(id, key)
+    if self.meta_hash[id] then
+        return self.meta_hash[id][key]
     else
         return nil, "Message ID not found."
     end

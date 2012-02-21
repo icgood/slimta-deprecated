@@ -24,7 +24,7 @@ end
 
 -- {{{ redis_session:get_active_messages()
 function redis_session:get_active_messages()
-    self.driver("SELECT", 1)
+    self.driver("SELECT", 3)
     local reply, err = self.driver("KEYS", "*")
     self.driver("SELECT", 0)
     if err[1] then
@@ -49,7 +49,7 @@ end
 
 -- {{{ redis_session:get_all_messages()
 function redis_session:get_all_messages()
-    local reply, err = self.driver("HKEYS", "message_meta")
+    local reply, err = self.driver("SMEMBERS", "message_ids")
     if err[1] then
         return nil, err[1]
     end
@@ -74,28 +74,63 @@ end
 
 -- {{{ redis_session:set_message_meta()
 function redis_session:set_message_meta(id, meta)
-    local reply, err = self.driver("HSET", "message_meta", id, tostring(meta))
-    return reply[1], err[1]
+    self.driver("SELECT", 1)
+    for k, v in pairs(meta) do
+        self.driver("HSET", id, k, v)
+    end
+    self.driver("SELECT", 0)
+end
+-- }}}
+
+-- {{{ redis_session:set_message_meta_key()
+function redis_session:set_message_meta_key(id, key, value)
+    self.driver("SELECT", 1)
+    if value then
+        self.driver("HSET", id, key, value)
+    else
+        self.driver("HDEL", id, key)
+    end
+    self.driver("SELECT", 0)
 end
 -- }}}
 
 -- {{{ redis_session:set_message_contents()
 function redis_session:set_message_contents(id, contents)
-    local reply, err = self.driver("HSET", "message_contents", id, contents)
-    return reply[1], err[1]
+    self.driver("SELECT", 2)
+    self.driver("SET", id, contents)
+    self.driver("SELECT", 0)
 end
 -- }}}
 
 -- {{{ redis_session:get_message_meta()
 function redis_session:get_message_meta(id)
-    local reply, err = self.driver("HGET", "message_meta", id)
+    self.driver("SELECT", 1)
+    local reply, err = self.driver("HGETALL", id)
+    local meta = {}
+    for i=1, reply.n, 2 do
+        if reply[i] then
+            meta[reply[i]] = reply[i+1]
+        end
+    end
+    self.driver("SELECT", 0)
+    return meta, err[1]
+end
+-- }}}
+
+-- {{{ redis_session:get_message_meta_key()
+function redis_session:get_message_meta_key(id, key)
+    self.driver("SELECT", 1)
+    local reply, err = self.driver("HGET", id, key)
+    self.driver("SELECT", 0)
     return reply[1], err[1]
 end
 -- }}}
 
 -- {{{ redis_session:get_message_contents()
 function redis_session:get_message_contents(id)
-    local reply, err = self.driver("HGET", "message_contents", id)
+    self.driver("SELECT", 2)
+    local reply, err = self.driver("GET", id)
+    self.driver("SELECT", 0)
     return reply[1], err[1]
 end
 -- }}}
@@ -137,14 +172,16 @@ end
 function redis_session:delete_message(id)
     self.driver("MULTI")
     self.driver("SREM", "message_ids", id)
-    self.driver("HDEL", "message_meta", id)
-    self.driver("HDEL", "message_contents", id)
     self.driver("ZREM", "retry_queue", id)
     self.driver("SELECT", 1)
     self.driver("DEL", id)
+    self.driver("SELECT", 2)
+    self.driver("DEL", id)
+    self.driver("SELECT", 3)
+    self.driver("DEL", id)
     self.driver("SELECT", 0)
     local reply, err = self.driver("EXEC")
-    return reply[1]
+    return reply[1], err[1]
 end
 -- }}}
 
