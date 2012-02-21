@@ -41,7 +41,8 @@ function flush_queue(relay_bus)
 
     local storage_session = storage:connect()
 
-    local messages = queue:get_all_messages(storage_session)
+    local messages, invalids = queue:get_all_messages(storage_session)
+
     for i, message in ipairs(messages) do
         local response, err = queue:try_relay(message, storage_session)
         if response then
@@ -52,6 +53,10 @@ function flush_queue(relay_bus)
         else
             print(("%s: %s"):format(message.id, err))
         end
+    end
+
+    for i, id in ipairs(invalids) do
+        print(("%s: ERROR: Could not load message ID from storage."):format(id))
     end
 
     storage_session:close()
