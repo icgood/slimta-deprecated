@@ -22,6 +22,7 @@ end
 
 -- {{{ slimta.storage.memory:connect()
 function slimta.storage.memory:connect()
+    return self
 end
 -- }}}
 

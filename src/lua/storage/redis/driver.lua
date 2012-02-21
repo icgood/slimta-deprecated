@@ -16,6 +16,12 @@ function driver.new(socket)
 end
 -- }}}
 
+-- {{{ driver:close()
+function driver:close()
+    self.pad:close()
+end
+-- }}}
+
 -- {{{ driver:send_request()
 function driver:send_request(cmd, ...)
     local to_send = {}
