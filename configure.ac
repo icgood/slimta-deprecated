@@ -100,7 +100,7 @@ fi
 
 #####################
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h sys/ioctl.h sys/socket.h sys/time.h signal.h sys/signalfd.h])
+AC_CHECK_HEADERS([fcntl.h sys/ioctl.h sys/socket.h sys/time.h signal.h sys/signalfd.h pwd.h grp.h])
 AX_LUA_HEADERS
 if test "x${ac_cv_header_lua_h}" != "xyes"; then
 	AC_MSG_ERROR([Lua headers are required for building.])
@@ -113,7 +113,7 @@ AC_TYPE_SSIZE_T
 
 #####################
 # Checks for library functions.
-AC_CHECK_FUNCS([memset modf strchr strdup strerror uname sigaction on_exit signalfd])
+AC_CHECK_FUNCS([memset modf strchr strdup strerror uname sigaction on_exit signalfd getpwnam getgrnam])
 AC_FUNC_STRERROR_R
 
 AC_CONFIG_FILES([Makefile
