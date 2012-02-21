@@ -93,7 +93,7 @@ function slimta.message.envelope.to_meta(msg, meta)
     meta = meta or {}
 
     meta.sender = msg.sender
-    meta.recipients = table.concat(msg.recipients, "\0").."\0"
+    meta.recipients = "\0"..table.concat(msg.recipients, "\0")
     meta.dest_relayer = msg.dest_relayer
     meta.dest_host = msg.dest_host
     meta.dest_port = msg.dest_port
@@ -105,7 +105,7 @@ end
 -- {{{ slimta.message.envelope.from_meta()
 function slimta.message.envelope.from_meta(meta)
     local recipients = {}
-    for rcpt in meta.recipients:gmatch("([^%\0]*)%\0") do
+    for rcpt in meta.recipients:gmatch("%\0([^%\0]*)") do
         table.insert(recipients, rcpt)
     end
 
