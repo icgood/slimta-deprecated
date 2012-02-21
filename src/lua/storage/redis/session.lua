@@ -106,6 +106,10 @@ end
 function redis_session:get_message_meta(id)
     self.driver("SELECT", 1)
     local reply, err = self.driver("HGETALL", id)
+    if not reply[1] then
+        return nil, err[1]
+    end
+
     local meta = {}
     for i=1, reply.n, 2 do
         if reply[i] then
@@ -143,7 +147,7 @@ end
 
 -- {{{ redis_session:lock_message()
 function redis_session:lock_message(id, length)
-    self.driver("SELECT", 1)
+    self.driver("SELECT", 3)
     self.driver("WATCH", id)
     local reply, err = self.driver("TTL", id)
     if reply[1] and reply[1] >= 0 then
@@ -162,7 +166,7 @@ end
 
 -- {{{ redis_session:unlock_message()
 function redis_session:unlock_message(id)
-    self.driver("SELECT", 1)
+    self.driver("SELECT", 3)
     self.driver("DEL", id)
     self.driver("SELECT", 0)
 end
