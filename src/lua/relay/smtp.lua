@@ -18,12 +18,6 @@ function slimta.relay.smtp.new(ehlo_as, family)
 end
 -- }}}
 
--- {{{ slimta.relay.smtp:set_manager()
-function slimta.relay.smtp:set_manager()
-    -- This function is currently a no-op.
-end
--- }}}
-
 -- {{{ slimta.relay.smtp:set_ehlo_as()
 function slimta.relay.smtp:set_ehlo_as(ehlo_as)
     self.ehlo_as = ehlo_as

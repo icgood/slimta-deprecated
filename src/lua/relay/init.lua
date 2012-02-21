@@ -24,7 +24,6 @@ end
 
 -- {{{ slimta.relay:add_relayer()
 function slimta.relay:add_relayer(name, relayer)
-    relayer:set_manager(self)
     self.relayers[name] = relayer
 end
 -- }}}
