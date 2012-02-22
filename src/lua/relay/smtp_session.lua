@@ -81,7 +81,8 @@ local function encrypt_session(self, socket)
     local enc = socket:encrypt(self.security_method)
     enc:client_handshake()
 
-    local got_cert, verified, host_matched = enc:verify_certificate(self.host)
+    local host_no_dot = self.host:gsub("%.$", "")
+    local got_cert, verified, host_matched = enc:verify_certificate(host_no_dot)
     if self.force_verify and (not got_cert or not verified or not host_matched) then
         self.client:quit()
         error({"530", "5.7.0 Unable to verify certificates"})
