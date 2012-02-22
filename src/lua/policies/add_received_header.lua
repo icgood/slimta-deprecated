@@ -38,10 +38,9 @@ end
 
 -- {{{ build_id_section()
 local function build_id_section(message, parts)
-    if message.storage then
+    if message.id then
         local template = "id %s"
-        local id = message.storage.data
-        table.insert(parts, template:format(id))
+        table.insert(parts, template:format(message.id))
     end
 end
 -- }}}
