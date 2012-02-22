@@ -53,7 +53,6 @@ local function set_response_to_all_messages(self, info)
             response.message = info[2] or info.message
         end
     else
-        print(info)
         for msg, response in pairs(self.messages) do
             response.code = "451"
             response.message = "Unhandled error in processing."
@@ -82,8 +81,8 @@ local function encrypt_session(self, socket)
     local enc = socket:encrypt(self.security_method)
     enc:client_handshake()
 
-    local got_cert, verified = enc:verify_certificate()
-    if self.force_verify and (not got_cert or not verified) then
+    local got_cert, verified, host_matched = enc:verify_certificate(self.host)
+    if self.force_verify and (not got_cert or not verified or not host_matched) then
         self.client:quit()
         error({"530", "5.7.0 Unable to verify certificates"})
     end
