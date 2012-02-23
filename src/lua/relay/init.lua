@@ -11,12 +11,13 @@ local relay_session_meta = {}
 require "slimta.relay.smtp"
 
 -- {{{ slimta.relay.new()
-function slimta.relay.new(bus)
+function slimta.relay.new(bus, default)
     local self = {}
     setmetatable(self, slimta.relay)
 
     self.relayers = {}
     self.bus = bus
+    self.default = default
 
     return self
 end
@@ -34,6 +35,11 @@ local function get_relayer_for_message(self, message)
 
     if message.envelope.dest_relayer then
         return self.relayers[message.envelope.dest_relayer]
+    end
+
+    -- Use the default, if set.
+    if self.default then
+        return self.relayers[self.default]
     end
 
     -- Pick an arbitrary relayer.
