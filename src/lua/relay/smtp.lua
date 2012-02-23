@@ -18,6 +18,24 @@ function slimta.relay.smtp.new(ehlo_as, family)
 end
 -- }}}
 
+-- {{{ slimta.relay.smtp:build_session_info()
+function slimta.relay.smtp:build_session_info(message)
+    local hash_parts = {
+        message.envelope.dest_relayer or "default",
+        ":[",
+        message.envelope.dest_host or "default",
+        "]:",
+        message.envelope.dest_port or "default",
+    }
+    local info = {
+        host = message.envelope.dest_host,
+        port = message.envelope.dest_port,
+    }
+
+    return table.concat(hash_parts), info
+end
+-- }}}
+
 -- {{{ slimta.relay.smtp:set_ehlo_as()
 function slimta.relay.smtp:set_ehlo_as(ehlo_as)
     self.ehlo_as = ehlo_as
@@ -33,9 +51,9 @@ end
 -- }}}
 
 -- {{{ slimta.relay.smtp:new_session()
-function slimta.relay.smtp:new_session(host, port)
+function slimta.relay.smtp:new_session(info)
     local session = smtp_session.new(
-        host, port,
+        info.host, info.port,
         self.family
     )
     session:set_ehlo_as(self.ehlo_as)

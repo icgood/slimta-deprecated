@@ -63,9 +63,9 @@ local function build_sessions(self, messages, responses)
 
     for i, msg in ipairs(messages) do
         local which = get_relayer_for_message(self, msg)
-        local hash = relayer_hash(msg.envelope.dest_relayer, msg.envelope.dest_host, msg.envelope.dest_port)
+        local hash, info = which:build_session_info(msg)
         if not sessions[hash] then
-            sessions[hash] = which:new_session(msg.envelope.dest_host, msg.envelope.dest_port)
+            sessions[hash] = which:new_session(info)
             n = n + 1
         end
         sessions[hash]:add_message(msg, responses, i)

@@ -1,8 +1,10 @@
 
 luasrcdir = @LUA_LPATH@/slimta/
-nobase_dist_luasrc_DATA = relay/smtp_session.lua \
-			  relay/init.lua \
+nobase_dist_luasrc_DATA = relay/init.lua \
 			  relay/smtp.lua \
+			  relay/smtp_session.lua \
+			  relay/maildrop.lua \
+			  relay/maildrop_session.lua \
 			  message/response.lua \
 			  message/header_folding.lua \
 			  message/init.lua \
