@@ -10,12 +10,13 @@ local driver = require "slimta.storage.redis.driver"
 local session = require "slimta.storage.redis.session"
 
 -- {{{ slimta.storage.redis.new()
-function slimta.storage.redis.new(host, port)
+function slimta.storage.redis.new(host, port, offset)
     local self = {}
     setmetatable(self, slimta.storage.redis)
 
     self.host = host
     self.port = port or 6379
+    self.offset = offset
 
     return self
 end
@@ -28,7 +29,7 @@ function slimta.storage.redis:connect()
     socket:connect(rec.addr)
 
     local driver = driver.new(socket)
-    return session.new(driver)
+    return session.new(driver, self.offset)
 end
 -- }}}
 
