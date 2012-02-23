@@ -81,7 +81,7 @@ $LUA -lcjson -e '' >> config.log 2>&1
 if test $? -eq 0; then
 	AC_MSG_RESULT([yes])
 else
-	AC_MSG_ERROR([Lua CJSON library is required.])
+	AC_MSG_RESULT([no])
 fi
 
 # Expat
