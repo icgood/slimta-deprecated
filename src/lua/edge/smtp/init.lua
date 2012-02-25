@@ -59,6 +59,12 @@ function slimta.edge.smtp:set_timeout(timeout)
 end
 -- }}}
 
+-- {{{ slimta.edge.smtp:enable_authentication()
+function slimta.edge.smtp:enable_authentication(auth)
+    self.settings.enable_auth = auth
+end
+-- }}}
+
 -- {{{ apply_extension_settings()
 local function apply_extension_settings(extensions, settings)
     if settings.enable_tls then
@@ -67,6 +73,10 @@ local function apply_extension_settings(extensions, settings)
 
     if settings.max_message_size then
         extensions:add("SIZE", tostring(settings.max_message_size))
+    end
+
+    if settings.enable_auth then
+        extensions:add("AUTH", settings.enable_auth)
     end
 end
 -- }}}

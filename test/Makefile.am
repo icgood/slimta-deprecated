@@ -2,6 +2,8 @@ if HAVE_LUA_INTERPRETER
 
 TESTS_ENVIRONMENT = LUA_CPATH="../src/c/.libs/?.so;@LUA_CPATH@/?.so;;" LUA_PATH="./?.lua;./?/init.lua;@LUA_LPATH@/?.lua;@LUA_LPATH@/?/init.lua;;" @LUA@
 
+misc_tests = test_base64.lua
+
 bus_tests = test_bus_client_server.lua \
 	    test_bus_local.lua
 
@@ -34,7 +36,8 @@ coordination_tests = test_edge_to_relay.lua
 
 TESTS = $(bus_tests) $(xml_tests) $(message_tests) \
 	$(edge_tests) $(queue_tests) $(relay_tests) \
-	$(coordination_tests) $(policy_tests)
+	$(coordination_tests) $(policy_tests) \
+	$(misc_tests)
 
 XFAIL_TESTS = 
 EXTRA_DIST = $(TESTS)

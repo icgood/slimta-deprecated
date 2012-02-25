@@ -38,6 +38,12 @@ fi
 AC_SUBST([LUA_LPATH], ["$with_lua_lpath"])
 
 #####################
+# Configure options: --disable-openssl[=no]
+AC_ARG_ENABLE([openssl], [AS_HELP_STRING([--disable-openssl],
+	                                 [disable usage of openssl libraries (default no)])],
+	      [use_openssl="$enableval"], [use_openssl=yes])
+
+#####################
 # Configure options: --enable-devel
 AC_ARG_ENABLE([devel], [AS_HELP_STRING([--disable-devel],
 	                               [do not install development headers and libraries.])],
@@ -72,6 +78,20 @@ if test "x${have_ratchet}" != "xyes"; then
 	AC_MSG_ERROR([Lua Ratchet library is required for building.])
 fi
 AC_SUBST([RATCHET_LIB], [-lratchet])
+
+# OpenSSL
+AC_DEFINE([HAVE_OPENSSL], [0], [Define to 1 if you have the openssl library.])
+if test "x${use_openssl}" != "xno"; then
+	AX_CHECK_OPENSSL([have_openssl=yes], [have_openssl=no])
+	if test "x${have_openssl}" != "xyes"; then
+		AC_MSG_ERROR([OpenSSL libraries required for building (or --disable-openssl).])
+	else
+		AC_DEFINE([HAVE_OPENSSL], [1])
+	fi
+else
+	AC_MSG_NOTICE([OpenSSL will not be included in the slimta library.])
+fi
+AM_CONDITIONAL([HAVE_OPENSSL], [test "x${have_openssl}" = "xyes"])
 
 # Lua CJSON
 # http://www.kyne.com.au/~mark/software/lua-cjson.php

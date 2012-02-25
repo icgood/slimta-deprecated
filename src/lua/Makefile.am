@@ -17,7 +17,8 @@ nobase_dist_luasrc_DATA = relay/init.lua \
 			  storage/redis/session.lua \
 			  storage/redis/driver.lua \
 			  edge/http.lua \
-			  edge/smtp.lua \
+			  edge/smtp/init.lua \
+			  edge/smtp/auth.lua \
 			  policies/add_date_header.lua \
 			  policies/add_received_header.lua \
 			  policies/forward.lua \

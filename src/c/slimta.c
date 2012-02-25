@@ -192,6 +192,9 @@ int luaopen_slimta (lua_State *L)
 	lua_setfield (L, -2, "signalfd");
 #endif
 
+	luaL_requiref (L, "slimta.base64", luaopen_slimta_base64, 0);
+	lua_setfield (L, -2, "base64");
+
 	return 1;
 }
 /* }}} */

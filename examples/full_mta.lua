@@ -1,8 +1,10 @@
 #!/usr/bin/lua
 
 require "ratchet"
+require "ratchet.smtp.smtp_auth"
 
 require "slimta.edge.smtp"
+require "slimta.edge.smtp.auth"
 require "slimta.relay"
 require "slimta.relay.smtp"
 require "slimta.queue"
@@ -66,11 +68,16 @@ end
 function run_edge(bus_client, host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket.SO_REUSEADDR = true
+    socket:setsockopt("SO_REUSEADDR", true)
     socket:bind(rec.addr)
     socket:listen()
 
+    local plain = slimta.edge.smtp.auth.PLAIN.new(function (zid, cid, pass) return cid == "test" and pass == "pass" end)
+    local auth = slimta.edge.smtp.auth.new()
+    auth:add_mechanism("PLAIN", plain)
+
     local smtp = slimta.edge.smtp.new(socket, bus_client)
+    smtp:enable_authentication(auth)
     smtp:set_timeout(10.0)
 
     while true do
