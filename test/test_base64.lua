@@ -1,8 +1,8 @@
 
-require "ratchet"
+require "slimta"
 
-local encode = ratchet.base64.encode
-local decode = ratchet.base64.decode
+local encode = slimta.base64.encode
+local decode = slimta.base64.decode
 
 local all_256 = {}
 for i=0, 255 do
