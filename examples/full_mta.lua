@@ -4,7 +4,6 @@ require "ratchet"
 require "ratchet.smtp.smtp_auth"
 
 require "slimta.edge.smtp"
-require "slimta.edge.smtp.auth"
 require "slimta.relay"
 require "slimta.relay.smtp"
 require "slimta.queue"
@@ -64,6 +63,19 @@ function delivery_logger(from_bus, to_bus)
 end
 -- }}}
 
+-- {{{ error_logger()
+function error_logger(err, thread)
+    local time = os.date("%F %T")
+    local traceback = debug.traceback(thread, tostring(err)):gsub("(%\r?%\n)", "%1 ")
+    if err.type == "ratchet_error" then
+        io.stderr:write(("E time=(%s) code=(%s) traceback=(\"%s\")\n"):format(time, err.code, traceback))
+    else
+        io.stderr:write(("E time=(%s) traceback=(\"%s\")\n"):format(time, traceback))
+    end
+    io.stderr:flush()
+end
+-- }}}
+
 -- {{{ run_edge()
 function run_edge(bus_client, host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
@@ -72,12 +84,7 @@ function run_edge(bus_client, host, port)
     socket:bind(rec.addr)
     socket:listen()
 
-    local plain = slimta.edge.smtp.auth.PLAIN.new(function (zid, cid, pass) return cid == "test" and pass == "pass" end)
-    local auth = slimta.edge.smtp.auth.new()
-    auth:add_mechanism("PLAIN", plain)
-
     local smtp = slimta.edge.smtp.new(socket, bus_client)
-    smtp:enable_authentication(auth)
     smtp:set_timeout(10.0)
 
     while true do
@@ -168,9 +175,7 @@ function main()
 end
 -- }}}
 
-kernel = ratchet.new(main, function (err)
-    print(("E error=(\"%s\")"):format(tostring(err)))
-end)
+kernel = ratchet.new(main, error_logger)
 kernel:loop()
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:

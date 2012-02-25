@@ -1,6 +1,7 @@
 #!/usr/bin/lua
 
 require "ratchet"
+require "ratchet.smtp.smtp_auth"
 
 require "slimta.edge.http"
 require "slimta.relay"
@@ -62,11 +63,24 @@ function delivery_logger(from_bus, to_bus)
 end
 -- }}}
 
+-- {{{ error_logger()
+function error_logger(err, thread)
+    local time = os.date("%F %T")
+    local traceback = debug.traceback(thread, tostring(err)):gsub("(%\r?%\n)", "%1 ")
+    if err.type == "ratchet_error" then
+        io.stderr:write(("E time=(%s) code=(%s) traceback=(\"%s\")\n"):format(time, err.code, traceback))
+    else
+        io.stderr:write(("E time=(%s) traceback=(\"%s\")\n"):format(time, traceback))
+    end
+    io.stderr:flush()
+end
+-- }}}
+
 -- {{{ run_edge()
 function run_edge(bus_client, host, port)
     local rec = ratchet.socket.prepare_tcp(host, port)
     local socket = ratchet.socket.new(rec.family, rec.socktype, rec.protocol)
-    socket.SO_REUSEADDR = true
+    socket:setsockopt("SO_REUSEADDR", true)
     socket:bind(rec.addr)
     socket:listen()
 
@@ -154,15 +168,13 @@ function main()
     local queue_edge = slimta.bus.chain(prequeue_policies, prequeue_chain_bus)
     local relay_bus = slimta.bus.chain(postqueue_policies, postqueue_chain_bus)
 
-    ratchet.thread.attach(run_edge, edge_bus, "*", 8025)
+    ratchet.thread.attach(run_edge, edge_bus, "*", 2525)
     ratchet.thread.attach(run_queue, queue_edge, queue_relay)
     ratchet.thread.attach(run_relay, relay_bus)
 end
 -- }}}
 
-kernel = ratchet.new(main, function (err)
-    print(("E error=(\"%s\")"):format(tostring(err)))
-end)
+kernel = ratchet.new(main, error_logger)
 kernel:loop()
 
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
