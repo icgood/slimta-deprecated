@@ -42,8 +42,8 @@ end
 -- }}}
 
 -- {{{ slimta.edge.smtp:enable_tls()
-function slimta.edge.smtp:enable_tls()
-    self.settings.enable_tls = true
+function slimta.edge.smtp:enable_tls(tls_context)
+    self.settings.tls_context = tls_context
 end
 -- }}}
 
@@ -67,16 +67,15 @@ end
 
 -- {{{ apply_extension_settings()
 local function apply_extension_settings(extensions, settings)
-    if settings.enable_tls then
-        extensions:add("STARTTLS")
-    end
-
     if settings.max_message_size then
         extensions:add("SIZE", tostring(settings.max_message_size))
     end
 
     if settings.enable_auth then
-        extensions:add("AUTH", settings.enable_auth)
+        local session = settings.enable_auth:get_session()
+        if session then
+            extensions:add("AUTH", session)
+        end
     end
 end
 -- }}}
@@ -97,7 +96,7 @@ function slimta.edge.smtp:accept()
     end
     
     local cmd_handler = command_handler.new(from_ip, self)
-    local smtp_handler = ratchet.smtp.server.new(client, cmd_handler)
+    local smtp_handler = ratchet.smtp.server.new(client, cmd_handler, self.settings.tls_context)
 
     apply_extension_settings(smtp_handler.extensions, self.settings)
 
@@ -142,10 +141,18 @@ end
 -- }}}
 
 -- {{{ command_handler:STARTTLS()
-function command_handler:STARTTLS()
+function command_handler:STARTTLS(reply, extensions)
     local validator = self.smtp_edge.settings.validators.STARTTLS
     if validator then
         validator(self, reply)
+    end
+
+    local auth = self.smtp_edge.settings.enable_auth
+    if auth then
+        local session = auth:get_session(true)
+        if session then
+            extensions:add("AUTH", session)
+        end
     end
 
     self.security = "TLS"
@@ -163,6 +170,44 @@ function command_handler:EHLO(reply, ehlo_as)
         self.ehlo_as = ehlo_as
         self.message = nil
     end
+end
+-- }}}
+
+-- {{{ command_handler:AUTH()
+function command_handler:AUTH(arg, server)
+    local ext = server.extensions:has("AUTH")
+    if not ext then
+        return server:unknown_command("AUTH", arg)
+    end
+
+    if not self.ehlo_as or self.authed or self.have_mailfrom then
+        return server:bad_sequence("AUTH", arg)        
+    end
+
+    local reply = {
+        code = "235",
+        message = "Authentication successful",
+        enhanced_status_code = "2.7.0",
+    }
+
+    local result, challenge, challenge_response
+    local data = {}
+    while true do
+        result, challenge = ext:challenge(arg, reply, data, challenge_response)
+        if not challenge then
+            break
+        end
+
+        server.io:send_reply("334", challenge)
+        server.io:flush_send()
+        challenge_response = server.io:recv_line()
+    end
+
+    if reply.code == "235" then
+        self.authed = result
+    end
+
+    return reply
 end
 -- }}}
 
@@ -226,7 +271,7 @@ function command_handler:HAVE_DATA(reply, data, err)
 
     -- Build a slimta.message object.
     local hostname = os.getenv("HOSTNAME") or ratchet.socket.gethostname()
-    local client = slimta.message.client.new("SMTP", self.ehlo_as, self.from_ip, self.security, hostname)
+    local client = slimta.message.client.new("SMTP", self.ehlo_as, self.from_ip, self.security, hostname, self.authed)
     local envelope = slimta.message.envelope.new(self.message.sender, self.message.recipients)
     local contents = slimta.message.contents.new(data)
     local timestamp = os.time()
