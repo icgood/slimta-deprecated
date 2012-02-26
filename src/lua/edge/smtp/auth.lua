@@ -1,6 +1,8 @@
 
 require "slimta"
 
+local auth_mechanisms = require "slimta.edge.smtp.auth_mechanisms"
+
 slimta.edge.smtp.auth = {}
 slimta.edge.smtp.auth.__index = slimta.edge.smtp.auth
 
@@ -14,17 +16,29 @@ function slimta.edge.smtp.auth.new()
 
     self.secure_mechanisms = {}
     self.all_mechanisms = {}
+    self.known_mechanisms = auth_mechanisms
 
     return self
 end
 -- }}}
 
 -- {{{ slimta.edge.smtp.auth:add_mechanism()
-function slimta.edge.smtp.auth:add_mechanism(name, handler)
-    if handler.secure then
-        self.secure_mechanisms[name:upper()] = handler
+function slimta.edge.smtp.auth:add_mechanism(name, arg, ...)
+    name = name:upper()
+
+    local handler
+    local mechanism = self.known_mechanisms[name]
+    if not mechanism then
+        handler = arg
+        assert(handler.challenge, "Second argument is not an AUTH mechanism.")
+    else
+        handler = mechanism.new(arg, ...)
     end
-    self.all_mechanisms[name:upper()] = handler
+
+    if handler.secure then
+        self.secure_mechanisms[name] = handler
+    end
+    self.all_mechanisms[name] = handler
 end
 -- }}}
 
@@ -90,89 +104,6 @@ function auth_session:__tostring()
         table.insert(mechanisms, k)
     end
     return table.concat(mechanisms, " ")
-end
--- }}}
-
-slimta.edge.smtp.auth.PLAIN = {}
-slimta.edge.smtp.auth.PLAIN.__index = slimta.edge.smtp.auth.PLAIN
-
--- {{{ slimta.edge.smtp.auth.PLAIN.new()
-function slimta.edge.smtp.auth.PLAIN.new(verify_func)
-    local self = {}
-    setmetatable(self, slimta.edge.smtp.auth.PLAIN)
-
-    self.verify_func = verify_func or error("Verification function required.")
-
-    return self
-end
--- }}}
-
--- {{{ slimta.edge.smtp.auth.PLAIN:challenge()
-function slimta.edge.smtp.auth.PLAIN:challenge(data, last_response, final_reply)
-    if not last_response then
-        return nil, ""
-    end
-
-    local decoded = slimta.base64.decode(last_response)
-    local zid, cid, password = decoded:match("^([^%\0]*)%\0([^%\0]+)%\0([^%\0]+)$")
-    if not zid then
-        final_reply.code = "501"
-        final_reply.message = "Invalid PLAIN authentication string"
-        final_reply.enhanced_status_code = "5.5.2"
-        return
-    end
-
-    local result, message = self.verify_func(cid, password, zid)
-    if not result then
-        final_reply.code = "535"
-        final_reply.message = "Authentication credentials invalid"
-        final_reply.enhanced_status_code = "5.7.8"
-    end
-    if message then
-        final_reply.message = message
-    end
-    
-    return result
-end
--- }}}
-
-slimta.edge.smtp.auth.LOGIN = {}
-slimta.edge.smtp.auth.LOGIN.__index = slimta.edge.smtp.auth.LOGIN
-
--- {{{ slimta.edge.smtp.auth.LOGIN.new()
-function slimta.edge.smtp.auth.LOGIN.new(verify_func)
-    local self = {}
-    setmetatable(self, slimta.edge.smtp.auth.LOGIN)
-
-    self.verify_func = verify_func or error("Verification function required.")
-
-    return self
-end
--- }}}
-
--- {{{ slimta.edge.smtp.auth.LOGIN:challenge()
-function slimta.edge.smtp.auth.LOGIN:challenge(data, last_response, final_reply)
-    if not data.requested_anything then
-        data.requested_anything = true
-        return nil, "VXNlcm5hbWU6"
-    elseif not data.username then
-        data.username = slimta.base64.decode(last_response)
-        return nil, "UGFzc3dvcmQ6"
-    elseif not data.password then
-        data.password = slimta.base64.decode(last_response)
-    end
-
-    local result, message = self.verify_func(data.username, data.password)
-    if not result then
-        final_reply.code = "535"
-        final_reply.message = "Authentication credentials invalid"
-        final_reply.enhanced_status_code = "5.7.8"
-    end
-    if message then
-        final_reply.message = message
-    end
-    
-    return result
 end
 -- }}}
 
