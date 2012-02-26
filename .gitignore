@@ -23,3 +23,4 @@ Makefile
 *.lo
 *.o
 test/slimta
+examples/cert.pem
