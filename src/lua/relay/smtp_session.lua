@@ -193,10 +193,7 @@ function smtp_session:relay_all()
     if not success then
         set_response_to_all_messages(self, err)
     end
-
-    if self.client then
-        self.client:close()
-    end
+    pcall(self.client.quit, self.client)
 end
 -- }}}
 
