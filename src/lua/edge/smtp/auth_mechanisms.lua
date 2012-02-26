@@ -162,8 +162,8 @@ end
 -- }}}
 
 return {
-    ["plain"] = plain,
-    ["login"] = login,
+    ["PLAIN"] = plain,
+    ["LOGIN"] = login,
     ["CRAM-MD5"] = crammd5,
 }
 
