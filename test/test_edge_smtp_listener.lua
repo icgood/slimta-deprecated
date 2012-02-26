@@ -11,7 +11,7 @@ local function check_messages(messages)
     assert(1 == #messages)
     local message = messages[1]
 
-    assert("SMTP" == message.client.protocol)
+    assert("ESMTP" == message.client.protocol)
     assert("test" == message.client.ehlo)
     assert("127.0.0.1" == message.client.ip)
     assert("none" == message.client.security)
