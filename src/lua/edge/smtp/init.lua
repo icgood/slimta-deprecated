@@ -42,8 +42,9 @@ end
 -- }}}
 
 -- {{{ slimta.edge.smtp:enable_tls()
-function slimta.edge.smtp:enable_tls(tls_context)
-    self.settings.tls_context = tls_context
+function slimta.edge.smtp:enable_tls(context, immediately)
+    self.settings.tls_context = context
+    self.settings.tls_immediately = immediately
 end
 -- }}}
 
@@ -96,7 +97,12 @@ function slimta.edge.smtp:accept()
     end
     
     local cmd_handler = command_handler.new(from_ip, self)
-    local smtp_handler = ratchet.smtp.server.new(client, cmd_handler, self.settings.tls_context)
+    local smtp_handler = ratchet.smtp.server.new(
+        client,
+        cmd_handler,
+        self.settings.tls_context,
+        self.settings.tls_immediately
+    )
 
     apply_extension_settings(smtp_handler.extensions, self.settings)
 
