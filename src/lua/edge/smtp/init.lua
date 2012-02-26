@@ -120,6 +120,10 @@ end
 local function generate_protocol_string(old, change)
     if old == "SMTP" and change == "EHLO" then
         return "ESMTP"
+    elseif old == "SMTP" and change == "STARTTLS" then
+        return "SMTPS"
+    elseif old == "SMTPS" and change == "EHLO" then
+        return "ESMTPS"
     elseif old == "ESMTP" and change == "STARTTLS" then
         return "ESMTPS"
     elseif old == "ESMTPA" and change == "STARTTLS" then
