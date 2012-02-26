@@ -22,6 +22,7 @@ nobase_dist_luasrc_DATA = relay/init.lua \
 			  edge/smtp/auth_mechanisms.lua \
 			  policies/add_date_header.lua \
 			  policies/add_received_header.lua \
+			  policies/add_message_id_header.lua \
 			  policies/forward.lua \
 			  routing/mx.lua \
 			  routing/static.lua \

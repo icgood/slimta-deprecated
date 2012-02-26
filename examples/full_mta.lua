@@ -16,6 +16,7 @@ require "slimta.storage.memory"
 require "slimta.routing.mx"
 require "slimta.policies.add_date_header"
 require "slimta.policies.add_received_header"
+require "slimta.policies.add_message_id_header"
 
 if not slimta.storage[arg[1]] then
     print("usage: "..arg[0].." <memory|redis> [redis host] [redis port]")
@@ -156,6 +157,7 @@ function main()
     local prequeue_policies = {
         slimta.policies.add_date_header.new(),
         slimta.policies.add_received_header.new(),
+        slimta.policies.add_message_id_header.new(),
         reception_logger,
     }
     local postqueue_policies = {

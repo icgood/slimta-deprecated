@@ -30,7 +30,8 @@ queue_tests = test_queue_store_only.lua \
 relay_tests = test_relay_smtp_relayer.lua
 
 policy_tests = test_add_date_header.lua \
-	       test_add_received_header.lua
+	       test_add_received_header.lua \
+	       test_add_message_id_header.lua
 
 coordination_tests = test_edge_to_relay.lua
 
