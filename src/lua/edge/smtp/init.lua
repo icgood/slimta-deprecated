@@ -110,11 +110,30 @@ function slimta.edge.smtp:close()
 end
 -- }}}
 
+-- {{{ generate_protocol_string()
+local function generate_protocol_string(old, change)
+    if old == "SMTP" and change == "EHLO" then
+        return "ESMTP"
+    elseif old == "ESMTP" and change == "STARTTLS" then
+        return "ESMTPS"
+    elseif old == "ESMTPA" and change == "STARTTLS" then
+        return "ESMTPSA"
+    elseif old == "ESMTP" and change == "AUTH" then
+        return "ESMTPA"
+    elseif old == "ESMTPS" and change == "AUTH" then
+        return "ESMTPSA"
+    else
+        return old
+    end
+end
+-- }}}
+
 -- {{{ command_handler.new()
 function command_handler.new(from_ip, smtp_edge)
     local self = {}
     setmetatable(self, command_handler)
 
+    self.protocol = "SMTP"
     self.security = "none"
     self.from_ip = from_ip
     self.smtp_edge = smtp_edge
@@ -140,6 +159,22 @@ function command_handler:BANNER(reply)
 end
 -- }}}
 
+-- {{{ command_handler:EHLO()
+function command_handler:EHLO(reply, ehlo_as, helo)
+    local validator = self.smtp_edge.settings.validators.EHLO
+    if validator then
+        validator(self, reply, ehlo_as)
+    end
+
+    self.protocol = generate_protocol_string(self.protocol, "EHLO")
+
+    if reply.code == "250" then
+        self.ehlo_as = ehlo_as
+        self.message = nil
+    end
+end
+-- }}}
+
 -- {{{ command_handler:STARTTLS()
 function command_handler:STARTTLS(reply, extensions)
     local validator = self.smtp_edge.settings.validators.STARTTLS
@@ -155,21 +190,8 @@ function command_handler:STARTTLS(reply, extensions)
         end
     end
 
+    self.protocol = generate_protocol_string(self.protocol, "STARTTLS")
     self.security = "TLS"
-end
--- }}}
-
--- {{{ command_handler:EHLO()
-function command_handler:EHLO(reply, ehlo_as)
-    local validator = self.smtp_edge.settings.validators.EHLO
-    if validator then
-        validator(self, reply, ehlo_as)
-    end
-
-    if reply.code == "250" then
-        self.ehlo_as = ehlo_as
-        self.message = nil
-    end
 end
 -- }}}
 
@@ -204,6 +226,7 @@ function command_handler:AUTH(arg, server)
     end
 
     if reply.code == "235" then
+        self.protocol = generate_protocol_string(self.protocol, "AUTH")
         self.authed = result
     end
 
@@ -271,7 +294,7 @@ function command_handler:HAVE_DATA(reply, data, err)
 
     -- Build a slimta.message object.
     local hostname = os.getenv("HOSTNAME") or ratchet.socket.gethostname()
-    local client = slimta.message.client.new("SMTP", self.ehlo_as, self.from_ip, self.security, hostname, self.authed)
+    local client = slimta.message.client.new(self.protocol, self.ehlo_as, self.from_ip, self.security, hostname, self.authed)
     local envelope = slimta.message.envelope.new(self.message.sender, self.message.recipients)
     local contents = slimta.message.contents.new(data)
     local timestamp = os.time()
