@@ -15,6 +15,7 @@ libslimta_la_SOURCES = slimta.c \
 		       xml.c \
 		       signalfd.c \
 		       base64.c \
+		       hmac.c \
 		       misc.c
 
 lualibdir = @LUA_CPATH@

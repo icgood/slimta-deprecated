@@ -195,6 +195,9 @@ int luaopen_slimta (lua_State *L)
 	luaL_requiref (L, "slimta.base64", luaopen_slimta_base64, 0);
 	lua_setfield (L, -2, "base64");
 
+	luaL_requiref (L, "slimta.hmac", luaopen_slimta_hmac, 0);
+	lua_setfield (L, -2, "hmac");
+
 	return 1;
 }
 /* }}} */
