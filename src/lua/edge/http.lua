@@ -93,9 +93,9 @@ end
 
 -- {{{ slimta.edge.http:accept()
 function slimta.edge.http:accept()
-    local client, from_ip = self.socket:accept()
+    local client, from = self.socket:accept()
 
-    return ratchet.http.server.new(client, from_ip, self)
+    return ratchet.http.server.new(client, tostring(from), self)
 end
 -- }}}
 

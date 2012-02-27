@@ -91,12 +91,12 @@ end
 
 -- {{{ slimta.edge.smtp:accept()
 function slimta.edge.smtp:accept()
-    local client, from_ip = self.socket:accept()
+    local client, from = self.socket:accept()
     if self.settings.timeout then
         client:set_timeout(self.settings.timeout)
     end
     
-    local cmd_handler = command_handler.new(from_ip, self)
+    local cmd_handler = command_handler.new(tostring(from), self)
     local smtp_handler = ratchet.smtp.server.new(
         client,
         cmd_handler,
