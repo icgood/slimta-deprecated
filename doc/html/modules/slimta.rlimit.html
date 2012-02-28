@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta: Module Index</title>
+    <title>slimta.rlimit: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -35,8 +35,10 @@
 <h1>Modules</h1>
 <ul>
 
-	<li><strong>slimta</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.html">slimta</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.base64.html">slimta.base64</a>
 	</li>
@@ -45,10 +47,8 @@
 		<a href="../modules/slimta.hmac.html">slimta.hmac</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.rlimit.html">slimta.rlimit</a>
-	</li>
-
+	<li><strong>slimta.rlimit</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.signal.fd.html">slimta.signal.fd</a>
 	</li>
@@ -76,9 +76,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta</code></h1>
+<h1>Module <code>slimta.rlimit</code></h1>
 
-<p>The root module for all other slimta modules. Also contains several C supporting functions. Note that this module only directly loads the modules implemented in C, other modules will require direct require() calls.</p>
+<p>Module providing access to the setrlimit and getrlimit system calls. In server applications, tuning these values often proves valuable. The rlimit resource parameter in the get() and set() functions below correspond to RLIMIT_* constants, e.g. "CPU" and "NOFILE".</p>
 
 
 
@@ -88,13 +88,13 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#daemonize">daemonize</a>&nbsp;()</td>
-    <td class="summary">Daemonizes the current process using the standard double-fork.</td>
+    <td class="name" nowrap><a href="#get">get</a>&nbsp;(resource)</td>
+    <td class="summary">Gets the current soft and hard rlimit values, respecticaly.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#redirect_stdio">redirect_stdio</a>&nbsp;(stdout, stderr, stdin)</td>
-    <td class="summary">Redirects standard output, error, and input to the given filenames.</td>
+    <td class="name" nowrap><a href="#set">set</a>&nbsp;(resource, soft, hard)</td>
+    <td class="summary">Sets new soft and hard rlimit values.</td>
     </tr>
 
 </table>
@@ -114,10 +114,19 @@
 
 
 
-<dt><a name="daemonize"></a><strong>daemonize</strong>&nbsp;()</dt>
+<dt><a name="get"></a><strong>get</strong>&nbsp;(resource)</dt>
 <dd>
-Daemonizes the current process using the standard double-fork. This function closes standard input, output, and error and redirects them to "/dev/null", even if you previously called redirect_stdio().
+Gets the current soft and hard rlimit values, respecticaly.
 
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  resource: the rlimit resource string.
+	</li>
+	
+</ul>
 
 
 
@@ -125,7 +134,7 @@ Daemonizes the current process using the standard double-fork. This function clo
 
 
 <h3>Return value:</h3>
-the pid of the new daemon process.
+the soft and hard limits.
 
 
 
@@ -134,24 +143,24 @@ the pid of the new daemon process.
 
 
 
-<dt><a name="redirect_stdio"></a><strong>redirect_stdio</strong>&nbsp;(stdout, stderr, stdin)</dt>
+<dt><a name="set"></a><strong>set</strong>&nbsp;(resource, soft, hard)</dt>
 <dd>
-Redirects standard output, error, and input to the given filenames. Standard output and error are opened in append-mode, and standard input is opened in read-only mode. Leaving any parameter blank leaves that stream alone.
+Sets new soft and hard rlimit values.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  stdout: filename to append the standard output stream into.
+	  resource: the rlimit resource string.
 	</li>
 	
 	<li>
-	  stderr: filename to append the standard error stream into.
+	  soft: the new soft limit.
 	</li>
 	
 	<li>
-	  stdin: filename to read from as the standard input stream.
+	  hard: the new hard limit.
 	</li>
 	
 </ul>

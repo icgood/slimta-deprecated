@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta: Module Index</title>
+    <title>slimta.base64: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -35,12 +35,12 @@
 <h1>Modules</h1>
 <ul>
 
-	<li><strong>slimta</strong></li>
-	
 	<li>
-		<a href="../modules/slimta.base64.html">slimta.base64</a>
+		<a href="../modules/slimta.html">slimta</a>
 	</li>
 
+	<li><strong>slimta.base64</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.hmac.html">slimta.hmac</a>
 	</li>
@@ -76,9 +76,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta</code></h1>
+<h1>Module <code>slimta.base64</code></h1>
 
-<p>The root module for all other slimta modules. Also contains several C supporting functions. Note that this module only directly loads the modules implemented in C, other modules will require direct require() calls.</p>
+<p>Module containing encoding and decoding functions for the standard BASE64 codec, as provided by the OpenSSL crypto library.</p>
 
 
 
@@ -88,13 +88,13 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#daemonize">daemonize</a>&nbsp;()</td>
-    <td class="summary">Daemonizes the current process using the standard double-fork.</td>
+    <td class="name" nowrap><a href="#decode">decode</a>&nbsp;(data)</td>
+    <td class="summary">Decodes the string with the base64 algorithm.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#redirect_stdio">redirect_stdio</a>&nbsp;(stdout, stderr, stdin)</td>
-    <td class="summary">Redirects standard output, error, and input to the given filenames.</td>
+    <td class="name" nowrap><a href="#encode">encode</a>&nbsp;(data)</td>
+    <td class="summary">Encodes the string with the base64 algorithm.</td>
     </tr>
 
 </table>
@@ -114,44 +114,16 @@
 
 
 
-<dt><a name="daemonize"></a><strong>daemonize</strong>&nbsp;()</dt>
+<dt><a name="decode"></a><strong>decode</strong>&nbsp;(data)</dt>
 <dd>
-Daemonizes the current process using the standard double-fork. This function closes standard input, output, and error and redirects them to "/dev/null", even if you previously called redirect_stdio().
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the pid of the new daemon process.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="redirect_stdio"></a><strong>redirect_stdio</strong>&nbsp;(stdout, stderr, stdin)</dt>
-<dd>
-Redirects standard output, error, and input to the given filenames. Standard output and error are opened in append-mode, and standard input is opened in read-only mode. Leaving any parameter blank leaves that stream alone.
+Decodes the string with the base64 algorithm. The following operation should always be true: decode(encode(X)) == X
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  stdout: filename to append the standard output stream into.
-	</li>
-	
-	<li>
-	  stderr: filename to append the standard error stream into.
-	</li>
-	
-	<li>
-	  stdin: filename to read from as the standard input stream.
+	  data: string of BASE64 data to decode.
 	</li>
 	
 </ul>
@@ -160,6 +132,38 @@ Redirects standard output, error, and input to the given filenames. Standard out
 
 
 
+
+<h3>Return value:</h3>
+string of raw, decoded data.
+
+
+
+</dd>
+
+
+
+
+<dt><a name="encode"></a><strong>encode</strong>&nbsp;(data)</dt>
+<dd>
+Encodes the string with the base64 algorithm. This operation will increase the size of the data by about 33%, but will make it transferable on traditionally 7-bit streams such as SMTP.
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  data: string of data to encode.
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+string of BASE64 encoded data.
 
 
 
