@@ -45,7 +45,7 @@ static int redirect_fd_to_filename (lua_State *L, int fd, const char *filename, 
 	if (close (fd) == -1)
 		return ratchet_error_errno (L, "slimta.redirect_stdio()", "close");
 
-	int new_fd = open (filename, flags);
+	int new_fd = open (filename, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (new_fd == -1)
 		return ratchet_error_errno (L, "slimta.redirect_stdio()", "open");
 
