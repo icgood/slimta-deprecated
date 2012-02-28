@@ -1,0 +1,14 @@
+
+--- Module for generating HMAC-encoded digests using OpenSSL's HMAC() function.
+module "slimta.hmac"
+
+--- Encodes the data using the given secret key. This is not a reversible
+--  action. 
+--  @param method the method string. The available methods are the
+--                corresponding EVP_*() names, e.g. "md5" or "sha1".
+--  @param data a string of data to encode.
+--  @param key a secret key to encode the data with.
+--  @return a string of bytes containing the result of the encoding.
+function encode(method, data, key)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:

@@ -1,0 +1,19 @@
+
+--- Module containing encoding and decoding functions for the standard BASE64
+--  codec, as provided by the OpenSSL crypto library.
+module "slimta.base64"
+
+--- Encodes the string with the base64 algorithm. This operation will increase
+--  the size of the data by about 33%, but will make it transferable on
+--  traditionally 7-bit streams such as SMTP.
+--  @param data string of data to encode.
+--  @return string of BASE64 encoded data.
+function encode(data)
+
+--- Decodes the string with the base64 algorithm. The following operation should
+--  always be true: decode(encode(X)) == X
+--  @param data string of BASE64 data to decode.
+--  @return string of raw, decoded data.
+function decode(data)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
