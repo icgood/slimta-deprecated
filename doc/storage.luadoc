@@ -1,0 +1,24 @@
+
+--- Module containing the storage engines for queuing messages. These engines
+--  must implement the same interface.
+module("slimta.storage")
+
+--- Creates and returns a new in-memory storage engine. This engine is NOT
+--  persistent and any messages in it will be LOST if the process should die
+--  for any reason. This engine is mostly for testing and debugging purposes.
+--  @return a new memory object.
+function memory.new()
+
+--- Creates and returns a new redis-based storage engine. The engine attempts
+--  to connect to a redis instance on the given host and port. The storage
+--  engine consumes (currently) four redis databases (see the redis "SELECT"
+--  command).
+--  @param host the hostname of the redis instance.
+--  @param port the port of the redis instance, default 6379.
+--  @param offset the offset of the redis databases to use, default 0. To avoid
+--                overlap, set this value to the lowest unused database index
+--                and do not use it or the next three database indices
+--                for any other purpose.
+function redis.new(host, port, offset)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
