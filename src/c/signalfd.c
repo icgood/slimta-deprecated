@@ -233,7 +233,12 @@ static int sfd_read (lua_State *L)
 	else
 		return ratchet_error_str (L, "slimta.signalfd.read()", "read", "Unknown signal number: %d", (int) fdsi.ssi_signo);
 
-	return 1;
+	if (fdsi.ssi_code == SI_USER || fdsi.ssi_code == SI_QUEUE)
+		lua_pushinteger (L, (lua_Integer) fdsi.ssi_pid);
+	else
+		lua_pushnil (L);
+
+	return 2;
 }
 /* }}} */
 
