@@ -1,0 +1,75 @@
+
+--- Module that simplifies and abstracts the transfer of objects either locally
+--  (within the same Lua state) or over a socket.
+--  
+--  For server-side bus objects, the recv_request() method is implemented which
+--  results in a transaction and a array of requests. The transaction object
+--  implements the send_response() method which sends an array of responses
+--  back to the client.
+--
+--  For client-side bus objects, the send_request() method is implemented which
+--  results in a transaction object. The transaction object implements the
+--  recv_response() method, which gets the array of responses back from the
+--  server.
+--
+--  Objects sent and received with socket buses either as the request or as the
+--  response MUST implement to_xml() and from_xml() functions. The to_xml()
+--  function is as described in the slimta.xml.writer module. The from_xml()
+--  function takes a root tree node (as in slimta.xml.reader) and an array of
+--  arbitrary string attachments.
+--
+--  For more information, see the ratchet.bus API documentation and usage
+--  manual.
+module("slimta.bus")
+
+--- Creates a new local bus, implemented as a queue structure using Lua tables
+--  and ratchet threads, such that one thread may wait for requests until
+--  another sends one. After a thread sends a request, it may then wait for a
+--  response. The result is a client-server model.
+--  @return the server end of the bus, followed by the client end.
+function new_local()
+
+--- Creates a server-side bus object to listen for requests on a socket
+--  listening on the given host and port. Received requests are translated from
+--  XML using the from_xml() function of the given request data type, and sent
+--  responses are translated to XML using its to_xml() method.
+--  @param host the host interface to listen on.
+--  @param port the port to listen on.
+--  @param request_type a table implementing the from_xml() function for
+--                      interpreting the request XML.
+--  @return a new server-side socket bus.
+function new_server(host, port, request_type)
+
+--- Creates a client-side bus object to send requests to a server bus located
+--  by the given host and port. Received responses are translated from XML using
+--  the from_xml() function of the given response data type, and sent requests
+--  are translated to XML using the to_xml() method.
+--  @param host the host to connect to.
+--  @param port the port to connect to.
+--  @param response_type a table implementing the from_xml() function for
+--                       interpreting the response XML.
+--  @param a new client-side socket bus.
+function new_client(host, port, response_type)
+
+--- Convenience function to chain together filter functions to access or modify
+--  any request or response that goes through the chain. Filter functions take
+--  two parameters: a server-side "from" bus and a client-side "to" bus.
+--
+--  This call is responsible for creating threads for each filter function and
+--  connecting each with appropriate "from" and "to" buses.
+--
+--  The filter functions are then responsible for receiving requests on the
+--  "from" bus, forwarding them to the "to" bus, receiving the response from the
+--  "to" bus, and finally forwarding the response back on the "from" bus. At any
+--  point, the filter may modify the requests or responses, as long as the "from"
+--  bus receives as many responses as it sent requests.
+--  @param filters array of filter functions.
+--  @param from_bus the initial server-side "from" bus in the chain. Requests
+--                  received on it are forwarded on through the chain as
+--                  described.
+--  @return a new server-side bus, which will receive requests that have passed
+--          through the chain and whose responses will go back through the
+--          chain.
+function chain(filters, from_bus)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:

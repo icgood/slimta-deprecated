@@ -1,0 +1,37 @@
+
+--- Module which provides a consistent interface for generating XML
+--  representations of an object's data, such that it can be recreated without
+--  access to the original object.
+--
+--  Objects written added to an xml.writer MUST implement a to_xml() method
+--  which returns a table array of strings for each line of representation XML.
+--  Alternatively, a line may instead be a nested table of more lines, so that
+--  objects may allow child objects to implement their own XML representation
+--  routines. For readability, lines a prefixed with spaces based on tag depth.
+--  Finally, an object's to_xml() method may take advantage of an attachments
+--  table passed as a paramter, where it may append arbitrary non-representable
+--  string data.
+module("slimta.xml.writer")
+
+--- Creates a new xml.writer object.
+--  @return a new xml.writer object.
+function new()
+
+--- Adds an object to the list of objects for which the current xml.writer will
+--  generate XML for.
+--  @param self the xml.writer object.
+--  @param item an object implementing a to_xml() method.
+function add_item(item)
+
+--- Builds XML representing all objects added to the xml.writer. If more than
+--  one item has been added to the xml.writer, the optional containers array
+--  parameter becomes required, or else the resulting XML will not be valid.
+--  @param self the xml.writer object.
+--  @param containers an optional table array of container tags, such that the
+--                    containers[1] is the outermost tag, followed by
+--                    containers[2] and so on.
+--  @return a string of resulting XML, followed by the resulting attachments
+--          table containing all non-representable string data.
+function build(self, containers)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
