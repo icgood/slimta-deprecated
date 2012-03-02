@@ -12,24 +12,33 @@ function slimta.routing.static.new(relayer, host, port)
     local self = {}
     setmetatable(self, slimta.routing.static)
 
-    self.relayer = relayer
-    self.host = host
-    self.port = port or 25
+    if type(relayer) == "function" then
+        self.relayer_func = relayer
+    else
+        self.relayer = relayer
+    end
+
+    if type(host) == "function" then
+        self.host_func = host
+    else
+        self.host = host
+    end
+
+    if type(port) == "function" then
+        self.port_func = port
+    else
+        self.port = port or 25
+    end
 
     return self
 end
 -- }}}
 
--- {{{ set_routing_from_domain()
-local function set_routing_from_domain(self, message, domain)
-end
--- }}}
-
 -- {{{ slimta.routing.static:route()
 function slimta.routing.static:route(message)
-    message.envelope.dest_relayer = self.relayer
-    message.envelope.dest_host = self.host
-    message.envelope.dest_port = self.port
+    message.envelope.dest_relayer = self.relayer or self.relayer_func(message)
+    message.envelope.dest_host = self.host or self.host_func(message)
+    message.envelope.dest_port = self.port or self.port_func(message)
 
     return {message}
 end
