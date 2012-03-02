@@ -181,12 +181,6 @@ int luaopen_slimta (lua_State *L)
 	luaL_requiref (L, "slimta.uuid", luaopen_slimta_uuid, 0);
 	lua_setfield (L, -2, "uuid");
 
-	luaL_requiref (L, "slimta.rlimit", luaopen_slimta_rlimit, 0);
-	lua_setfield (L, -2, "rlimit");
-
-	luaL_requiref (L, "slimta.process", luaopen_slimta_rlimit, 0);
-	lua_setfield (L, -2, "rlimit");
-
 #if HAVE_SIGNALFD
 	luaL_requiref (L, "slimta.signalfd", luaopen_slimta_signalfd, 0);
 	lua_setfield (L, -2, "signalfd");
