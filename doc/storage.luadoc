@@ -6,7 +6,7 @@ module("slimta.storage")
 --- Creates and returns a new in-memory storage engine. This engine is NOT
 --  persistent and any messages in it will be LOST if the process should die
 --  for any reason. This engine is mostly for testing and debugging purposes.
---  @return a new memory object.
+--  @return a new memory storage object.
 function memory.new()
 
 --- Creates and returns a new redis-based storage engine. The engine attempts
@@ -19,6 +19,7 @@ function memory.new()
 --                overlap, set this value to the lowest unused database index
 --                and do not use it or the next three database indices
 --                for any other purpose.
+--  @return a new redis storage object.
 function redis.new(host, port, offset)
 
 -- vim:filetype=lua:sw=4:ts=4:sts=4:et:
