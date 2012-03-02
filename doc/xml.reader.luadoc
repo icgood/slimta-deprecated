@@ -1,7 +1,7 @@
 
 --- Module that parses XML data into a consistent tree structure that data types
 --  may use to recreate objects.
---
+--  <br/><br/>
 --  Tree nodes contain three associative key elements: "name" is the name of the
 --  node's tag, "attrs" is a table whose keys correlate to tag attributes, and
 --  "data" is a concatenation of all the data found between the start and end of

@@ -2,7 +2,7 @@
 --- Module which provides a consistent interface for generating XML
 --  representations of an object's data, such that it can be recreated without
 --  access to the original object.
---
+--  <br/><br/>
 --  Objects written added to an xml.writer MUST implement a to_xml() method
 --  which returns a table array of strings for each line of representation XML.
 --  Alternatively, a line may instead be a nested table of more lines, so that

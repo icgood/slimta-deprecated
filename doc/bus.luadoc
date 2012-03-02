@@ -1,23 +1,23 @@
 
 --- Module that simplifies and abstracts the transfer of objects either locally
 --  (within the same Lua state) or over a socket.
---  
+--  <br/><br/>
 --  For server-side bus objects, the recv_request() method is implemented which
 --  results in a transaction and a array of requests. The transaction object
 --  implements the send_response() method which sends an array of responses
 --  back to the client.
---
+--  <br/><br/>
 --  For client-side bus objects, the send_request() method is implemented which
 --  results in a transaction object. The transaction object implements the
 --  recv_response() method, which gets the array of responses back from the
 --  server.
---
+--  <br/><br/>
 --  Objects sent and received with socket buses either as the request or as the
 --  response MUST implement to_xml() and from_xml() functions. The to_xml()
 --  function is as described in the slimta.xml.writer module. The from_xml()
 --  function takes a root tree node (as in slimta.xml.reader) and an array of
 --  arbitrary string attachments.
---
+--  <br/><br/>
 --  For more information, see the ratchet.bus API documentation and usage
 --  manual.
 module("slimta.bus")
@@ -54,10 +54,10 @@ function new_client(host, port, response_type)
 --- Convenience function to chain together filter functions to access or modify
 --  any request or response that goes through the chain. Filter functions take
 --  two parameters: a server-side "from" bus and a client-side "to" bus.
---
+--  <br/><br/>
 --  This call is responsible for creating threads for each filter function and
 --  connecting each with appropriate "from" and "to" buses.
---
+--  <br/><br/>
 --  The filter functions are then responsible for receiving requests on the
 --  "from" bus, forwarding them to the "to" bus, receiving the response from the
 --  "to" bus, and finally forwarding the response back on the "from" bus. At any
