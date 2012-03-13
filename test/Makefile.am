@@ -19,6 +19,8 @@ message_tests = test_message_to_xml.lua \
 
 edge_tests = test_edge_http_listener.lua \
 	     test_edge_smtp_listener.lua \
+	     test_edge_smtp_tls_listener.lua \
+	     test_edge_smtp_starttls_listener.lua \
 	     test_edge_smtp_auth.lua
 
 queue_tests = test_queue_store_only.lua \
