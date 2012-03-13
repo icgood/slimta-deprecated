@@ -35,7 +35,7 @@ local function start_maildrop(self, message, response, processes)
     p:start()
     local remaining = tostring(message.contents)
     repeat
-        local remaining = p:stdin():write(remaining)
+        remaining = p:stdin():write(remaining)
     until not remaining
     p:stdin():close()
     processes[p] = response

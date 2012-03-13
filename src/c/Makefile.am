@@ -10,7 +10,6 @@ libslimta_la_CFLAGS = -std=gnu99 -Wall -Wno-unused-function -Wno-unused-label
 libslimta_la_LDFLAGS = 
 
 libslimta_la_SOURCES = slimta.c \
-		       rlimit.c \
 		       uuid.c \
 		       xml.c \
 		       signalfd.c \
