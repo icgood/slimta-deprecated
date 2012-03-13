@@ -18,7 +18,8 @@ message_tests = test_message_to_xml.lua \
 		test_message_header_folding.lua
 
 edge_tests = test_edge_http_listener.lua \
-	     test_edge_smtp_listener.lua
+	     test_edge_smtp_listener.lua \
+	     test_edge_smtp_auth.lua
 
 queue_tests = test_queue_store_only.lua \
 	      test_queue_store_relay.lua \
@@ -48,5 +49,10 @@ CLEANFILES = slimta
 
 slimta-link:
 	ln -nsf ../src/lua ./slimta
+
+check_DATA += cert.pem
+CLEANFILES += cert.pem
+cert.pem:
+	openssl req -x509 -nodes -subj '/CN=localhost' -newkey rsa:1024 -keyout $@ -out $@ > /dev/null
 
 endif
