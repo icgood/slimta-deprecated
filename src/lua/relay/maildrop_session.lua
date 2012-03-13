@@ -9,12 +9,13 @@ local maildrop_session = {}
 maildrop_session.__index = maildrop_session
 
 -- {{{ maildrop_session.new()
-function maildrop_session.new(argv)
+function maildrop_session.new(argv, time_limit)
     local self = {}
     setmetatable(self, maildrop_session)
 
     self.argv0 = argv0 or "maildrop"
     self.messages = {}
+    self.time_limit = time_limit
 
     return self
 end
@@ -58,11 +59,27 @@ local function set_response(response, status, err)
 end
 -- }}}
 
+-- {{{ get_time_remaining()
+local function get_time_remaining(p, time_limit)
+    if time_limit then
+        local start_time = p:get_start_time()
+        local running = os.time() - start_time
+        local remaining = time_limit - running
+        if remaining > 0.0 then
+            return remaining
+        else
+            return 0.0
+        end
+    end
+end
+-- }}}
+
 -- {{{ wait_for_all()
 local function wait_for_all(self, processes)
     for p, response in pairs(processes) do
         local err = p:stderr():read()
-        local status = p:wait()
+        local limit = get_time_remaining(p, self.time_limit)
+        local status = p:wait(limit)
         set_response(response, status, err)
     end
 end

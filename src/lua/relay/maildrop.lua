@@ -6,11 +6,12 @@ slimta.relay.maildrop = {}
 slimta.relay.maildrop.__index = slimta.relay.maildrop
 
 -- {{{ slimta.relay.maildrop.new()
-function slimta.relay.maildrop.new(argv0)
+function slimta.relay.maildrop.new(argv0, time_limit)
     local self = {}
     setmetatable(self, slimta.relay.maildrop)
 
     self.argv0 = argv0
+    self.time_limit = time_limit
 
     return self
 end
@@ -24,7 +25,7 @@ end
 
 -- {{{ slimta.relay.maildrop:new_session()
 function slimta.relay.maildrop:new_session()
-    local session = maildrop_session.new(self.argv0)
+    local session = maildrop_session.new(self.argv0, self.time_limit)
     return session
 end
 -- }}}
