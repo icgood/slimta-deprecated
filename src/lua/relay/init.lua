@@ -43,22 +43,8 @@ local function get_relayer_for_message(self, message)
     end
 
     -- Pick an arbitrary relayer.
-    for k, v in pairs(self.relayers) do
-        return v
-    end
-end
--- }}}
-
--- {{{ relayer_hash()
-local function relayer_hash(relayer, host, port)
-    local ret = {
-        relayer or "default",
-        ":[",
-        host or "default",
-        "]:",
-        port or "default",
-    }
-    return table.concat(ret)
+    local k, v = next(self.relayers)
+    return v
 end
 -- }}}
 
