@@ -33,24 +33,11 @@ local function start_maildrop(self, message, response, processes)
     local p = ratchet.exec.new(argv)
     p:start()
     local remaining = tostring(message.contents)
-    local stdin = p:stdin()
     repeat
-        local successful, ret = pcall(stdin.write, stdin, remaining)
-        if not successful and ratchet.error.is(ret, "EPIPE") then
-            return broken_pipe(p, response, ret)
-        end
-        remaining = ret
+        local remaining = p:stdin():write(remaining)
     until not remaining
-    stdin:close()
+    p:stdin():close()
     processes[p] = response
-end
--- }}}
-
--- {{{ broken_pipe()
-local function broken_pipe(p, response, err)
-    set_response(response, EX_TEMPFAIL, ret.description)
-    p:kill()
-    p:wait()
 end
 -- }}}
 
