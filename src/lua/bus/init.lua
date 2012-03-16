@@ -5,6 +5,7 @@ require "ratchet.bus.samestate"
 
 slimta.bus = {}
 
+require "slimta.bus.proxy"
 require "slimta.bus.server"
 require "slimta.bus.client"
 
@@ -26,6 +27,15 @@ function slimta.bus.new_client(...)
 end
 -- }}}
 
+-- {{{ run_chain_link()
+local function run_chain_link(call, from_bus, to_bus)
+    while true do
+        local from_transaction, request = from_bus:recv_request()
+        ratchet.thread.attach(call, from_transaction, request, to_bus)
+    end
+end
+-- }}}
+
 -- {{{ slimta.bus.chain()
 function slimta.bus.chain(calls, from_bus)
     local threads = {}
@@ -44,7 +54,7 @@ function slimta.bus.chain(calls, from_bus)
 
     local final_to_bus
     for i, stack in ipairs(call_stacks) do
-        local t = ratchet.thread.attach(table.unpack(stack))
+        local t = ratchet.thread.attach(run_chain_link, table.unpack(stack))
         table.insert(threads, t)
         final_to_bus = stack[3]
     end

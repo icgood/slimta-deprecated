@@ -69,11 +69,11 @@ end
 
 -- {{{ relay_session_meta.__call()
 function relay_session_meta.__call(self, synchronous)
-    local threads = {}
     local responses = {}
     local sessions, n = build_sessions(self.relay, self.messages, responses)
 
     if n > 1 and not synchronous then
+        local threads = {}
         for hash, session in pairs(sessions) do
             table.insert(threads, ratchet.thread.attach(session.relay_all, session))
         end

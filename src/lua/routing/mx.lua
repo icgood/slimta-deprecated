@@ -109,20 +109,4 @@ function slimta.routing.mx:route(message)
 end
 -- }}}
 
--- {{{ slimta.routing.mx:__call()
-function slimta.routing.mx:__call(from_bus, to_bus)
-    while true do
-        local from_transaction, messages = from_bus:recv_request()
-        local responses = {}
-        for i, msg in ipairs(messages) do
-            local new_messages = self:route(msg)
-            local to_transaction = to_bus:send_request(new_messages)
-            local all_responses = to_transaction:recv_response()
-            responses[i] = all_responses[#all_responses]
-        end
-        from_transaction:send_response(responses)
-    end
-end
--- }}}
-
 -- vim:foldmethod=marker:sw=4:ts=4:sts=4:et:
