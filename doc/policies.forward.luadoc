@@ -11,8 +11,7 @@ module("slimta.policies.forward")
 --                 and "n" keys corresponding to the arguments of Lua's
 --                 string.gsub() function.
 --  @return a new forward object.
---  @usage
---      slimta.policies.forward.new({ <br/>
+--  @usage slimta.policies.forward.new({ <br/>
 --      &nbsp; &nbsp; {pattern = "^staff%-([^%@]+)%@example%.com$", repl = "%1@staff.example.com"}, <br/>
 --      &nbsp; &nbsp; {pattern = "^.*$", repl = "admin@example.com"}, <br/>
 --      }) <br/>
