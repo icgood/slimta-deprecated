@@ -59,8 +59,8 @@ end
 -- }}}
 
 -- {{{ slimta.message:store()
-function slimta.message:store(storage_session)
-    self.id = storage_session:claim_message_id()
+function slimta.message:store(storage_session, id)
+    self.id = id or storage_session:claim_message_id()
 
     local meta = self:to_meta()
     local contents = tostring(self.contents)
