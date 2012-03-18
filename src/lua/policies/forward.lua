@@ -16,12 +16,6 @@ function slimta.policies.forward.new(mapping)
 end
 -- }}}
 
--- {{{ slimta.policies.forward:set()
-function slimta.policies.forward:set(pattern, dest)
-    self.mapping[pattern] = dest
-end
--- }}}
-
 -- {{{ slimta.policies.forward:map()
 function slimta.policies.forward:map(message)
     local n_rcpt = #message.envelope.recipients

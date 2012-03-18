@@ -1,0 +1,27 @@
+
+--- Module that implements pattern-based, prioritized recipient rewriting, also
+--  known as forwarding.
+module("slimta.policies.forward")
+
+--- Creates a new forward object with an optional initial mapping table. The
+--  objects mapping table can be accessed and modified with the forward
+--  object's "mapping" attribute.
+--  @param mapping optional initial mapping table, default empty. This table
+--                 should be an array of tables containing "pattern", "repl",
+--                 and "n" keys corresponding to the arguments of Lua's
+--                 string.gsub() function.
+--  @return a new forward object.
+--  @usage slimta.policies.forward.new({
+--          {pattern = "^staff%-([^%@]+)%@example%.com$", repl = "%1@staff.example.com"},
+--          {pattern = "^.*$", repl = "admin@example.com"},
+--      })
+function slimta.policies.forward.new(mapping)
+
+--- For each recipient of the message, loops through the patterns in the
+--  mapping array attempting to match the recipient. If the recipient matches,
+--  it is rewritten according to the pattern's "repl" and "n" keys.
+--  @param self the forward object.
+--  @param message the message to rewrite recipients for.
+function slimta.policies.forward.map(self, message)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
