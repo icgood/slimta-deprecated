@@ -46,15 +46,4 @@ function set_mx(self, domain, record)
 --          recognizable domain name.
 function route(self, message)
 
---- Implements the MX routing logic as a filter function for a bus chain. The
---  route() method is called for each received message in the request. If a
---  message is split into more than one by the route() method, only the last
---  response from down the chain will be sent back to the requester. That way,
---  the chain requirement of one response per request is fulfilled.
---  @param self the routing.mx object.
---  @param from_bus the "from" bus.
---  @param to_bus the "to" bus.
---  @see slimta.bus.chain
-function __call(self, from_bus, to_bus)
-
 -- vim:filetype=lua:sw=4:ts=4:sts=4:et:
