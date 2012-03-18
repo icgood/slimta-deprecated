@@ -9,7 +9,8 @@ module("slimta.policies.add_received_header")
 --  @param use_utc forces the date portion to use UTC instead of the local
 --                 system timezone.
 --  @return a new add_received_header object.
---  @see http://www.lua.org/manual/5.2/manual.html#pdf-os.date
+--  @see <a href="http://www.lua.org/manual/5.2/manual.html#pdf-os.date">
+--       os.date()</a>
 function slimta.policies.add_received_header.new(date_format, use_utc)
 
 --- Prepends a "Received:" header to the message, describing information about
