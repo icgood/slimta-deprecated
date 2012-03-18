@@ -6,7 +6,7 @@ local bus_proxy_session_meta = {}
 bus_proxy_session_meta.__index = bus_proxy_session_meta
 
 -- {{{ default_filter()
-local function default_filter(to_bus, request, responses)
+local function default_filter(to_bus, request)
     local to_transaction = to_bus:send_request(request)
     return to_transaction:recv_response()
 end
