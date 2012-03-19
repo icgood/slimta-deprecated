@@ -68,11 +68,17 @@ end
 
 -- {{{ slimta.message.response.to_xml()
 function slimta.message.response.to_xml(response)
-    local lines = {
-        "<reply code=\"" .. response.code .. "\">" .. response.message .. "</reply>",
-    }
-
-    return lines
+    if response.data then
+        return {
+            ("<reply code=\"%s\">%s"):format(response.code, response.message),
+            (" <data>%s</data>"):format(response.data),
+            "</reply>",
+        }
+    else
+        return {
+            ("<reply code=\"%s\">%s</reply>"):format(response.code, response.message),
+        }
+    end
 end
 -- }}}
 
@@ -83,7 +89,14 @@ function slimta.message.response.from_xml(tree_node)
     local code = tonumber(tree_node.attrs.code)
     local message = tree_node.data:gsub("^%s*", ""):gsub("%s*$", "")
 
-    return slimta.message.response.new(code, message)
+    local data
+    for i, child_node in ipairs(tree_node) do
+        if child_node.name == "data" then
+            data = child_node.data:gsub("^%s*", ""):gsub("%s*$", "")
+        end
+    end
+
+    return slimta.message.response.new(code, message, data)
 end
 -- }}}
 
