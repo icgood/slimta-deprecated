@@ -57,7 +57,7 @@ function send_http(host, port)
         "arbitrary test message data"
     )
 
-    assert("451" == tostring(code))
+    assert("500" == tostring(code))
     assert("4.6.0 Testing" == reason)
     client_checks_ok = true
 end

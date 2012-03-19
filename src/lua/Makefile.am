@@ -29,7 +29,8 @@ nobase_dist_luasrc_DATA = relay/init.lua \
 			  xml/reader.lua \
 			  xml/writer.lua \
 			  queue/init.lua \
-			  bus/server.lua \
 			  bus/init.lua \
+			  bus/proxy.lua \
+			  bus/server.lua \
 			  bus/client.lua
 

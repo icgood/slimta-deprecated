@@ -51,25 +51,4 @@ function new_server(host, port, request_type)
 --  @param a new client-side socket bus.
 function new_client(host, port, response_type)
 
---- Convenience function to chain together filter functions to access or modify
---  any request or response that goes through the chain. Filter functions take
---  two parameters: a server-side "from" bus and a client-side "to" bus.
---  <br/><br/>
---  This call is responsible for creating threads for each filter function and
---  connecting each with appropriate "from" and "to" buses.
---  <br/><br/>
---  The filter functions are then responsible for receiving requests on the
---  "from" bus, forwarding them to the "to" bus, receiving the response from the
---  "to" bus, and finally forwarding the response back on the "from" bus. At any
---  point, the filter may modify the requests or responses, as long as the "from"
---  bus receives as many responses as it sent requests.
---  @param filters array of filter functions.
---  @param from_bus the initial server-side "from" bus in the chain. Requests
---                  received on it are forwarded on through the chain as
---                  described.
---  @return a new server-side bus, which will receive requests that have passed
---          through the chain and whose responses will go back through the
---          chain.
-function chain(filters, from_bus)
-
 -- vim:filetype=lua:sw=4:ts=4:sts=4:et:

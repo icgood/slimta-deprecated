@@ -1,0 +1,49 @@
+
+--- Module for describing the envelope of a message, in other words the info
+--  used by policies and the relayer to deliver the message.
+--  @see slimta.message
+module "slimta.message.envelope"
+
+--- Copies a message envelope object into a new object. This is a "deep" copy
+--  operation, tables are not recycled.
+--  @param old the original message envelope object.
+--  @return a new message envelope object, identical to the original.
+function slimta.message.envelope.copy(old)
+
+--- Creates a new message envelope object from the given information.
+--  @param sender the original sender address of the message.
+--  @param recipients table array of intended message recipients.
+--  @param dest_relayer string identifying the intended relayer.
+--  @param dest_host string identifying the destination host.
+--  @param dest_port the destination port number.
+--  @return a new message envelope object.
+function slimta.message.envelope.new(sender, recipients, dest_relayer, dest_host, dest_port)
+
+--- Generates a table array of XML representing the message envelope object.
+--  @param self the message envelope object.
+--  @return a table array of XML lines.
+--  @see slimta.xml.writer
+function slimta.message.envelope.to_xml(self)
+
+--- Loads a message envelope object from the given XML node tree, as generated
+--  by the slimta.xml.reader module.
+--  @param tree_node node of the XML tree where the message envelope starts.
+--  @return a new message envelope object.
+--  @see slimta.xml.reader
+function slimta.message.envelope.from_xml(tree_node)
+
+--- Creates a simple key-value table describing all the information contained
+--  in the message envelope object, suitable for serialization or, more
+--  commonly, storage in a storage engine.
+--  @param self the message envelope object.
+--  @param meta if given, keys are added to this table rather than a new one.
+--  @return the simple table of meta information.
+function slimta.message.envelope.to_meta(self, meta)
+
+--- Loads a message envelope object from the given simple table of meta
+--  information.
+--  @param meta simple table of meta information to load from.
+--  @return a new message envelope object.
+function slimta.message.envelope.from_meta(meta)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:

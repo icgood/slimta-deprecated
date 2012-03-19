@@ -1,0 +1,25 @@
+
+--- Module that implements policy logic to add a "Message-Id:" header to an
+--  outgoing message, as per RFC 2822. This header should be added to all
+--  messages that do not already have one.
+module("slimta.policies.add_message_id_header")
+
+--- Creates a new add_message_id_header object.
+--  @param hostname the hostname of the system generating the message-id. By
+--                  default, this information will be retrieved manually.
+--  @param random_func optional function that returns a random string to
+--                     differentiate this message from others. The default
+--                     should work just fine.
+--  @param time_func optional function that returns the current system
+--                   timestamp. The default is Lua's os.time.
+--  @return a new add_message_id_header object.
+function slimta.policies.add_message_id_header.new(hostname, random_func, time_func)
+
+--- If the message does not already contain a "Message-Id:" header, one is
+--  constructed and added to the message. This header will be of the form
+--  "<randomstring.timestamp@hostname>".
+--  @param self the add_message_id_header object.
+--  @param message the message to add the header to.
+function slimta.policies.add_message_id_header.add(self, message)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:

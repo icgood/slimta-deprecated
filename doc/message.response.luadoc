@@ -1,0 +1,47 @@
+
+--- Module to represent a response to a message delivery. These responses must
+--  come from an SMTP relayer attempting delivery or must be translated into
+--  valid SMTP command responses. For example, successfully writing a message
+--  into a user's local mailbox should yield a "250" even if an SMTP relayer was
+--  not used.
+module "slimta.message.response"
+
+--- Creates a new message response object.
+--  @param code SMTP code describing the success or failure.
+--  @param message simple message string describing the response.
+--  @param data data string providing further information, such as a queue ID.
+--              This data is not used by SMTP protocols.
+--  @return a new message response object.
+function slimta.message.response.new(code, message, data)
+
+--- Returns the response code and message, as it could be returned to the client
+--  of an SMTP edge service.
+--  @param self the message response object.
+--  @return code followed by message.
+function slimta.message.response.as_smtp(self)
+
+--- Returns a response object suitable for returning as an HTTP response. This
+--  object includes a code and message, and can also include the arbitrary data
+--  string passed to the constructor. SMTP codes are translated (rather
+--  ignorantly) into HTTP codes, e.g. 250 => 200.
+--  @param self the message response object.
+--  @return an HTTP response object.
+--  @see <a href="http://ratchet.icgood.net/?p=HTTPImplementation#Server">
+--       ratchet HTTP server usage</a>
+function slimta.message.response.as_http(self)
+
+--- Generates a table array of lines of XML representing the message response
+--  object.
+--  @param self the message response object.
+--  @return a table array of XML lines.
+--  @see slimta.xml.writer
+function slimta.message.response.to_xml(self)
+
+--- Loads a message response object from the given XML node tree, as generated
+--  by the slimta.xml.reader module.
+--  @param tree_node node of the XML tree where the message response starts.
+--  @return a new message response object.
+--  @see slimta.xml.reader
+function slimta.message.response.from_xml(tree_node)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
