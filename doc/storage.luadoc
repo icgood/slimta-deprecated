@@ -1,25 +1,45 @@
 
---- Module containing the storage engines for queuing messages. These engines
---  must implement the same interface.
-module("slimta.storage")
+--- Module of storage engines currently available to slimta. Every storage
+--  engine should expose the same base set of methods, and every storage engine
+--  session should as well.
+module "slimta.storage"
 
---- Creates and returns a new in-memory storage engine. This engine is NOT
---  persistent and any messages in it will be LOST if the process should die
---  for any reason. This engine is mostly for testing and debugging purposes.
---  @return a new memory storage object.
-function memory.new()
+--- Creates a new in-memory storage engine. This engine is NOT persistent to
+--  disk in any way. If this object is garbage-collected or the process ends for
+--  any reaspon, any messages queued with this engine will be lost. It's primary
+--  function is as a storage "mock" for testing.
+--  @return a new memory engine object.
+function slimta.storage.memory.new()
 
---- Creates and returns a new redis-based storage engine. The engine attempts
---  to connect to a redis instance on the given host and port. The storage
---  engine consumes (currently) four redis databases (see the redis "SELECT"
---  command).
---  @param host the hostname of the redis instance.
---  @param port the port of the redis instance, default 6379.
---  @param offset the offset of the redis databases to use, default 0. To avoid
---                overlap, set this value to the lowest unused database index
---                and do not use it or the next three database indices
---                for any other purpose.
---  @return a new redis storage object.
-function redis.new(host, port, offset)
+--- Creates a session with the given memory engine object. Sessions are the more
+--  transient objects that open and close frequently during execution, as
+--  opposed to the engine objects themselves of which you generally only create
+--  one. You should always close sessions when you are done with them.
+--  @param self the memory engine object.
+--  @return a session object for the memory engine.
+--  @see slimta.storage.session
+function slimta.storage.memory.connect(self)
+
+--- Creates a new redis storage engine. When sessions are created, they will
+--  connect to the given host/port. This storage engine, at the time of writing,
+--  consumes 4 adjacent databases, e.g. 0-3 if offset argument is 0 or nil.
+--  @param host the host running the redis instance.
+--  @param port the port of the redis instance.
+--  @param offset the index of the first redis database to use. If multiple,
+--                distinct redis storage engines need to run using one redis
+--                instance, this offst can be used to avoid conflict. The
+--                default is 0.
+--  @see <a href="http://redis.io/commands/select">redis SELECT command</a>
+function slimta.storage.redis.new(host, port offset)
+
+--- Creates a session connected to the given redis storage engine. Sessions are
+--  the more transient objects that open and close frequently during execution,
+--  as opposed to the engine objects themselves of which you generally only
+--  create/need one. You should always close sessions when you are done with
+--  them.
+--  @param self the redis engine object.
+--  @return a session object for the redis engine.
+--  @see slimta.storage.session
+function slimta.storage.redis.connect(self)
 
 -- vim:filetype=lua:sw=4:ts=4:sts=4:et:
