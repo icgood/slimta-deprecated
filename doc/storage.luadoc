@@ -7,7 +7,7 @@ module "slimta.storage"
 --- Creates a new in-memory storage engine. This engine is NOT persistent to
 --  disk in any way. If this object is garbage-collected or the process ends for
 --  any reaspon, any messages queued with this engine will be lost. It's primary
---  function is as a storage "mock" for testing.
+--  purpose is as a storage "mock" for testing.
 --  @return a new memory engine object.
 function slimta.storage.memory.new()
 
@@ -30,7 +30,7 @@ function slimta.storage.memory.connect(self)
 --                instance, this offst can be used to avoid conflict. The
 --                default is 0.
 --  @see <a href="http://redis.io/commands/select">redis SELECT command</a>
-function slimta.storage.redis.new(host, port offset)
+function slimta.storage.redis.new(host, port, offset)
 
 --- Creates a session connected to the given redis storage engine. Sessions are
 --  the more transient objects that open and close frequently during execution,
