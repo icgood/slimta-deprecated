@@ -294,4 +294,4 @@ int luaopen_slimta_signalfd (lua_State *L)
 
 #endif /* HAVE_SIGNALFD */
 
-// vim:foldmethod=marker:ai:ts=4:sw=4:
+// vim:fdm=marker:ai:ts=4:sw=4:noet:
