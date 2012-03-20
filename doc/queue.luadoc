@@ -1,0 +1,83 @@
+
+--- Module to manage the queue of messages passing through the MTA. This
+--  involves receiving messages from the edge service, storing it in a storage
+--  engine, immediately attempting relay, and retrying failed messages at
+--  regular intervals.
+module "slimta.queue"
+
+--- Creates a new queue object. Requests are received from the edge bus,
+--  delivered to the relay bus, and messages are stored in the storage engine
+--  until they are successfully delivered or bounced.
+--  @param edge_bus receive requests from the edge service on this bus.
+--  @param relay_bus send requests to the relay service on this bus.
+--  @param storage the storage engine to write to.
+--  @return a new queue object.
+--  @see slimta.storage
+function slimta.queue.new(edge_bus, relay_bus, storage)
+
+--- Sets a new function to generate a retry timestamp for a failed message. This
+--  function is passed a message object and a response object and returns nil or
+--  a timestamp number. If nil is returned, it signifies the message should not
+--  be retried and a bounce is delivered to the sender.
+--  @param self the queue object.
+--  @param func new retry algorithm function.
+function slimta.queue.set_retry_algorithm(self, func)
+
+--- Sets a new bounce builder for the queue. This object should have a "build"
+--  method that takes a message, response, and timestamp and returns a new
+--  message object for the bounce.
+--  @param self the queue object.
+--  @param new the new bounce builder object.
+--  @see slimta.message.bounce
+function slimta.queue.set_bounce_builder(self, new)
+
+--- Sets the new lock duration in seconds. Until this time expires or the lock
+--  is removed, no other queue manager will be able to lock the message and
+--  attempt a simultaneous delivery. Ideally, relayers should be configured to
+--  timeout and fail before this lock expires.
+--  @param self the queue object.
+--  @param new the new lock duration in seconds.
+function slimta.queue.set_lock_duration(self, new)
+
+--- Gets deferred messages. If timestamp is given, only messages with retry
+--  timestamps it will be returned.
+--  @param self the queue object.
+--  @param storage_session use this storage session to query deferred messages.
+--  @param timestamp if given, only return messages whose retry time comes
+--                   before it.
+--  @return table array of deferred messages objects.
+function slimta.queue.get_deferred_messages(self, storage_session, timestamp)
+
+--- Returns all messages in the storage engine.
+--  @param self the queue object.
+--  @param storage_session use this storage engine to get messages.
+--  @return table array of stored message objects.
+function slimta.queue.get_all_messages(self, storage_session)
+
+--- Attempts delivery of the message.
+--  @param self the queue object.
+--  @param message message object to deliver.
+--  @param storage_session if given, only attempt delivery if the message can be
+--                         locked by the storage session.
+--  @return message response returned by the relayer.
+--  @see slimta.message.response
+--  @see slimta.storage.session
+function slimta.queue.try_relay(self, message, storage_session)
+
+--- Waits for a request from the edge bus.
+--  @param self the queue object.
+--  @return a callable object which stores the message and attempts delivery.
+--          Usually, this is called in its own thread so that accept() may be
+--          immediately called again.
+function slimta.queue.accept(self)
+
+--- Checks the queue for any deferred messages that are due for another attempt.
+--  Unlike accept(), this method does not wait, but immediately returns nil if
+--  no deferred messages are ready for retry. It is expected that the caller
+--  will wait before checking again.
+--  @param self the queue object.
+--  @return a callable object which attempts a delivery retry for all messages
+--          that are ready. Usually, this is called in its own thread.
+function slimta.queue.retry(self)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
