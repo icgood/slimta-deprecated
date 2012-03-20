@@ -1,0 +1,29 @@
+
+--- Module that attempts message delivery by connection to a remote SMTP server.
+--  @see <a href="http://ratchet.icgood.net/api/latest/modules/ratchet.smtp.client.html">ratchet.smtp.client</a>
+module "slimta.relay.smtp"
+
+--- Creates a new SMTP relayer.
+--  @param ehlo_as EHLO string, or a function that returns an EHLO string.
+--  @param family family of IP protocols to use.
+--  @return a new SMTP relayer object.
+--  @see <a href="http://ratchet.icgood.net/api/latest/modules/ratchet.socket.html#prepare_tcp">ratchet.socket.prepare_tcp</a>
+function slimta.relay.smtp.new(ehlo_as, family)
+
+--- Sets the new EHLO string for sessions to use.
+--  @param ehlo_as EHLO string, or a function that returns an EHLO string.
+function slimta.relay.smtp.set_ehlo_as(self, ehlo_as)
+
+--- States that SMTP sessions in this relayer should attempt to use TLS security
+--  when possible.
+--  @param self the SMTP relayer object.
+--  @param mode "ssl" for full-connection encryption (i.e. port 465), or
+--              "starttls" for encryption as-available.
+--  @param method a ratchet.ssl context object.
+--  @param force_verify if true, consider it a complete failure of delivery if
+--                      the session could not be verified, including certificate
+--                      validation.
+--  @see <a href="http://ratchet.icgood.net/api/latest/modules/ratchet.ssl.html">ratchet.ssl</a>
+function slimta.relay.smtp.use_security(self, mode, method, force_verify)
+
+-- vim:filetype=lua:sw=4:ts=4:sts=4:et:
