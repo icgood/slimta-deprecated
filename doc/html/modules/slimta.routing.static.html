@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.routing.static: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -127,12 +127,12 @@
 		<a href="../modules/slimta.routing.mx.html">slimta.routing.mx</a>
 	</li>
 
+	<li><strong>slimta.routing.static</strong></li>
+	
 	<li>
-		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.routing.static</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module for static routing logic for messages. This function is ideal for inbound mail traffic where all messages follow the same routing rules.</p>
 
 
 
@@ -184,33 +184,13 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#new">new</a>&nbsp;(relayer, host, port)</td>
+    <td class="summary">Creates a new static routing object.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#route">route</a>&nbsp;(self, message)</td>
+    <td class="summary">Applies the static routing information to the messages envelope.</td>
     </tr>
 
 </table>
@@ -230,42 +210,24 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="new"></a><strong>new</strong>&nbsp;(relayer, host, port)</dt>
 <dd>
-Closes the signalfd object.
+Creates a new static routing object. The parameters define the relaying information applied to each routed message. Generally, this information is static (i.e. a string or a number), but each parameter can also be given as a function which will be called in route() with the message as the only parameter.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  relayer: the relayer to use for routing messages.
 	</li>
 	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
-<dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
-
-
-<h3>Parameters</h3>
-<ul>
+	<li>
+	  host: the host to use for routing messages.
+	</li>
 	
 	<li>
-	  sigs: table of signal names.
+	  port: the port to use for routing messages, default 25.
 	</li>
 	
 </ul>
@@ -276,7 +238,7 @@ Returns a signal mask suitable for passing to sigprocmask() or new(). The signal
 
 
 <h3>Return value:</h3>
-signal mask suitable for later use.
+a new routing.static object.
 
 
 
@@ -285,36 +247,20 @@ signal mask suitable for later use.
 
 
 
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
+<dt><a name="route"></a><strong>route</strong>&nbsp;(self, message)</dt>
 <dd>
-Creates a new signalfd object.
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the new signalfd object.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
-<dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
+Applies the static routing information to the messages envelope. If any piece of the routing information was given as a function, that function is called with the message as the only parameter and the result is used.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  self: the routing.static object.
+	</li>
+	
+	<li>
+	  message: the message to apply routing information to.
 	</li>
 	
 </ul>
@@ -325,66 +271,7 @@ Pauses the current ratchet thread until a signal belonging to the signalfd objec
 
 
 <h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
-
-
-
-</dd>
-
-
-
-
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
-<dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-	<li>
-	  mask: the new mask for the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  mask: the new signal mask.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-the old signal mask.
+an array containing one element, the original message, for compatibility with other routing types.
 
 
 

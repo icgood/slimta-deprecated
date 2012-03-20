@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.policies.add_received_header: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -99,10 +99,8 @@
 		<a href="../modules/slimta.policies.add_message_id_header.html">slimta.policies.add_message_id_header</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.policies.add_received_header.html">slimta.policies.add_received_header</a>
-	</li>
-
+	<li><strong>slimta.policies.add_received_header</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.policies.forward.html">slimta.policies.forward</a>
 	</li>
@@ -131,8 +129,10 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.policies.add_received_header</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module that implements policy logic to add a "Received:" header to an outgoing message, as per RFC 2821. This header should be prepended to all messages handled by the MTA.</p>
 
 
 
@@ -184,33 +184,13 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#slimta.policies.add_received_header.add">slimta.policies.add_received_header.add</a>&nbsp;(self, message)</td>
+    <td class="summary">Prepends a "Received:" header to the message, describing information about its reception from the edge.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#slimta.policies.add_received_header.new">slimta.policies.add_received_header.new</a>&nbsp;(date_format, use_utc)</td>
+    <td class="summary">Creates a new add_received_header object.</td>
     </tr>
 
 </table>
@@ -230,16 +210,20 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="slimta.policies.add_received_header.add"></a><strong>slimta.policies.add_received_header.add</strong>&nbsp;(self, message)</dt>
 <dd>
-Closes the signalfd object.
+Prepends a "Received:" header to the message, describing information about its reception from the edge.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  self: the add_received_header object.
+	</li>
+	
+	<li>
+	  message: the message to add the header to.
 	</li>
 	
 </ul>
@@ -256,65 +240,20 @@ Closes the signalfd object.
 
 
 
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
+<dt><a name="slimta.policies.add_received_header.new"></a><strong>slimta.policies.add_received_header.new</strong>&nbsp;(date_format, use_utc)</dt>
 <dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
+Creates a new add_received_header object.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  sigs: table of signal names.
+	  date_format: date format to use in the header, as per os.date().
 	</li>
 	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-signal mask suitable for later use.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
-<dd>
-Creates a new signalfd object.
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the new signalfd object.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
-<dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
-
-
-<h3>Parameters</h3>
-<ul>
-	
 	<li>
-	  self: the signalfd object.
+	  use_utc: forces the date portion to use UTC instead of the local system timezone.
 	</li>
 	
 </ul>
@@ -325,68 +264,18 @@ Pauses the current ratchet thread until a signal belonging to the signalfd objec
 
 
 <h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
+a new add_received_header object.
 
 
 
-</dd>
-
-
-
-
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
-<dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
-
-
-<h3>Parameters</h3>
+<h3>See also:</h3>
 <ul>
 	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-	<li>
-	  mask: the new mask for the signalfd object.
-	</li>
+	<li><a href="">
+		<a href="http://www.lua.org/manual/5.2/manual.html#pdf-os.date"> os.date()</a>
+	</a>
 	
 </ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  mask: the new signal mask.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-the old signal mask.
-
-
 
 </dd>
 

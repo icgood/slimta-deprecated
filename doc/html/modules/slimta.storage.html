@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.storage: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -131,12 +131,12 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
 	<li>
-		<a href="../modules/slimta.storage.html">slimta.storage</a>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
 	</li>
 
+	<li><strong>slimta.storage</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.storage.session.html">slimta.storage.session</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.storage</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module of storage engines currently available to slimta. Every storage engine should expose the same base set of methods, and every storage engine session should as well.</p>
 
 
 
@@ -184,33 +184,23 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#slimta.storage.memory.connect">slimta.storage.memory.connect</a>&nbsp;(self)</td>
+    <td class="summary">Creates a session with the given memory engine object.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
+    <td class="name" nowrap><a href="#slimta.storage.memory.new">slimta.storage.memory.new</a>&nbsp;()</td>
+    <td class="summary">Creates a new in-memory storage engine.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
+    <td class="name" nowrap><a href="#slimta.storage.redis.connect">slimta.storage.redis.connect</a>&nbsp;(self)</td>
+    <td class="summary">Creates a session connected to the given redis storage engine.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#slimta.storage.redis.new">slimta.storage.redis.new</a>&nbsp;(host, port, offset)</td>
+    <td class="summary">Creates a new redis storage engine.</td>
     </tr>
 
 </table>
@@ -230,42 +220,16 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="slimta.storage.memory.connect"></a><strong>slimta.storage.memory.connect</strong>&nbsp;(self)</dt>
 <dd>
-Closes the signalfd object.
+Creates a session with the given memory engine object. Sessions are the more transient objects that open and close frequently during execution, as opposed to the engine objects themselves of which you generally only create one. You should always close sessions when you are done with them.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
-<dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  sigs: table of signal names.
+	  self: the memory engine object.
 	</li>
 	
 </ul>
@@ -276,18 +240,27 @@ Returns a signal mask suitable for passing to sigprocmask() or new(). The signal
 
 
 <h3>Return value:</h3>
-signal mask suitable for later use.
+a session object for the memory engine.
 
 
+
+<h3>See also:</h3>
+<ul>
+	
+	<li><a href="../modules/slimta.storage.session.html">
+		slimta.storage.session
+	</a>
+	
+</ul>
 
 </dd>
 
 
 
 
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
+<dt><a name="slimta.storage.memory.new"></a><strong>slimta.storage.memory.new</strong>&nbsp;()</dt>
 <dd>
-Creates a new signalfd object.
+Creates a new in-memory storage engine. This engine is NOT persistent to disk in any way. If this object is garbage-collected or the process ends for any reaspon, any messages queued with this engine will be lost. It's primary purpose is as a storage "mock" for testing.
 
 
 
@@ -296,7 +269,7 @@ Creates a new signalfd object.
 
 
 <h3>Return value:</h3>
-the new signalfd object.
+a new memory engine object.
 
 
 
@@ -305,16 +278,16 @@ the new signalfd object.
 
 
 
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
+<dt><a name="slimta.storage.redis.connect"></a><strong>slimta.storage.redis.connect</strong>&nbsp;(self)</dt>
 <dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
+Creates a session connected to the given redis storage engine. Sessions are the more transient objects that open and close frequently during execution, as opposed to the engine objects themselves of which you generally only create/need one. You should always close sessions when you are done with them.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  self: the redis engine object.
 	</li>
 	
 </ul>
@@ -325,29 +298,42 @@ Pauses the current ratchet thread until a signal belonging to the signalfd objec
 
 
 <h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
+a session object for the redis engine.
 
 
+
+<h3>See also:</h3>
+<ul>
+	
+	<li><a href="../modules/slimta.storage.session.html">
+		slimta.storage.session
+	</a>
+	
+</ul>
 
 </dd>
 
 
 
 
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
+<dt><a name="slimta.storage.redis.new"></a><strong>slimta.storage.redis.new</strong>&nbsp;(host, port, offset)</dt>
 <dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
+Creates a new redis storage engine. When sessions are created, they will connect to the given host/port. This storage engine, at the time of writing, consumes 4 adjacent databases, e.g. 0-3 if offset argument is 0 or nil.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  host: the host running the redis instance.
 	</li>
 	
 	<li>
-	  mask: the new mask for the signalfd object.
+	  port: the port of the redis instance.
+	</li>
+	
+	<li>
+	  offset: the index of the first redis database to use. If multiple, distinct redis storage engines need to run using one redis instance, this offst can be used to avoid conflict. The default is 0.
 	</li>
 	
 </ul>
@@ -359,34 +345,14 @@ Sets the mask of the signalfd object. This defines which signals the signalfd's 
 
 
 
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
+<h3>See also:</h3>
 <ul>
 	
-	<li>
-	  mask: the new signal mask.
-	</li>
+	<li><a href="">
+		<a href="http://redis.io/commands/select">redis SELECT command</a>
+	</a>
 	
 </ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-the old signal mask.
-
-
 
 </dd>
 

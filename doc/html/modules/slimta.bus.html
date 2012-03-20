@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.bus: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -43,10 +43,8 @@
 		<a href="../modules/slimta.base64.html">slimta.base64</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.bus.html">slimta.bus</a>
-	</li>
-
+	<li><strong>slimta.bus</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.bus.proxy.html">slimta.bus.proxy</a>
 	</li>
@@ -131,8 +129,10 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.bus</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module that simplifies and abstracts the transfer of objects either locally (within the same Lua state) or over a socket. <br/><br/>&nbspFor server-side bus objects, the recv_request() method is implemented which results in a transaction and a array of requests. The transaction object implements the send_response() method which sends an array of responses back to the client. <br/><br/>&nbspFor client-side bus objects, the send_request() method is implemented which results in a transaction object. The transaction object implements the recv_response() method, which gets the array of responses back from the server. <br/><br/>&nbspObjects sent and received with socket buses either as the request or as the response MUST implement to_xml() and from_xml() functions. The to_xml() function is as described in the slimta.xml.writer module. The from_xml() function takes a root tree node (as in slimta.xml.reader) and an array of arbitrary string attachments. <br/><br/>&nbspFor more information, see the ratchet.bus API documentation and usage manual.</p>
 
 
 
@@ -184,33 +184,18 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#new_client">new_client</a>&nbsp;(host, port, response_type, a)</td>
+    <td class="summary">Creates a client-side bus object to send requests to a server bus located by the given host and port.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
+    <td class="name" nowrap><a href="#new_local">new_local</a>&nbsp;()</td>
+    <td class="summary">Creates a new local bus, implemented as a queue structure using Lua tables and ratchet threads, such that one thread may wait for requests until another sends one.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#new_server">new_server</a>&nbsp;(host, port, request_type)</td>
+    <td class="summary">Creates a server-side bus object to listen for requests on a socket listening on the given host and port.</td>
     </tr>
 
 </table>
@@ -230,16 +215,28 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="new_client"></a><strong>new_client</strong>&nbsp;(host, port, response_type, a)</dt>
 <dd>
-Closes the signalfd object.
+Creates a client-side bus object to send requests to a server bus located by the given host and port. Received responses are translated from XML using the from_xml() function of the given response data type, and sent requests are translated to XML using the to_xml() method.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  host: the host to connect to.
+	</li>
+	
+	<li>
+	  port: the port to connect to.
+	</li>
+	
+	<li>
+	  response_type: a table implementing the from_xml() function for interpreting the response XML.
+	</li>
+	
+	<li>
+	  a: new client-side socket bus.
 	</li>
 	
 </ul>
@@ -256,16 +253,44 @@ Closes the signalfd object.
 
 
 
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
+<dt><a name="new_local"></a><strong>new_local</strong>&nbsp;()</dt>
 <dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
+Creates a new local bus, implemented as a queue structure using Lua tables and ratchet threads, such that one thread may wait for requests until another sends one. After a thread sends a request, it may then wait for a response. The result is a client-server model.
+
+
+
+
+
+
+
+<h3>Return value:</h3>
+the server end of the bus, followed by the client end.
+
+
+
+</dd>
+
+
+
+
+<dt><a name="new_server"></a><strong>new_server</strong>&nbsp;(host, port, request_type)</dt>
+<dd>
+Creates a server-side bus object to listen for requests on a socket listening on the given host and port. Received requests are translated from XML using the from_xml() function of the given request data type, and sent responses are translated to XML using its to_xml() method.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  sigs: table of signal names.
+	  host: the host interface to listen on.
+	</li>
+	
+	<li>
+	  port: the port to listen on.
+	</li>
+	
+	<li>
+	  request_type: a table implementing the from_xml() function for interpreting the request XML.
 	</li>
 	
 </ul>
@@ -276,115 +301,7 @@ Returns a signal mask suitable for passing to sigprocmask() or new(). The signal
 
 
 <h3>Return value:</h3>
-signal mask suitable for later use.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
-<dd>
-Creates a new signalfd object.
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the new signalfd object.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
-<dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
-
-
-
-</dd>
-
-
-
-
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
-<dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-	<li>
-	  mask: the new mask for the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  mask: the new signal mask.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-the old signal mask.
+a new server-side socket bus.
 
 
 

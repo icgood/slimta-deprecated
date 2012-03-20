@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.message.bounce: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -71,10 +71,8 @@
 		<a href="../modules/slimta.message.html">slimta.message</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.message.bounce.html">slimta.message.bounce</a>
-	</li>
-
+	<li><strong>slimta.message.bounce</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.message.client.html">slimta.message.client</a>
 	</li>
@@ -131,8 +129,10 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.message.bounce</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module for taking a message and response and generating a bounce message to explain to the sender why the original message failed to send.</p>
 
 
 
@@ -184,33 +184,13 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#slimta.message.bounce.build">slimta.message.bounce.build</a>&nbsp;(self, message, response, timestamp)</td>
+    <td class="summary">Takes information about the original message and what happened to it and generates a bounce message to alert the sender that the message failed to be delivered and why.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#slimta.message.bounce.new">slimta.message.bounce.new</a>&nbsp;(sender, client, header_tmpl, footer_tmpl)</td>
+    <td class="summary">Creates a new bounce generator object.</td>
     </tr>
 
 </table>
@@ -230,16 +210,28 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="slimta.message.bounce.build"></a><strong>slimta.message.bounce.build</strong>&nbsp;(self, message, response, timestamp)</dt>
 <dd>
-Closes the signalfd object.
+Takes information about the original message and what happened to it and generates a bounce message to alert the sender that the message failed to be delivered and why.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  self: the bounce generator object.
+	</li>
+	
+	<li>
+	  message: the original message object.
+	</li>
+	
+	<li>
+	  response: the message response object.
+	</li>
+	
+	<li>
+	  timestamp: timestamp to use for the bounce message, defaulting to the current time.
 	</li>
 	
 </ul>
@@ -256,65 +248,28 @@ Closes the signalfd object.
 
 
 
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
+<dt><a name="slimta.message.bounce.new"></a><strong>slimta.message.bounce.new</strong>&nbsp;(sender, client, header_tmpl, footer_tmpl)</dt>
 <dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
+Creates a new bounce generator object. A form of variable substitution is applied to the header_tmpl and footer_tmpl strings allowing them to contain information about the message, see the usage manual for more details.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  sigs: table of signal names.
+	  sender: used as the envelope sender of the bounce message, default "".
 	</li>
 	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-signal mask suitable for later use.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
-<dd>
-Creates a new signalfd object.
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the new signalfd object.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
-<dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
-
-
-<h3>Parameters</h3>
-<ul>
+	<li>
+	  client: if given, used as the message.client of the bounce message.
+	</li>
 	
 	<li>
-	  self: the signalfd object.
+	  header_tmpl: The MIME data preceding the original message contents.
+	</li>
+	
+	<li>
+	  footer_tmpl: The MIME data proceeding the original message contents.
 	</li>
 	
 </ul>
@@ -325,68 +280,18 @@ Pauses the current ratchet thread until a signal belonging to the signalfd objec
 
 
 <h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
+a new bounce generator object.
 
 
 
-</dd>
-
-
-
-
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
-<dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
-
-
-<h3>Parameters</h3>
+<h3>See also:</h3>
 <ul>
 	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-	<li>
-	  mask: the new mask for the signalfd object.
-	</li>
+	<li><a href="../modules/slimta.message.client.html">
+		slimta.message.client
+	</a>
 	
 </ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  mask: the new signal mask.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-the old signal mask.
-
-
 
 </dd>
 

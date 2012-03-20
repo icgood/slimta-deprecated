@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.xml.reader: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -131,8 +131,10 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -149,10 +151,8 @@
 		<a href="../modules/slimta.xml.html">slimta.xml</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.xml.reader.html">slimta.xml.reader</a>
-	</li>
-
+	<li><strong>slimta.xml.reader</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.xml.writer.html">slimta.xml.writer</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.xml.reader</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module that parses XML data into a consistent tree structure that data types may use to recreate objects. <br/><br/>&nbspTree nodes contain three associative key elements: "name" is the name of the node's tag, "attrs" is a table whose keys correlate to tag attributes, and "data" is a concatenation of all the data found between the start and end of the tag. Child node of a node are given, in order, as numeric table indices (node[1], node[2], etc.).</p>
 
 
 
@@ -184,33 +184,13 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
-    </tr>
-
-    <tr>
     <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
+    <td class="summary">Creates a new xml.reader object.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#parse_xml">parse_xml</a>&nbsp;(self, data)</td>
+    <td class="summary">Parses the given XML data into a tree structure, returning the root node.</td>
     </tr>
 
 </table>
@@ -230,64 +210,9 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
-<dd>
-Closes the signalfd object.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
-<dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  sigs: table of signal names.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-signal mask suitable for later use.
-
-
-
-</dd>
-
-
-
-
 <dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
 <dd>
-Creates a new signalfd object.
+Creates a new xml.reader object.
 
 
 
@@ -296,7 +221,7 @@ Creates a new signalfd object.
 
 
 <h3>Return value:</h3>
-the new signalfd object.
+a new xml.reader object.
 
 
 
@@ -305,16 +230,20 @@ the new signalfd object.
 
 
 
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
+<dt><a name="parse_xml"></a><strong>parse_xml</strong>&nbsp;(self, data)</dt>
 <dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
+Parses the given XML data into a tree structure, returning the root node. Traversing the tree from the root node provides access to all the data contained in the original XML.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  self: the xml.reader object.
+	</li>
+	
+	<li>
+	  data: the XML data to parse.
 	</li>
 	
 </ul>
@@ -325,66 +254,7 @@ Pauses the current ratchet thread until a signal belonging to the signalfd objec
 
 
 <h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
-
-
-
-</dd>
-
-
-
-
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
-<dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  self: the signalfd object.
-	</li>
-	
-	<li>
-	  mask: the new mask for the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  mask: the new signal mask.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-the old signal mask.
+the root node of the tree structure.
 
 
 

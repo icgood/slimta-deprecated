@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.relay: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -111,10 +111,8 @@
 		<a href="../modules/slimta.queue.html">slimta.queue</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.relay.html">slimta.relay</a>
-	</li>
-
+	<li><strong>slimta.relay</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.relay.maildrop.html">slimta.relay.maildrop</a>
 	</li>
@@ -131,8 +129,10 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.relay</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module that manages the delivery of messages. Different messages can be delivered in different ways, some may be forwarded by SMTP to another host while others may belong to a local mailbox on disk. Different relayers are identified by an arbitrary unique string, e.g. "SMTP", "maildrop", or "gmail".</p>
 
 
 
@@ -184,33 +184,18 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#slimta.relay.accept">slimta.relay.accept</a>&nbsp;(self)</td>
+    <td class="summary">Waits for a relay request from the bus.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
+    <td class="name" nowrap><a href="#slimta.relay.add_relayer">slimta.relay.add_relayer</a>&nbsp;(self, name, relayer)</td>
+    <td class="summary">Adds a new available relayer object.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#slimta.relay.new">slimta.relay.new</a>&nbsp;(bus, default)</td>
+    <td class="summary">Creates a new relayer object, which receives relay requests on a bus.</td>
     </tr>
 
 </table>
@@ -230,42 +215,16 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="slimta.relay.accept"></a><strong>slimta.relay.accept</strong>&nbsp;(self)</dt>
 <dd>
-Closes the signalfd object.
+Waits for a relay request from the bus.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
-<dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  sigs: table of signal names.
+	  self: the relay object.
 	</li>
 	
 </ul>
@@ -276,7 +235,7 @@ Returns a signal mask suitable for passing to sigprocmask() or new(). The signal
 
 
 <h3>Return value:</h3>
-signal mask suitable for later use.
+a callable object which attempts message delivery by its specified relayer (or the default). Usually, this is called in a separate thread so that accept() can be called again immediately.
 
 
 
@@ -285,69 +244,24 @@ signal mask suitable for later use.
 
 
 
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
+<dt><a name="slimta.relay.add_relayer"></a><strong>slimta.relay.add_relayer</strong>&nbsp;(self, name, relayer)</dt>
 <dd>
-Creates a new signalfd object.
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the new signalfd object.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
-<dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
+Adds a new available relayer object. This relayer will handle any messages that specify it.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-<h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
-
-
-
-</dd>
-
-
-
-
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
-<dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  self: the signalfd object.
+	  self: the relay object.
 	</li>
 	
 	<li>
-	  mask: the new mask for the signalfd object.
+	  name: an arbitrary name string that messages will use to indicate which relayer should deliver them.
+	</li>
+	
+	<li>
+	  relayer: a relayer object.
 	</li>
 	
 </ul>
@@ -359,21 +273,38 @@ Sets the mask of the signalfd object. This defines which signals the signalfd's 
 
 
 
+<h3>See also:</h3>
+<ul>
+	
+	<li><a href="../modules/slimta.relay.smtp.html">
+		slimta.relay.smtp
+	</a>
+	
+	<li><a href="../modules/slimta.relay.maildrop.html">
+		slimta.relay.maildrop
+	</a>
+	
+</ul>
+
 </dd>
 
 
 
 
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
+<dt><a name="slimta.relay.new"></a><strong>slimta.relay.new</strong>&nbsp;(bus, default)</dt>
 <dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
+Creates a new relayer object, which receives relay requests on a bus.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  mask: the new signal mask.
+	  bus: new relay requests are received on this bus.
+	</li>
+	
+	<li>
+	  default: if a message does not specify its intended relayer, it should use the one indicated by this string.
 	</li>
 	
 </ul>
@@ -384,7 +315,7 @@ Sets the new signal mask of the current process and returns the old one. The sig
 
 
 <h3>Return value:</h3>
-the old signal mask.
+a new relay object.
 
 
 

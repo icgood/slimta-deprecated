@@ -3,7 +3,7 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>slimta.signalfd: Module Index</title>
+    <title>slimta.bus.proxy: Module Index</title>
     <link rel="stylesheet" href="../luadoc.css" type="text/css" />
     <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
 </head>
@@ -47,10 +47,8 @@
 		<a href="../modules/slimta.bus.html">slimta.bus</a>
 	</li>
 
-	<li>
-		<a href="../modules/slimta.bus.proxy.html">slimta.bus.proxy</a>
-	</li>
-
+	<li><strong>slimta.bus.proxy</strong></li>
+	
 	<li>
 		<a href="../modules/slimta.edge.http.html">slimta.edge.http</a>
 	</li>
@@ -131,8 +129,10 @@
 		<a href="../modules/slimta.routing.static.html">slimta.routing.static</a>
 	</li>
 
-	<li><strong>slimta.signalfd</strong></li>
-	
+	<li>
+		<a href="../modules/slimta.signalfd.html">slimta.signalfd</a>
+	</li>
+
 	<li>
 		<a href="../modules/slimta.storage.html">slimta.storage</a>
 	</li>
@@ -172,9 +172,9 @@
 
 <div id="content">
 
-<h1>Module <code>slimta.signalfd</code></h1>
+<h1>Module <code>slimta.bus.proxy</code></h1>
 
-<p>Module for catching signals in an event-based manner. Uses the signalfd() system call only available on GNU/Linux systems.</p>
+<p>Module that provides a convenient way to apply policies and make changes to a stream of requests traversing a bus. For example, a message going from the queue to the relayer may not yet have any routing information in order to be relayed.</p>
 
 
 
@@ -184,33 +184,18 @@
 <table class="function_list">
 
     <tr>
-    <td class="name" nowrap><a href="#close">close</a>&nbsp;(self)</td>
-    <td class="summary">Closes the signalfd object.</td>
+    <td class="name" nowrap><a href="#slimta.bus.proxy.__call">slimta.bus.proxy.__call</a>&nbsp;(self)</td>
+    <td class="summary">Enters an infinite loop of accepting new requests and starting new threads to proxy them.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#mask">mask</a>&nbsp;(sigs)</td>
-    <td class="summary">Returns a signal mask suitable for passing to sigprocmask() or new().</td>
+    <td class="name" nowrap><a href="#slimta.bus.proxy.accept">slimta.bus.proxy.accept</a>&nbsp;(self)</td>
+    <td class="summary">Waits for a new request on the source bus.</td>
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#new">new</a>&nbsp;()</td>
-    <td class="summary">Creates a new signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#read">read</a>&nbsp;(self)</td>
-    <td class="summary">Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#setmask">setmask</a>&nbsp;(self, mask)</td>
-    <td class="summary">Sets the mask of the signalfd object.</td>
-    </tr>
-
-    <tr>
-    <td class="name" nowrap><a href="#sigprocmask">sigprocmask</a>&nbsp;(mask)</td>
-    <td class="summary">Sets the new signal mask of the current process and returns the old one.</td>
+    <td class="name" nowrap><a href="#slimta.bus.proxy.new">slimta.bus.proxy.new</a>&nbsp;(from_bus, to_bus, filter)</td>
+    <td class="summary">Creates a new proxy object between a source and destination bus.</td>
     </tr>
 
 </table>
@@ -230,42 +215,16 @@
 
 
 
-<dt><a name="close"></a><strong>close</strong>&nbsp;(self)</dt>
+<dt><a name="slimta.bus.proxy.__call"></a><strong>slimta.bus.proxy.__call</strong>&nbsp;(self)</dt>
 <dd>
-Closes the signalfd object.
+Enters an infinite loop of accepting new requests and starting new threads to proxy them. This metamethod is given as a convenience so that a proxy object can be called as a new thread.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
-	</li>
-	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="mask"></a><strong>mask</strong>&nbsp;(sigs)</dt>
-<dd>
-Returns a signal mask suitable for passing to sigprocmask() or new(). The signals passed to this function are simply the namesin the signal(7) man page, e.g. "SIGHUP" or "SIGTERM".
-
-
-<h3>Parameters</h3>
-<ul>
-	
-	<li>
-	  sigs: table of signal names.
+	  self: the proxy object.
 	</li>
 	
 </ul>
@@ -276,7 +235,7 @@ Returns a signal mask suitable for passing to sigprocmask() or new(). The signal
 
 
 <h3>Return value:</h3>
-signal mask suitable for later use.
+this function never returns and should be called in its own thread.
 
 
 
@@ -285,36 +244,16 @@ signal mask suitable for later use.
 
 
 
-<dt><a name="new"></a><strong>new</strong>&nbsp;()</dt>
+<dt><a name="slimta.bus.proxy.accept"></a><strong>slimta.bus.proxy.accept</strong>&nbsp;(self)</dt>
 <dd>
-Creates a new signalfd object.
-
-
-
-
-
-
-
-<h3>Return value:</h3>
-the new signalfd object.
-
-
-
-</dd>
-
-
-
-
-<dt><a name="read"></a><strong>read</strong>&nbsp;(self)</dt>
-<dd>
-Pauses the current ratchet thread until a signal belonging to the signalfd object's mask is sent to the current process. The name string of this signal is the return value of this function.
+Waits for a new request on the source bus. When one is received, a callable object is returned that will run the proxy object's filter function. Usually the application will call the returned value in a new thread so that it may keep calling accept() for new requests.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  self: the proxy object.
 	</li>
 	
 </ul>
@@ -325,7 +264,7 @@ Pauses the current ratchet thread until a signal belonging to the signalfd objec
 
 
 <h3>Return value:</h3>
-a string name of the signal received, e.g. "SIGUSR1".
+a callable object to filter and proxy the received request.
 
 
 
@@ -334,46 +273,24 @@ a string name of the signal received, e.g. "SIGUSR1".
 
 
 
-<dt><a name="setmask"></a><strong>setmask</strong>&nbsp;(self, mask)</dt>
+<dt><a name="slimta.bus.proxy.new"></a><strong>slimta.bus.proxy.new</strong>&nbsp;(from_bus, to_bus, filter)</dt>
 <dd>
-Sets the mask of the signalfd object. This defines which signals the signalfd's read() method will catch. Generally, this mask is also passed to sigprocmask() to have their default handlers blocked.
+Creates a new proxy object between a source and destination bus.
 
 
 <h3>Parameters</h3>
 <ul>
 	
 	<li>
-	  self: the signalfd object.
+	  from_bus: requests are received from this bus as the source.
 	</li>
 	
 	<li>
-	  mask: the new mask for the signalfd object.
+	  to_bus: passed to the filter as the destination bus to proxy requests to.
 	</li>
 	
-</ul>
-
-
-
-
-
-
-
-
-</dd>
-
-
-
-
-<dt><a name="sigprocmask"></a><strong>sigprocmask</strong>&nbsp;(mask)</dt>
-<dd>
-Sets the new signal mask of the current process and returns the old one. The signal mask defines those signals whose handlers are blocked, which does not mean that signalfd cannot catch them.
-
-
-<h3>Parameters</h3>
-<ul>
-	
 	<li>
-	  mask: the new signal mask.
+	  filter: optional function to filter requests and proxy them to the destination bus. Accepts two parameters, the destination bus object and the request array. It should return an appropriate response array that will be sent back to the source bus. The default filter simply proxies to the destination without modification.
 	</li>
 	
 </ul>
@@ -384,7 +301,7 @@ Sets the new signal mask of the current process and returns the old one. The sig
 
 
 <h3>Return value:</h3>
-the old signal mask.
+a new proxy object.
 
 
 
