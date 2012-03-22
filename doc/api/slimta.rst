@@ -35,6 +35,7 @@ C, other modules will require direct ``require()`` calls.
    slimta.uuid
    slimta.xml
    slimta.message
+   slimta.storage
    slimta.policies
    slimta.routing
    slimta.edge

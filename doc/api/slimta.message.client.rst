@@ -20,12 +20,12 @@ listener. This information is useful for logging, policies, etc.
    Creates a new :mod:`client` object from the given information.
 
    :param protocol: a string describing the protocol by which the message was
-    delivered, e.g. ``ESMTP`` or ``HTTP``.
+    delivered, e.g. ``"ESMTP"`` or ``"HTTP"``.
    :param ehlo: the string passed to the SMTP EHLO command (or equivalent).
    :param ip: the source of the connection, calling ``tostring()`` on this
     object will give its IP string.
    :param security: a string describing any security procedures used to deliver
-    the message, e.g. ``none`` or ``TLS``.
+    the message, e.g. ``"none"`` or ``"TLS"``.
    :param receiver: the hostname or other identification string of the edge
     listener that received the message.
    :param auth_info: the identity used for any authentication mechanism.

@@ -47,6 +47,10 @@ does nothing fancy but functions very similar to using expat in C.
    :param self: :mod:`slimta.xml` object.
    :param data: the string of data to parse.
 
+--------------
+
+**Modules**
+
 .. toctree::
 
    slimta.xml.reader

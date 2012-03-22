@@ -11,7 +11,7 @@ system call only available on GNU/Linux systems.
 
    Returns a signal mask suitable for passing to :func:`sigprocmask()` or
    :func:`new()`. The signals passed to this function are simply the names in
-   the signal(7) man page, e.g. ``SIGHUP`` or ``SIGTERM``.
+   the signal(7) man page, e.g. ``"SIGHUP"`` or ``"SIGTERM"``.
 
    :param sigs: table of signal names.
    :return: signal mask suitable for later use.
@@ -53,5 +53,5 @@ system call only available on GNU/Linux systems.
    of this signal is the return value of this function.
 
    :param self: the :mod:`signalfd` object.
-   :return: a string name of the signal received, e.g. ``SIGUSR1``.
+   :return: a string name of the signal received, e.g. ``"SIGUSR1"``.
 

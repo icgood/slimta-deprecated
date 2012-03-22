@@ -3,18 +3,15 @@
 slimta: Mail Transfer Library
 #############################
 
-Table of Contents
-=================
-
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
-   README <https://raw.github.com/icgood/slimta/master/README>
-   License <license>
-   Download <https://github.com/icgood/ratchet/downloads>
-   Source Repository <https://github.com/icgood/ratchet>
-   Bug Reports <https://github.com/icgood/ratchet/issues>
-   Installation <installation>
-   API Reference <api>
-   Usage Manual <manual>
+   api
+   manual
+
+:doc:`API Reference <api>`
+==========================
+
+:doc:`Usage Manual <manual>`
+============================
 

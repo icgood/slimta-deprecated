@@ -1,12 +1,8 @@
 
-#############################
-slimta: Mail Transfer Library
-#############################
-
 API Reference
 =============
 
-Modules:
+**Modules:**
 
 .. toctree::
 

@@ -1,6 +1,6 @@
 
 slimta.message.envelope
-=====================
+=======================
 
 .. currentmodule:: slimta.message.envelope
 

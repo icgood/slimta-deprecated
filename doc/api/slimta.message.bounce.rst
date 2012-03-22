@@ -13,14 +13,15 @@ explain to the sender why the original message failed to send.
    applied to the *header_tmpl* and *footer_tmp* strings allowing them to
    contain information about the message, see the usage manual for more details.
 
-   :param sender: used as the envelope sender of the bounce message, default "".
+   :param sender: used as the envelope sender of the bounce message, default
+    ``""``.
    :param client: :mod:`slimta.message.client` object used for the bounce
     message.
    :param header_tmpl: the MIME data string preceding the original message
     contents.
    :param footer_tmpl: the MIME data string proceeding the original message
     contents.
-   :return new :mod:`bounce` object.
+   :return: new :mod:`bounce` object.
 
 .. function:: build(self, message, response, [timestamp])
 

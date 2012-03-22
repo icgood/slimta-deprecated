@@ -33,8 +33,8 @@ sensible way. This includes header parsing and modification.
    a message, modifying the ``headers`` table will NOT work.
 
    :param self: :mod:`contents` object.
-   :param name: the name of the header to add, e.g. ``X-Awesome-Sauce``.
-   :param value: the raw contents of the header, e.g. ``127.0.0.1``.
+   :param name: the name of the header to add, e.g. ``"X-Awesome-Sauce"``.
+   :param value: the raw contents of the header, e.g. ``"127.0.0.1"``.
    :param after_existing: if true, append the new header instead of prepending it
     to the list of headers.
 
@@ -43,7 +43,7 @@ sensible way. This includes header parsing and modification.
    Removes ALL headers of the given name from the message. This is the ONLY way to remove headers from a message, modifying the ``headers`` table will NOT work.
 
    :param self: :mod:`contents` object.
-   :param name: the name of the header to delete, e.g. ``X-Fail-Sauce``.
+   :param name: the name of the header to delete, e.g. ``"X-Fail-Sauce"``.
 
 .. function:: __tostring(self)
 

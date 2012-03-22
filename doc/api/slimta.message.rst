@@ -37,7 +37,7 @@ engine and serializing messages into transmittable form.
    :param storage_session: :mod:`slimta.storage.session` object.
    :param id: message ID string to load from storage.
    :return: new :mod:`slimta.message` object if successful, or nil followed by
-    an error message. Error message will be ``invalid`` if the query simply did
+    an error message. Error message will be ``"invalid"`` if the query simply did
     not match any message IDs.
 
 .. function:: store(self, storage_session, [id])
@@ -100,6 +100,10 @@ engine and serializing messages into transmittable form.
    :param force_id: if given, will be set as the message's storage ID string,
     potentially overriding any value specified in the table.
    :return: new :mod:`slimta.message` object.
+
+--------------
+
+**Modules**
 
 .. toctree::
 

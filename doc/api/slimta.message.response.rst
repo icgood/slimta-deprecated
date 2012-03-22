@@ -7,7 +7,7 @@ slimta.message.response
 Module to represent a response to a message delivery. These responses must come
 from an SMTP relayer attempting delivery or must be translated into valid SMTP
 command responses. For example, successfully writing a message into a user's
-local mailbox should yield a ``250`` even if an SMTP relayer was not used.
+local mailbox should yield a ``"250"`` even if an SMTP relayer was not used.
 
 .. function:: new(code, message, [data])
 
@@ -32,7 +32,7 @@ local mailbox should yield a ``250`` even if an SMTP relayer was not used.
    Returns a table suitable for returning as an HTTP response. This table
    includes an HTTP code and message, and can also include the arbitrary data
    string passed to the constructor. SMTP codes are translated (rather
-   ignorantly) into HTTP codes, e.g. ``250`` => ``200``.
+   ignorantly) into HTTP codes, e.g. ``"250"`` => ``"200"``.
 
    :param self: :mod:`response` object.
    :return: an HTTP response table.

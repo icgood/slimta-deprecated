@@ -62,6 +62,10 @@ manual.
                          interpreting the response XML.
    :return: a new client-side socket bus.
 
+--------------
+
+**Modules**
+
 .. toctree::
 
    slimta.bus.proxy
