@@ -2,7 +2,7 @@
 slimta.edge.http
 ================
 
-.. currentmodule:: slimta.edge.http
+.. module:: slimta.edge.http
 
 Module that manages an edge listener for HTTP message requests. These requests
 follow an unofficial, non-standard scheme where SMTP-like data is given as HTTP

@@ -2,7 +2,7 @@
 slimta.policies.add_received_header
 ===================================
 
-.. currentmodule:: slimta.policies.add_received_header
+.. module:: slimta.policies.add_received_header
 
 Module that implements policy logic to add a ``Received:`` header to an outgoing
 message, as per *RFC 2821*. This header should be prepended to all messages

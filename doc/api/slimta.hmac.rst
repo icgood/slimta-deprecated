@@ -2,7 +2,7 @@
 slimta.hmac
 ====================
 
-.. currentmodule:: slimta.hmac
+.. module:: slimta.hmac
 
 Module for generating HMAC-encoded digests using OpenSSL's HMAC() function.
 

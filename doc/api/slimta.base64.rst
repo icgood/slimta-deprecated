@@ -2,7 +2,7 @@
 slimta.base64
 =============
 
-.. currentmodule:: slimta.base64
+.. module:: slimta.base64
 
 Module containing encoding and decoding functions for the standard base64 codec,
 as provided by the OpenSSL crypto library.

@@ -2,7 +2,7 @@
 slimta.policies.forward
 =======================
 
-.. currentmodule:: slimta.policies.forward
+.. module:: slimta.policies.forward
 
 Module that implements pattern-based, prioritized recipient rewriting, also
 known as forwarding.

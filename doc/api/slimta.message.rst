@@ -2,7 +2,7 @@
 slimta.message
 ====================
 
-.. currentmodule:: slimta.message
+.. module:: slimta.message
 
 Module for representing email message and all their associated data. This module
 implements the routines for storing and retrieving messages from a storage

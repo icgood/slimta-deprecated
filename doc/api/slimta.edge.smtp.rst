@@ -2,7 +2,7 @@
 slimta.edge.smtp
 ================
 
-.. currentmodule:: slimta.edge.smtp
+.. module:: slimta.edge.smtp
 
 Module that manages an edge listener for SMTP message requests.
 

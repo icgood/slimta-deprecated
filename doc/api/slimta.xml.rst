@@ -2,7 +2,7 @@
 slimta.xml
 ====================
 
-.. currentmodule:: slimta.xml
+.. module:: slimta.xml
 
 Module that provides an interface to XML parsing using libexpat. This module
 does nothing fancy but functions very similar to using expat in C.

@@ -2,7 +2,7 @@
 slimta.signalfd
 ====================
 
-.. currentmodule:: slimta.signalfd
+.. module:: slimta.signalfd
 
 Module for catching signals in an event-based manner. Uses the ``signalfd()``
 system call only available on GNU/Linux systems.
@@ -11,7 +11,7 @@ system call only available on GNU/Linux systems.
 
    Returns a signal mask suitable for passing to :func:`sigprocmask()` or
    :func:`new()`. The signals passed to this function are simply the names in
-   the signal(7) man page, e.g. ``"SIGHUP"`` or ``"SIGTERM"``.
+   the ``signal(7)`` man page, e.g. ``"SIGHUP"`` or ``"SIGTERM"``.
 
    :param sigs: table of signal names.
    :return: signal mask suitable for later use.

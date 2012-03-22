@@ -2,7 +2,7 @@
 slimta.edge.smtp.auth
 =====================
 
-.. currentmodule:: slimta.edge.smtp.auth
+.. module:: slimta.edge.smtp.auth
 
 Module for managing the authentication procedures of clients connecting to an
 :mod:`slimta.edge.smtp` service. Clients have a choice of any mechanisms the

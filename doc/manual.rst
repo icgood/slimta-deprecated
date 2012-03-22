@@ -5,6 +5,7 @@ Usage Manual
 .. toctree::
    :hidden:
 
+   manual/terminology
    manual/buildingblocks
    manual/messages
    manual/architecture
@@ -13,6 +14,7 @@ Usage Manual
    manual/relay
    manual/policies
 
+* :doc:`manual/terminology`
 * :doc:`manual/buildingblocks`
 
   * :doc:`manual/ratchet` (`Website <http://ratchet.icgood.net/>`_)

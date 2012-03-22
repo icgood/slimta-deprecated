@@ -2,6 +2,8 @@
 slimta.storage
 ==============
 
+.. module:: slimta.storage
+
 Module of storage engines currently available to slimta. Every storage engine
 should expose the same base set of methods, and every storage engine session
 should as well.

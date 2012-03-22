@@ -2,7 +2,7 @@
 slimta.message.bounce
 =====================
 
-.. currentmodule:: slimta.message.bounce
+.. module:: slimta.message.bounce
 
 Module for taking a message and response and generating a bounce message to
 explain to the sender why the original message failed to send.

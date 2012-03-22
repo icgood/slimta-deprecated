@@ -2,7 +2,7 @@
 slimta.edge
 ===========
 
-.. currentmodule:: slimta.edge
+.. module:: slimta.edge
 
 Contains various edge service protocols for receiving messages from the outside
 the MTA. This could be from the entire Internet, just your customers, just the

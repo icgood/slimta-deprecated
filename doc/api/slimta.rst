@@ -2,7 +2,7 @@
 slimta
 ======
 
-.. currentmodule:: slimta
+.. module:: slimta
 
 The root module for all other slimta modules. Also contains several C supporting
 functions. Note that this module only directly loads the modules implemented in
@@ -25,6 +25,10 @@ C, other modules will require direct ``require()`` calls.
    :param stdout: filename to append the standard output stream into.
    :param stderr: filename to append the standard error stream into.
    :param stdin: filename to read from as the standard input stream.
+
+--------------
+
+**Modules:**
 
 .. toctree::
 

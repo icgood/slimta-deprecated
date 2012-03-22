@@ -2,7 +2,7 @@
 slimta.message.contents
 =======================
 
-.. currentmodule:: slimta.message.contents
+.. module:: slimta.message.contents
 
 Module used to parse, store, load, and stringify message contents in an easy,
 sensible way. This includes header parsing and modification.

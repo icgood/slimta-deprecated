@@ -2,7 +2,7 @@
 slimta.relay.maildrop
 =====================
 
-.. currentmodule:: slimta.relay.maildrop
+.. module:: slimta.relay.maildrop
 
 Module that implements a relayer using the ``maildrop`` command-line utility.
 This is a venerable, local delivery method often used in conjunction with

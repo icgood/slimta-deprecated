@@ -2,7 +2,7 @@
 slimta.storage.session
 ======================
 
-.. currentmodule:: slimta.storage.session
+.. module:: slimta.storage.session
 
 Module describing the methods exposed by storage engine sessions. These objects
 can only be created by calling the :func:`slimta.storage.connect()` method of a

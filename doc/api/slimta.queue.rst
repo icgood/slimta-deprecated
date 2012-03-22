@@ -2,7 +2,7 @@
 slimta.queue
 ============
 
-.. currentmodule:: slimta.queue
+.. module:: slimta.queue
 
 Module to manage the queue of messages passing through the MTA. This involves
 receiving messages from the edge service, storing it in a storage engine,

@@ -2,7 +2,7 @@
 slimta.policies.add_date_header
 ===============================
 
-.. currentmodule:: slimta.policies.add_date_header
+.. module:: slimta.policies.add_date_header
 
 Module that implements policy logic to add a ``Date:`` header to an outgoing
 message, as per *RFC 2822*. This header should be added to all messages that do

@@ -2,7 +2,7 @@
 slimta.message.response
 =======================
 
-.. currentmodule:: slimta.message.response
+.. module:: slimta.message.response
 
 Module to represent a response to a message delivery. These responses must come
 from an SMTP relayer attempting delivery or must be translated into valid SMTP

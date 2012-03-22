@@ -2,6 +2,8 @@
 slimta.routing
 ==============
 
+.. module:: slimta.routing
+
 :mod:`slimta.message` objects received from edge services do not have routing
 information associated with them. Without routing information, relay attempts
 will not be possible. Routing policies simply modify the :mod:`message` object

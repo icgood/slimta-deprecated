@@ -2,7 +2,7 @@
 slimta.message.envelope
 =======================
 
-.. currentmodule:: slimta.message.envelope
+.. module:: slimta.message.envelope
 
 Module for describing the envelope of a :mod:`message`, in other words the info
 used by policies and the relayer to deliver the message.

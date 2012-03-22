@@ -2,7 +2,7 @@
 slimta.message.client
 =====================
 
-.. currentmodule:: slimta.message.client
+.. module:: slimta.message.client
 
 Module for describing the client that delivered the :mod:`message` to the edge
 listener. This information is useful for logging, policies, etc.

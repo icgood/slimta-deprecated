@@ -2,7 +2,7 @@
 slimta.relay.smtp
 =================
 
-.. currentmodule:: slimta.relay.smtp
+.. module:: slimta.relay.smtp
 
 Module that attempts message delivery by connection to a remote SMTP server.
 

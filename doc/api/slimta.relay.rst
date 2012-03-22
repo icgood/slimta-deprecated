@@ -2,7 +2,7 @@
 slimta.relay
 ============
 
-.. currentmodule:: slimta.relay
+.. module:: slimta.relay
 
 Module that manages the delivery of messages. Different messages can be
 delivered in different ways, some may be forwarded by SMTP to another host while

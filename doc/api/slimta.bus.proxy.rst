@@ -2,7 +2,7 @@
 slimta.bus.proxy
 ================
 
-.. currentmodule:: slimta.bus.proxy
+.. module:: slimta.bus.proxy
 
 Module that provides a convenient way to apply policies and make changes to a
 stream of requests traversing a bus. For example, a message going from the queue

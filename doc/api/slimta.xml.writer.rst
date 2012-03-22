@@ -2,7 +2,7 @@
 slimta.xml.writer
 ====================
 
-.. currentmodule:: slimta.xml.writer
+.. module:: slimta.xml.writer
 
 Module which provides a consistent interface for generating XML representations
 of an object's data, such that it can be recreated without access to the

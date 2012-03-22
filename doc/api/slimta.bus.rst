@@ -3,7 +3,7 @@
 slimta.bus
 ==========
 
-.. currentmodule:: slimta.bus
+.. module:: slimta.bus
 
 Module that simplifies and abstracts the transfer of objects either locally
 (within the same Lua state) or over a socket.

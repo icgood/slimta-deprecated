@@ -205,6 +205,20 @@ div.document .section:first-child {
   margin-top: 0px;
 }
 
+div.document div.highlight-python {
+  margin-left: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding-left: 0.2em;
+  border-left-width: 2px;
+  border-right-width: 0px;
+  border-top-width: 2px;
+  border-bottom-width: 0px;
+  border-color: gray;
+  border-style: dotted;
+  background-color: #ececec;
+}
+
 div.document div.highlight {
   padding: 3px;
   background-color: #eeeeec;
@@ -239,6 +253,7 @@ div.document .docutils.literal {
 div.document .docutils.xref.literal {
   background-color: transparent;
   padding: 0px;
+  font-weight: bold;
 }
 
 div.document blockquote {

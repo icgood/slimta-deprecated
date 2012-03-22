@@ -2,7 +2,7 @@
 slimta.uuid
 ====================
 
-.. currentmodule:: slimta.uuid
+.. module:: slimta.uuid
 
 Module for generating "Universally Unique IDentifiers". According to the man
 page for ``uuid_generate()``, "The new UUID can reasonably be considered unique

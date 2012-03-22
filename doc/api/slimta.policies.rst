@@ -2,7 +2,7 @@
 slimta.policies
 ===============
 
-.. currentmodule:: slimta.policies
+.. module:: slimta.policies
 
 Contains several useful policies that can be applied to messages traveling
 through the MTA. These can make them more RFC-compliant or help fit your

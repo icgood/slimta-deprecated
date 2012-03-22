@@ -2,7 +2,7 @@
 slimta.xml.reader
 ====================
 
-.. currentmodule:: slimta.xml.reader
+.. module:: slimta.xml.reader
 
 Module that parses XML data into a consistent tree structure that data types may
 use to recreate objects.
