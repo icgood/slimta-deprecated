@@ -5,6 +5,8 @@ slimta Terminology
 To get started working with *slimta*, there are a few terms to know. Someone
 familiar with SMTP and email servers will recognize many of them.
 
+--------------
+
 *MTA*
    Mail Transfer Agent. This is a server application used to transfer email
    messages from a source to a destination along a series of hops.

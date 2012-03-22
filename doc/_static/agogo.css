@@ -205,6 +205,11 @@ div.document .section:first-child {
   margin-top: 0px;
 }
 
+div.document span.optional {
+  font-weight: bold;
+  margin-left: 0.2em;
+}
+
 div.document div.highlight-python {
   margin-left: 1.5em;
   margin-top: 1em;
