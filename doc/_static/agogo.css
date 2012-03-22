@@ -228,6 +228,7 @@ div.document li.toctree-l1 {
 
 div.document .descname {
   font-weight: bold;
+  font-size: 1.4em;
 }
 
 div.document .docutils.literal {
