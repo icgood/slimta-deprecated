@@ -26,6 +26,15 @@ C, other modules will require direct ``require()`` calls.
    :param stderr: filename to append the standard error stream into.
    :param stdin: filename to read from as the standard input stream.
 
+.. function:: drop_privileges(user, group)
+
+   Uses the system calls ``setgid()`` and ``setuid()`` to drop root privileges
+   to the given user and group. This is useful for security purposes, once
+   root-only ports like 25 are opened.
+
+   :param user: user name (from /etc/passwd) or UID.
+   :param group: group name (from /etc/group) or GID.
+
 --------------
 
 **Modules:**
