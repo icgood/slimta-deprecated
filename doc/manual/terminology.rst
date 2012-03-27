@@ -63,3 +63,10 @@ familiar with SMTP and email servers will recognize many of them.
    it supports, and plaintext mechanisms may not be allowed unless the socket
    session is encrypted.
 
+*Policies*
+   A policy in an *MTA* is any behavior outside the standard receive, queue, and
+   deliver behaviors. Authentication and encryption are good examples of
+   standardized, universal policies. Examples of more customized policies could
+   be forms of spam filtering, inclusion or filtering of custom headers, or
+   smart forms of routing not based on *MX* records.
+

@@ -49,6 +49,8 @@ This way, if a thread errors, its traceback information will be printed and
 other threads will continue merrily on. The thread that errored cannot be
 resumed.
 
+.. _ratchet-threads:
+
 Using Threads
 """""""""""""
 
@@ -68,6 +70,8 @@ like this::
 
 The :doc:`../api` and :doc:`../manual` will attempt to make it clear to developers
 when it is necessary or desired to create new *ratchet* threads.
+
+.. _ratchet-sockets:
 
 Using Sockets
 """""""""""""

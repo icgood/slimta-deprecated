@@ -261,6 +261,15 @@ div.document .docutils.xref.literal {
   font-weight: bold;
 }
 
+div.document pre.literal-block {
+  background-color: #dddddd;
+  margin-left: 1em;
+}
+
+div.document pre.literal-block em {
+  font-weight: bold;
+}
+
 div.document blockquote {
   margin: 1em;
 }
