@@ -30,5 +30,8 @@ Usage Manual
 * :doc:`manual/architecture`
 * :doc:`manual/edge`
 * :doc:`manual/queue`
+
+  * :doc:`manual/storage`
+
 * :doc:`manual/relay`
 * :doc:`manual/policies`
