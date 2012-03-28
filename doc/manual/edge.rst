@@ -20,6 +20,8 @@ signify whether the message was successfully delivered, but rather that the
 **may** be configured to deliver directly to a relay service, creating a form of
 email message proxy.
 
+.. _edge-smtp:
+
 SMTP Edge Services
 """"""""""""""""""
 
@@ -192,6 +194,8 @@ If you add a validator for the ``STARTTLS`` command and are using immediate
 (socket-level) encryption, the validator will be called immediately when a
 client connects and the ``reply`` object will be igored.
 
+.. _edge-http:
+
 HTTP Edge Services
 """"""""""""""""""
 
@@ -235,10 +239,10 @@ client session, with edge server responses emphasized:
    Subject: slimta testing
 
    HTTP message submission!
-   *HTTP/1.0 200 Message queued as e6482085-5322-4254-8654-2d1bd59ba6cd
-   Content-Length: 36
+   *HTTP/1.0 200 Message queued as e6482085-5322-4254-8654-2d1bd59ba6cd*
+   *Content-Length: 36*
 
-   e6482085-5322-4254-8654-2d1bd59ba6cd*
+   *e6482085-5322-4254-8654-2d1bd59ba6cd*
 
 Receiving Edge Messages
 """""""""""""""""""""""

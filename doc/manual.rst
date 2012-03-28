@@ -29,9 +29,19 @@ Usage Manual
 
 * :doc:`manual/architecture`
 * :doc:`manual/edge`
+
+  * :ref:`SMTP <edge-smtp>`
+  * :ref:`HTTP <edge-http>`
+
 * :doc:`manual/queue`
 
   * :doc:`manual/storage`
 
 * :doc:`manual/relay`
+
+  * :ref:`SMTP <relay-smtp>`
+  * :ref:`Maildrop <relay-maildrop>`
+
 * :doc:`manual/policies`
+
+  * :doc:`manual/routing`

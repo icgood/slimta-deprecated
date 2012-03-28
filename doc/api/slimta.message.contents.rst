@@ -27,7 +27,7 @@ sensible way. This includes header parsing and modification.
     stream or from a storage engine.
    :return: new :mod:`contents` object.
 
-.. function:: add_header(self, name, value, [after_exiting])
+.. function:: add_header(self, name, value, [after_existing])
 
    Adds a new header to the message. This is the ONLY way to add new headers to
    a message, modifying the ``headers`` table will NOT work.

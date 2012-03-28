@@ -2,11 +2,6 @@
 Queue Services
 ==============
 
-.. toctree::
-   :hidden:
-
-   storage
-
 The *queue* of an *MTA* does little on its own, it takes in email messages from
 an :doc:`edge <edge>` service and intermittently attempts delivery with a
 :doc:`relay <relay>` service until successful. This keep-trying-until-successful
@@ -28,6 +23,12 @@ and remove it from storage. If the relay returns a *5xx* (permanent error) code,
 a *bounce* message is generated and queued to notify the sender of the failure,
 and the message is removed from storage. If the relay returns a *4xx* (transient
 error) code, the message remains in queue to be retried.
+
+**See also**
+
+.. toctree::
+
+   storage
 
 Creating a Queue Object
 """""""""""""""""""""""
