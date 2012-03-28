@@ -274,6 +274,10 @@ div.document blockquote {
   margin: 1em;
 }
 
+div.document blockquote.highlights {
+  background-color: lightpink;
+}
+
 div.document ol {
   margin: 1.5em;
 }

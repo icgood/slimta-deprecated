@@ -91,7 +91,9 @@ Creating Bus-compatible Objects
 As stated before, if a module has the two functions ``from_xml()`` and
 ``to_xml()``, its objects can be sent or received from buses.
 
-*Please see :mod:`slimta.message` or :mod:`slimta.message.response` for examples
-of bus-compatible modules/objects until this documentation section is
-completed.*
+.. highlights::
+
+   Please see :mod:`slimta.message` or :mod:`slimta.message.response` for
+   examples of bus-compatible modules/objects until this documentation section
+   is completed.
 
