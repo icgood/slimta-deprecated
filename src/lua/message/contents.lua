@@ -21,9 +21,7 @@ local headers_metatable = {
 -- }}}
 
 -- {{{ load_headers()
-local function load_headers(self)
-    local header_data = self.orig_data:sub(1, self.headers_end)
-
+local function load_headers(self, header_data)
     local pattern = "^([%d%a%-]+)%:%s(.-)()%\r?%\n"
     local multi_line_pattern = "^(%\r?%\n%s.-)()%\r?%\n"
     local to_line_end_pattern = "^.-%\n()"
@@ -95,7 +93,7 @@ function slimta.message.contents.new(data)
 
     self.headers_end, self.contents_start = data:match("%\r?%\n()%s-%\r?%\n()")
     if self.headers_end then
-        load_headers(self)
+        load_headers(self, self.orig_data:sub(1, self.headers_end))
     end
 
     return self
@@ -104,6 +102,10 @@ end
 
 -- {{{ slimta.message.contents:add_header()
 function slimta.message.contents:add_header(name, value, after_existing)
+    if not value then
+        return
+    end
+
     local key = name:lower()
     if self.headers[key][1] then
         if after_existing then
