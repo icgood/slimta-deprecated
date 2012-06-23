@@ -13,8 +13,8 @@ function slimta.policies.spamassassin.new(host, port, family)
     local self = {}
     setmetatable(self, slimta.policies.spamassassin)
 
-    self.host = host
-    self.port = port
+    self.host = host or "localhost"
+    self.port = port or 783
     self.family = family
 
     return self
