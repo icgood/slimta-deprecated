@@ -51,13 +51,13 @@ function scan_message()
 
     if not pcall(spamassassin.scan, spamassassin, spam_message) then
         io.stderr:write("WARNING: Could not connect to spamassassin, skipping test.\n")
-        return
+        os.exit(77)
     end
     assert(spam_message.spammy)
 
     if not pcall(spamassassin.scan, spamassassin, ham_message) then
         io.stderr:write("WARNING: Could not connect to spamassassin, skipping test.\n")
-        return
+        os.exit(77)
     end
     assert(not ham_message.spammy)
 
