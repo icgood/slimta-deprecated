@@ -24,6 +24,8 @@ nobase_dist_luasrc_DATA = relay/init.lua \
 			  policies/add_received_header.lua \
 			  policies/add_message_id_header.lua \
 			  policies/forward.lua \
+			  policies/spamassassin/init.lua \
+			  policies/spamassassin/spamc.lua \
 			  routing/mx.lua \
 			  routing/static.lua \
 			  xml/reader.lua \

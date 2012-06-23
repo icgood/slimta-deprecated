@@ -18,4 +18,5 @@ business logic.
    slimta.policies.add_received_header
    slimta.policies.add_message_id_header
    slimta.policies.forward
+   slimta.policies.spamassassin
 

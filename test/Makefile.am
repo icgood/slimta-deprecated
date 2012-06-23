@@ -38,10 +38,12 @@ policy_tests = test_add_date_header.lua \
 
 coordination_tests = test_edge_to_relay.lua
 
+spam_tests = test_spamassassin.lua
+
 TESTS = $(bus_tests) $(xml_tests) $(message_tests) \
 	$(edge_tests) $(queue_tests) $(relay_tests) \
 	$(coordination_tests) $(policy_tests) \
-	$(misc_tests)
+	$(misc_tests) $(spam_tests)
 
 XFAIL_TESTS = 
 EXTRA_DIST = $(TESTS)
