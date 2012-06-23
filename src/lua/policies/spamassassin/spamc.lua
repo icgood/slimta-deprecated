@@ -8,7 +8,7 @@ spamc.__index = spamc
 local function build_request_str(message)
     local raw_message = tostring(message.contents)
     local parts = {
-        "CHECK SPAMC/",
+        "SYMBOLS SPAMC/",
         SPAMC_PROTOCOL_VERSION,
         "\r\nContent-Length: ",
         #raw_message,
@@ -63,17 +63,22 @@ function spamc.recv_response(socket)
             break
         end
 
-        match = line:match("^Spam: ([^ ]+)")
-        if match then
-            if match == "True" then
-                spammy = true
-            end
+        if "True" == line:match("^Spam: ([^ ]+)") then
+            spammy = true
+        end
+    end
+
+    local lines = {}
+    while true do
+        line, buffer = get_line(socket, buffer)
+        if not line or line == "" then
             break
         end
+        table.insert(lines, line)
     end
     socket:close()
 
-    return spammy
+    return spammy, table.concat(lines, "\r\n")
 end
 -- }}}
 

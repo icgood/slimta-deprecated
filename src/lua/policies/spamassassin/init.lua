@@ -34,9 +34,10 @@ function slimta.policies.spamassassin.scan(self, message)
     end
 
     spamc.send_request(socket, message)
-    message.spammy = spamc.recv_response(socket)
+    local spammy, symbols = spamc.recv_response(socket)
+    message.spammy = spammy
 
-    return message.spammy
+    return spammy, symbols
 end
 -- }}}
 
