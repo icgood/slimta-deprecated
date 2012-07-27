@@ -223,18 +223,18 @@ static int myxml_parsesome (lua_State *L)
 /* {{{ luaopen_slimta_xml() */
 int luaopen_slimta_xml (lua_State *L)
 {
-	static const luaL_Reg funcs[] = {
+	const luaL_Reg funcs[] = {
 		{"new", myxml_new},
 		{"escape", myxml_escape},
 		{NULL}
 	};
 
-	static const luaL_Reg metameths[] = {
+	const luaL_Reg metameths[] = {
 		{"__gc", myxml_gc},
 		{NULL}
 	};
 
-	static const luaL_Reg meths[] = {
+	const luaL_Reg meths[] = {
 		/* Documented methods. */
 		{"parse", myxml_parse},
 		{"parsesome", myxml_parsesome},

@@ -52,7 +52,9 @@ static void push_evp_table (lua_State *L)
 {
 	lua_newtable (L);
 	add_method (L, md_null);
+#ifndef OPENSSL_NO_MD2
 	add_method (L, md2);
+#endif
 	add_method (L, md5);
 	add_method (L, sha);
 	add_method (L, sha1);
@@ -117,7 +119,7 @@ static int rhmac_encode (lua_State *L)
 /* {{{ luaopen_slimta_hmac() */
 int luaopen_slimta_hmac (lua_State *L)
 {
-	static const luaL_Reg funcs[] = {
+	const luaL_Reg funcs[] = {
 		{"encode", rhmac_encode},
 		{NULL}
 	};

@@ -52,7 +52,7 @@ static int myuuid_generate (lua_State *L)
 /* {{{ luaopen_slimta_uuid() */
 int luaopen_slimta_uuid (lua_State *L)
 {
-	static const luaL_Reg funcs[] = {
+	const luaL_Reg funcs[] = {
 		{"generate", myuuid_generate},
 		{NULL}
 	};

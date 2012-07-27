@@ -161,7 +161,7 @@ static int slimta_drop_privileges (lua_State *L)
 /* {{{ luaopen_slimta() */
 int luaopen_slimta (lua_State *L)
 {
-	static const luaL_Reg funcs[] = {
+	const luaL_Reg funcs[] = {
 		{"redirect_stdio", slimta_redirect_stdio},
 		{"daemonize", slimta_daemonize},
 		{"drop_privileges", slimta_drop_privileges},

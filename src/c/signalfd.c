@@ -248,7 +248,7 @@ static int sfd_read (lua_State *L)
 int luaopen_slimta_signalfd (lua_State *L)
 {
 	/* Static functions in the slimta.signalfd namespace. */
-	static const luaL_Reg funcs[] = {
+	const luaL_Reg funcs[] = {
 		{"new", sfd_new},
 		{"mask", sfd_mask},
 		{"sigprocmask", sfd_sigprocmask},
@@ -256,13 +256,13 @@ int luaopen_slimta_signalfd (lua_State *L)
 	};
 
 	/* Meta-methods for slimta.signalfd object metatables. */
-	static const luaL_Reg metameths[] = {
+	const luaL_Reg metameths[] = {
 		{"__gc", sfd_close},
 		{NULL}
 	};
 
 	/* Methods in the slimta.signalfd class. */
-	static const luaL_Reg meths[] = {
+	const luaL_Reg meths[] = {
 		/* Documented methods. */
 		{"setmask", sfd_setmask},
 		{"close", sfd_close},

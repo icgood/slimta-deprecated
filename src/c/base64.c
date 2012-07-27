@@ -119,7 +119,7 @@ static int rb64_decode (lua_State *L)
 /* {{{ luaopen_slimta_base64() */
 int luaopen_slimta_base64 (lua_State *L)
 {
-	static const luaL_Reg funcs[] = {
+	const luaL_Reg funcs[] = {
 		{"encode", rb64_encode},
 		{"decode", rb64_decode},
 		{NULL}
